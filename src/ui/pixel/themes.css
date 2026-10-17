@@ -1,0 +1,273 @@
+/* Per-screen themes for BOX BOX. Put one of the classes below on a screen wrapper, for example
+ *   <div className="screen career theme-car"> ... </div>
+ * Each theme sets --accent, --accent-line and --accent-ink for the screen and restyles .panel with a
+ * distinct pixel pattern. Colours stay inside the dark retro palette and text keeps high contrast.
+ * Import once: import "./ui/pixel/themes.css"; (this file does not change anything until a theme class is used) */
+
+/* news: studio: scanlines and a red on-air accent */
+.theme-news {
+  --accent: #ff5a5f;
+  --accent-line: #6a3f8a;
+  --accent-ink: #ff8a8e;
+  --theme-panel: #2a1f4a;
+  --theme-panel2: #241a42;
+}
+.theme-news .panel {
+  background-color: #2a1f4a;
+  background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 4px);
+  box-shadow:
+    0 0 0 2px #6a3f8a,
+    0 0 0 4px var(--shadow),
+    6px 6px 0 4px var(--shadow),
+    inset 0 4px 0 0 #ff5a5f;
+}
+.theme-news .panel h3 {
+  color: #ff8a8e;
+}
+.theme-news .c-card,
+.theme-news .c-opt {
+  background-color: #241a42;
+  border-color: #6a3f8a;
+}
+.theme-news .c-notice {
+  border-left-color: #ff5a5f;
+}
+
+/* car: blueprint: a fine drafting grid */
+.theme-car {
+  --accent: #6fb3ff;
+  --accent-line: #3f6bb5;
+  --accent-ink: #9fd0ff;
+  --theme-panel: #16264f;
+  --theme-panel2: #122046;
+}
+.theme-car .panel {
+  background-color: #16264f;
+  background-image: linear-gradient(rgba(111,179,255,0.10) 1px, transparent 1px) 0 0/16px 16px, linear-gradient(90deg, rgba(111,179,255,0.10) 1px, transparent 1px) 0 0/16px 16px;
+  box-shadow:
+    0 0 0 2px #3f6bb5,
+    0 0 0 4px var(--shadow),
+    6px 6px 0 4px var(--shadow),
+    inset 0 4px 0 0 #6fb3ff;
+}
+.theme-car .panel h3 {
+  color: #9fd0ff;
+}
+.theme-car .c-card,
+.theme-car .c-opt {
+  background-color: #122046;
+  border-color: #3f6bb5;
+}
+.theme-car .c-notice {
+  border-left-color: #6fb3ff;
+}
+
+/* people: paddock dusk: warm awning stripes */
+.theme-people {
+  --accent: #ff9a3c;
+  --accent-line: #8a5a3a;
+  --accent-ink: #ffb86b;
+  --theme-panel: #2e2030;
+  --theme-panel2: #281b2b;
+}
+.theme-people .panel {
+  background-color: #2e2030;
+  background-image: repeating-linear-gradient(90deg, rgba(255,154,60,0.05) 0 6px, transparent 6px 12px);
+  box-shadow:
+    0 0 0 2px #8a5a3a,
+    0 0 0 4px var(--shadow),
+    6px 6px 0 4px var(--shadow),
+    inset 0 4px 0 0 #ff9a3c;
+}
+.theme-people .panel h3 {
+  color: #ffb86b;
+}
+.theme-people .c-card,
+.theme-people .c-opt {
+  background-color: #281b2b;
+  border-color: #8a5a3a;
+}
+.theme-people .c-notice {
+  border-left-color: #ff9a3c;
+}
+
+/* money: ledger: green paper with ruled lines */
+.theme-money {
+  --accent: #57cc99;
+  --accent-line: #2f7a5c;
+  --accent-ink: #8fe3bb;
+  --theme-panel: #14291f;
+  --theme-panel2: #102319;
+}
+.theme-money .panel {
+  background-color: #14291f;
+  background-image: repeating-linear-gradient(0deg, rgba(249,199,79,0.06) 0 1px, transparent 1px 12px);
+  box-shadow:
+    0 0 0 2px #2f7a5c,
+    0 0 0 4px var(--shadow),
+    6px 6px 0 4px var(--shadow),
+    inset 0 4px 0 0 #57cc99;
+}
+.theme-money .panel h3 {
+  color: #8fe3bb;
+}
+.theme-money .c-card,
+.theme-money .c-opt {
+  background-color: #102319;
+  border-color: #2f7a5c;
+}
+.theme-money .c-notice {
+  border-left-color: #57cc99;
+}
+
+/* calendar: race control: planner checks */
+.theme-calendar {
+  --accent: #2ec4b6;
+  --accent-line: #2a7f8a;
+  --accent-ink: #6fe3d8;
+  --theme-panel: #1a2542;
+  --theme-panel2: #151f3a;
+}
+.theme-calendar .panel {
+  background-color: #1a2542;
+  background-image: linear-gradient(45deg, rgba(46,196,182,0.07) 25%, transparent 25% 75%, rgba(46,196,182,0.07) 75%) 0 0/12px 12px, linear-gradient(45deg, rgba(46,196,182,0.07) 25%, transparent 25% 75%, rgba(46,196,182,0.07) 75%) 6px 6px/12px 12px;
+  box-shadow:
+    0 0 0 2px #2a7f8a,
+    0 0 0 4px var(--shadow),
+    6px 6px 0 4px var(--shadow),
+    inset 0 4px 0 0 #2ec4b6;
+}
+.theme-calendar .panel h3 {
+  color: #6fe3d8;
+}
+.theme-calendar .c-card,
+.theme-calendar .c-opt {
+  background-color: #151f3a;
+  border-color: #2a7f8a;
+}
+.theme-calendar .c-notice {
+  border-left-color: #2ec4b6;
+}
+
+/* rules: hearing room: dark wood panelling and gold */
+.theme-rules {
+  --accent: #f9c74f;
+  --accent-line: #8a6a2a;
+  --accent-ink: #ffd986;
+  --theme-panel: #2e2218;
+  --theme-panel2: #271c14;
+}
+.theme-rules .panel {
+  background-color: #2e2218;
+  background-image: repeating-linear-gradient(90deg, rgba(249,199,79,0.05) 0 2px, transparent 2px 16px);
+  box-shadow:
+    0 0 0 2px #8a6a2a,
+    0 0 0 4px var(--shadow),
+    6px 6px 0 4px var(--shadow),
+    inset 0 4px 0 0 #f9c74f;
+}
+.theme-rules .panel h3 {
+  color: #ffd986;
+}
+.theme-rules .c-card,
+.theme-rules .c-opt {
+  background-color: #271c14;
+  border-color: #8a6a2a;
+}
+.theme-rules .c-notice {
+  border-left-color: #f9c74f;
+}
+
+/* academy: junior paddock: kart track checkers */
+.theme-academy {
+  --accent: #8be04e;
+  --accent-line: #4a8a2a;
+  --accent-ink: #b4f07c;
+  --theme-panel: #1a2a1c;
+  --theme-panel2: #152318;
+}
+.theme-academy .panel {
+  background-color: #1a2a1c;
+  background-image: linear-gradient(90deg, rgba(139,224,78,0.07) 50%, transparent 50%) 0 0/16px 16px, linear-gradient(rgba(139,224,78,0.07) 50%, transparent 50%) 0 0/16px 16px;
+  box-shadow:
+    0 0 0 2px #4a8a2a,
+    0 0 0 4px var(--shadow),
+    6px 6px 0 4px var(--shadow),
+    inset 0 4px 0 0 #8be04e;
+}
+.theme-academy .panel h3 {
+  color: #b4f07c;
+}
+.theme-academy .c-card,
+.theme-academy .c-opt {
+  background-color: #152318;
+  border-color: #4a8a2a;
+}
+.theme-academy .c-notice {
+  border-left-color: #8be04e;
+}
+
+/* world: league map: a dotted globe grid */
+.theme-world {
+  --accent: #b66cff;
+  --accent-line: #5a4aa0;
+  --accent-ink: #d2a2ff;
+  --theme-panel: #1b1a3a;
+  --theme-panel2: #161531;
+}
+.theme-world .panel {
+  background-color: #1b1a3a;
+  background-image: radial-gradient(rgba(182,108,255,0.22) 1px, transparent 1.5px) 0 0/12px 12px;
+  box-shadow:
+    0 0 0 2px #5a4aa0,
+    0 0 0 4px var(--shadow),
+    6px 6px 0 4px var(--shadow),
+    inset 0 4px 0 0 #b66cff;
+}
+.theme-world .panel h3 {
+  color: #d2a2ff;
+}
+.theme-world .c-card,
+.theme-world .c-opt {
+  background-color: #161531;
+  border-color: #5a4aa0;
+}
+.theme-world .c-notice {
+  border-left-color: #b66cff;
+}
+
+/* a banner placed at the top of a themed screen gets the same frame as a panel */
+.bbn-frame {
+  margin: 4px 6px 10px 4px;
+  box-shadow: 0 0 0 2px var(--accent-line, var(--line)), 0 0 0 4px var(--shadow), 6px 6px 0 4px var(--shadow);
+  background: var(--shadow);
+  overflow: hidden;
+}
+
+/* readability: every panel is one flat colour, no stripes, grids or dots behind text */
+[class*="theme-"] .panel,
+[class*="theme-"] .c-card,
+[class*="theme-"] .c-opt,
+[class*="theme-"] .c-sd {
+  background-image: none !important;
+}
+
+/* garage: practice. Concrete floor, hazard stripe on the panel top */
+.theme-garage {
+  --accent: #f9c74f;
+  --accent-line: #6b6590;
+  --accent-ink: #ffe08a;
+  --theme-panel: #25222e;
+  --theme-panel2: #1d1b26;
+}
+.theme-garage .panel {
+  background-color: #25222e;
+  background-image: repeating-linear-gradient(135deg, rgba(249,199,79,0.05) 0 8px, transparent 8px 16px);
+  box-shadow:
+    0 0 0 2px #6b6590,
+    0 0 0 4px var(--shadow),
+    6px 6px 0 4px var(--shadow),
+    inset 0 4px 0 0 #f9c74f;
+}
+.theme-garage .panel h3 { color: #ffe08a; }
+.theme-garage .c-card, .theme-garage .c-opt { background-color: #1d1b26; border-color: #6b6590; }

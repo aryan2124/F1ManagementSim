@@ -1,0 +1,168 @@
+/* Styles for the pixel-art scene components. Colours come from the global CSS variables. */
+.pixel-scene {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  margin: 8px 0;
+  border: 2px solid var(--line, #4a3f7a);
+  background: #0b0814;
+  line-height: 0;
+}
+.pixel-scene canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 480 / 150;
+  image-rendering: pixelated;
+}
+.pixel-scene .pixel-hits {
+  position: absolute;
+  inset: 0;
+}
+.pixel-scene .pixel-hit {
+  position: absolute;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  outline: none;
+  line-height: 1;
+}
+.pixel-scene .pixel-hit:hover,
+.pixel-scene .pixel-hit:focus-visible {
+  background: rgba(255, 226, 122, 0.12);
+  box-shadow: inset 0 0 0 2px rgba(255, 226, 122, 0.85);
+}
+.pixel-scene .pixel-tip {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 4px;
+  width: max-content;
+  max-width: 260px;
+  padding: 4px 6px;
+  background: var(--panel, #231d3b);
+  color: var(--ink, #f4e9d0);
+  border: 2px solid var(--yellow, #f9c74f);
+  font-family: var(--body, "VT323", monospace);
+  font-size: 16px;
+  line-height: 1.1;
+  text-align: left;
+  pointer-events: none;
+  z-index: 3;
+}
+.pixel-scene .pixel-hit.tip-left .pixel-tip {
+  left: 0;
+  transform: none;
+}
+.pixel-scene .pixel-hit.tip-right .pixel-tip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.pixel-scene .pixel-hit:hover .pixel-tip,
+.pixel-scene .pixel-hit:focus-visible .pixel-tip {
+  display: block;
+}
+.pixel-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* car sprite */
+.pixel-car {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+  max-width: 100%;
+}
+.pixel-car canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+}
+.pixel-car .pixel-hit {
+  position: absolute;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  outline: none;
+}
+.pixel-car button.pixel-hit:hover,
+.pixel-car button.pixel-hit:focus-visible {
+  background: rgba(255, 226, 122, 0.18);
+  box-shadow: inset 0 0 0 2px rgba(255, 226, 122, 0.9);
+}
+.pixel-car .pixel-tip {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  padding: 2px 5px;
+  background: var(--panel, #231d3b);
+  color: var(--ink, #f4e9d0);
+  border: 2px solid var(--yellow, #f9c74f);
+  font-family: var(--pix, monospace);
+  font-size: 8px;
+  line-height: 1.2;
+  pointer-events: none;
+  z-index: 2;
+}
+.pixel-car .pixel-hit:hover .pixel-tip,
+.pixel-car .pixel-hit:focus-visible .pixel-tip {
+  display: block;
+}
+.pixel-car-labels { position: relative; height: 16px; line-height: 1; }
+.pixel-car-labels span { position: absolute; top: 0; transform: translateX(-50%); font-family: var(--pix, monospace); font-size: 8px; color: var(--ink, #f4e9d0); white-space: nowrap; }
+.pixel-car-labels span.hot { color: #ffe27a; }
+
+/* season launch reveal */
+.pixel-reveal {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  border: 2px solid var(--line, #4a3f7a);
+  background: #0b0814;
+  line-height: 0;
+  cursor: pointer;
+  user-select: none;
+}
+.pixel-reveal canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  image-rendering: pixelated;
+}
+.pixel-reveal .pixel-continue {
+  position: absolute;
+  right: 3%;
+  bottom: 4%;
+  font-family: var(--pix, monospace);
+  font-size: clamp(8px, 1.6vw, 14px);
+  line-height: 1;
+  padding: 0.8em 1.1em;
+  color: #14111f;
+  background: var(--yellow, #f9c74f);
+  border: 3px solid var(--ink, #f4e9d0);
+  box-shadow: 0 4px 0 #8a6a12;
+  cursor: pointer;
+}
+.pixel-reveal .pixel-continue:hover,
+.pixel-reveal .pixel-continue:focus-visible {
+  background: var(--hot, #ff7a1a);
+  outline: none;
+}

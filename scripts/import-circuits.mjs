@@ -1,0 +1,132 @@
+#!/usr/bin/env node
+/**
+ * Converts real circuit centrelines (GeoJSON, https://github.com/bacinger/f1-circuits, MIT) into
+ * the compact metre-based control points the sim uses.
+ *
+ * Usage: node scripts/import-circuits.mjs /path/to/f1-circuits-repo
+ * Output: src/game/circuitGeo.generated.ts
+ *
+ * Pipeline per circuit: project lon/lat to metres (north up) -> centripetal Catmull-Rom ->
+ * resample every STEP metres -> light Gaussian smoothing (removes GPS jitter that would otherwise
+ * create fake corners) -> rescale to the official lap length -> round to 0.1 m.
+ */
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const SRC = process.argv[2];
+if (!SRC) {
+  console.error("usage: node scripts/import-circuits.mjs <path to f1-circuits repo>");
+  process.exit(1);
+}
+const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../src/game/circuitGeo.generated.ts");
+const STEP = 12;
+const SIGMA = 1.1; // in samples
+
+const files = fs.readdirSync(path.join(SRC, "circuits")).filter((f) => f.endsWith(".geojson")).sort();
+
+function project(coords) {
+  const lat0 = coords.reduce((a, c) => a + c[1], 0) / coords.length;
+  const lon0 = coords.reduce((a, c) => a + c[0], 0) / coords.length;
+  const kx = 111320 * Math.cos((lat0 * Math.PI) / 180);
+  return coords.map((c) => ({ x: (c[0] - lon0) * kx, y: -(c[1] - lat0) * 110574 }));
+}
+
+function centripetal(pts, samplesPerMetre = 1) {
+  const n = pts.length;
+  const out = [];
+  const d = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+    const t0 = 0;
+    const t1 = t0 + Math.sqrt(Math.max(d(p0, p1), 1e-6));
+    const t2 = t1 + Math.sqrt(Math.max(d(p1, p2), 1e-6));
+    const t3 = t2 + Math.sqrt(Math.max(d(p2, p3), 1e-6));
+    const steps = Math.max(2, Math.ceil(d(p1, p2) * samplesPerMetre));
+    for (let k = 0; k < steps; k++) {
+      const t = t1 + ((t2 - t1) * k) / steps;
+      const lerp = (a, b, ta, tb) => ({
+        x: ((tb - t) / (tb - ta)) * a.x + ((t - ta) / (tb - ta)) * b.x,
+        y: ((tb - t) / (tb - ta)) * a.y + ((t - ta) / (tb - ta)) * b.y,
+      });
+      const a1 = lerp(p0, p1, t0, t1), a2 = lerp(p1, p2, t1, t2), a3 = lerp(p2, p3, t2, t3);
+      const b1 = lerp(a1, a2, t0, t2), b2 = lerp(a2, a3, t1, t3);
+      out.push(lerp(b1, b2, t1, t2));
+    }
+  }
+  return out;
+}
+
+function resample(pts, step) {
+  const n = pts.length;
+  const cum = [0];
+  for (let i = 1; i <= n; i++) cum.push(cum[i - 1] + Math.hypot(pts[i % n].x - pts[i - 1].x, pts[i % n].y - pts[i - 1].y));
+  const total = cum[n];
+  const m = Math.round(total / step);
+  const out = [];
+  let j = 0;
+  for (let i = 0; i < m; i++) {
+    const t = (i * total) / m;
+    while (cum[j + 1] < t) j++;
+    const f = (t - cum[j]) / (cum[j + 1] - cum[j] || 1);
+    const a = pts[j], b = pts[(j + 1) % n];
+    out.push({ x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f });
+  }
+  return { pts: out, total };
+}
+
+function gaussian(pts, sigma) {
+  const n = pts.length;
+  const r = Math.ceil(sigma * 3);
+  const w = [];
+  let sum = 0;
+  for (let k = -r; k <= r; k++) {
+    const v = Math.exp(-(k * k) / (2 * sigma * sigma));
+    w.push(v);
+    sum += v;
+  }
+  return pts.map((_, i) => {
+    let x = 0, y = 0;
+    for (let k = -r; k <= r; k++) {
+      const p = pts[(i + k + n) % n];
+      x += p.x * w[k + r];
+      y += p.y * w[k + r];
+    }
+    return { x: x / sum, y: y / sum };
+  });
+}
+
+const result = {};
+const report = [];
+for (const f of files) {
+  const id = f.replace(".geojson", "");
+  const gj = JSON.parse(fs.readFileSync(path.join(SRC, "circuits", f), "utf8"));
+  const feat = gj.features[0];
+  let coords = feat.geometry.coordinates;
+  const first = coords[0], last = coords[coords.length - 1];
+  if (Math.abs(first[0] - last[0]) < 1e-9 && Math.abs(first[1] - last[1]) < 1e-9) coords = coords.slice(0, -1);
+  const official = feat.properties.length;
+  const dense = centripetal(project(coords));
+  const { pts } = resample(dense, STEP);
+  const smooth = gaussian(pts, SIGMA);
+  // rescale to the official lap length about the centroid
+  let len = 0;
+  for (let i = 0; i < smooth.length; i++) len += Math.hypot(smooth[(i + 1) % smooth.length].x - smooth[i].x, smooth[(i + 1) % smooth.length].y - smooth[i].y);
+  const k = official / len;
+  const cx = smooth.reduce((a, p) => a + p.x, 0) / smooth.length;
+  const cy = smooth.reduce((a, p) => a + p.y, 0) / smooth.length;
+  result[id] = {
+    name: feat.properties.Name,
+    location: feat.properties.Location,
+    length: official,
+    altitude: feat.properties.altitude ?? 0,
+    pts: smooth.map((p) => [Math.round((p.x - cx) * k * 10) / 10, Math.round((p.y - cy) * k * 10) / 10]),
+  };
+  report.push(`${id} ${official}m raw=${Math.round(len)} scale=${k.toFixed(4)} pts=${smooth.length}`);
+}
+
+const header = `// GENERATED by scripts/import-circuits.mjs from bacinger/f1-circuits (MIT). Do not edit by hand.\n// Coordinates are metres, x east, y south (screen space), centred on the circuit. pts[0] is at the start/finish line.\n`;
+const body = `export interface CircuitGeo {\n  name: string;\n  location: string;\n  /** Official lap length in metres. */\n  length: number;\n  /** Altitude of the start/finish line in metres. */\n  altitude: number;\n  pts: [number, number][];\n}\n\nexport const CIRCUIT_GEO: Record<string, CircuitGeo> = ${JSON.stringify(result)};\n`;
+fs.writeFileSync(OUT, header + body);
+console.log(report.join("\n"));
+console.log("wrote", OUT, (fs.statSync(OUT).size / 1024).toFixed(0), "KB");

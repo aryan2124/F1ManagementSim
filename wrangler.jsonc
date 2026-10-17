@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "box-box",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2025-10-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "durable_objects": {
+    "bindings": [
+      { "name": "LEAGUE", "class_name": "LeagueRoom" },
+      { "name": "CAREER", "class_name": "CareerRoom" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["LeagueRoom"] },
+    { "tag": "v2", "new_sqlite_classes": ["CareerRoom"] }
+  ]
+}
