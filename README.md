@@ -45,10 +45,10 @@ Do this once. After that, every push to `main` goes live by itself.
 ### 3a. Push the code to GitHub
 
 1. Install Git (https://git-scm.com) if `git --version` does not work.
-2. Create an empty repository on GitHub: github.com, New repository. Pick a name (for example `box-box`), choose Private, and do NOT tick "Add a README" or any other starter file.
-3. Unzip the project, open a terminal in the `box-box` folder and run (replace the URL with the one GitHub shows you):
+2. Your repository is https://github.com/aryan2124/F1ManagementSim (if you ever need a fresh one: github.com, New repository, Private, and do NOT tick "Add a README" or any other starter file).
+3. Unzip the project, open a terminal in the `box-box` folder and run (this is your repo URL):
    ```
-   git remote add origin https://github.com/YOUR-USERNAME/box-box.git
+   git remote add origin https://github.com/aryan2124/F1ManagementSim.git
    git branch -M main
    git push -u origin main
    ```
@@ -58,7 +58,7 @@ Do this once. After that, every push to `main` goes live by itself.
 ### 3b. Connect GitHub to Cloudflare (auto deploy)
 
 1. Go to https://dash.cloudflare.com and sign in (free account is fine).
-2. Workers & Pages, then Create, then Import a repository (Connect to Git). Authorise the Cloudflare GitHub app and pick your `box-box` repo.
+2. Workers & Pages, then Create, then Import a repository (Connect to Git). Authorise the Cloudflare GitHub app and pick the `F1ManagementSim` repo.
 3. Settings on that screen:
    - Project name: `box-box` (it must match `name` in `wrangler.jsonc`, otherwise the build fails with a name mismatch)
    - Production branch: `main`
@@ -403,3 +403,27 @@ The big development decisions are scenes with people instead of plain cards. All
 - The same `SetPicker` list appears on practice, qualifying, race pit stops, safety car and weather prompts, and the race briefing start-tyre choice. The engineers' pick is marked with `*`.
 - Quick sim (SIMULATE A RACE WEEKEND) has a TEST FIELD section to untick teams and drivers (min two cars). Qualifying cut-offs scale for fields of ten or fewer.
 - Not built: a "scrub" bonus for scrubbed sets; Q2 start set uses the compound lock only. Online start-set choice is not yet carried to other players' race config.
+
+## Development: briefs and approaches (replaces "pick an area, pick the biggest number")
+
+- **Where are we losing time?** Every six weeks the engineers report the three biggest problems (traits, such as tyre life or drivability), from your own numbers, a rough picture of the other cars, and the next five races. The report can be wrong; its error bars come from your staff and tools. You choose ONE problem. That is the brief.
+- **Three ways to solve it.** A week later the design office comes back with a QUICK FIX (cheap, fast, small), a PROPER JOB (the solid middle) and a RETHINK (bigger, slower, a real gamble, and it costs the partner trait for certain). Every follow-up round (every ten days once the table is clear) is again about the brief. Odd stray ideas from other departments are marked OFF-BRIEF. Trainee and lab pitches still arrive.
+- **What you judge a pitch on** (no single "best number"): the gain range, price, build time, how many of the remaining races it lands before, how much each coming race rewards it (a bar per track, greyed where the part would be too late), the exact side cost, whether it evens out or tilts the department's balance, and how many factory slots are busy. A full factory means scrapping a running project to start a new one.
+- **Not built yet:** the this-year vs next-year split on the same board (it still lives in the separate Next car card), and AI teams still use the old random idea flow.
+- Code: `src/career/brief.ts` (diagnosis, race fit, pitch profile), `proposeApproaches` in `src/career/rnd.ts`, the cards in `src/career/tick.ts`, scenes in `src/ui/career/DevRoom.tsx`. Tests: `tests/brief.test.ts`.
+
+## Tyre rack and fixes
+- One tyre rack (`src/ui/SetPicker.tsx`) on every sim screen: round tyres, ring = life left, NEW or % worn.
+- White flash on pop-ups: an old duplicate CSS rule kept the full-screen camera flash alive; it is now small corner flashes shown once.
+
+## Development: weekends feed the factory, dials, crises (round 2 of the revamp)
+
+Built on the briefs and approaches above, from the research (Civ boosts, F1 Manager's dials, XCOM pressure, Meier's "interesting decisions"):
+
+- **Weekend data (boosts).** Practice runs teach the factory. A tyre wear study makes tyre-life and warm-up projects cheaper and quicker, a race simulation helps wear and platform, a setup run helps grip and platform, a quali sim helps downforce and drivability. A boost is worth 10 to 16 percent per run, up to 35 percent, lasts five weeks, is spent by the first matching project, and also tightens the staff's range. Weak engineers and wet runs teach less.
+- **Which car.** Every pitch can be built for this season or banked for next year's car (worth 50 percent more, never races this year, goes on the car in January).
+- **How long it lasts.** A short-life part gains 30 percent more and costs 10 percent less but comes off the car after six races, taking its gain with it.
+- **Stockpile and rules.** A held part loses about 3 percent a week after three weeks. When the rules are redrawn in January the engineers lose confidence in the numbers for the traits that moved, and groundwork and weekend data on the old rules are void.
+- **Crises** (about one every seven weeks from round 3): a rival copies a part (protest, out-develop them, or accept), a part cracks (emergency redesign, run it at reduced load, or pull it), the wind tunnel balance fails (hire outside time or lose hours).
+
+Files: `src/career/crises.ts`, `rnd.ts` (`addBoost`, dials, `wearOutParts`), `brief.ts` (`previewIdea`), `tests/dials.test.ts`.

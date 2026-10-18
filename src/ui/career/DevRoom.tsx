@@ -4,7 +4,10 @@ import { AREA_LABEL, type Area } from "../../career/types";
 import { StaffBody, StaffPortrait } from "../pixel/portraits";
 import { sfx } from "../../audio/sound";
 import { TEST_PLANS, bestEstimate, devOf, pitchLine, scrapReact } from "../../career/dev";
-import { capRoom } from "../../career/rnd";
+import { NEXT_YEAR_GAIN, SHORT_LIFE, boostsFor, capRoom, maxConcurrent } from "../../career/rnd";
+import { briefActive, previewIdea, profileOf, trackFactor, upcomingRaces } from "../../career/brief";
+import { TRAIT_NAME } from "../../career/traits";
+import type { Trait } from "../../career/types";
 import { fmtMoney, fmtRange } from "../../career/util";
 import { hex, teamOf, type Dispatch } from "./common";
 import "./devroom.css";
@@ -168,9 +171,11 @@ export function DevRoom({ s, d, auto = true }: { s: CareerState; d: Dispatch; au
   // a part scrapped from anywhere (the Car screen, the weekend, the verdict) gets the same scene
   const binned = devOf(s.teams[s.teamId]).scrapped?.length ?? 0;
   const seenBin = useRef(binned);
+  const mute = useRef(false);
   useEffect(() => {
     if (binned <= seenBin.current) { seenBin.current = binned; return; }
     seenBin.current = binned;
+    if (mute.current) { mute.current = false; return; }
     if (after) return;
     const e = (devOf(s.teams[s.teamId]).scrapped ?? [])[binned - 1];
     const who = e?.staffId ? s.staff[e.staffId] : undefined;
@@ -189,7 +194,7 @@ export function DevRoom({ s, d, auto = true }: { s: CareerState; d: Dispatch; au
   const skip = () => { sfx.play("click"); setLater((l) => [...l, card.id]); };
   const res = (option: string) => d({ type: "card", id: card.id, option });
   if (card.kind === "rndDirection") return <Briefing s={s} card={card} res={res} setAfter={setAfter} skip={skip} />;
-  if (card.kind === "ideaBatch") return <Pitches s={s} card={card} res={res} setAfter={setAfter} skip={skip} />;
+  if (card.kind === "ideaBatch") return <Pitches s={s} d={d} card={card} mute={mute} res={res} setAfter={setAfter} skip={skip} />;
   if (card.kind === "media") return <Press s={s} card={card} res={res} setAfter={setAfter} skip={skip} />;
   if (card.kind === "info" || card.kind === "testDay") return <TestDay s={s} card={card} res={res} skip={skip} />;
   if (card.kind === "projectReady") return <Verdict s={s} d={d} card={card} setAfter={setAfter} skip={skip} />;
@@ -229,81 +234,180 @@ function AfterScene({ a }: { a: After }) {
   );
 }
 
+/** A row of the coming races: each bar is how much that track rewards the thing in question. Races the part would miss are greyed. */
+function RaceStrip({ races }: { races: { gp: string; f: number; after?: boolean }[] }) {
+  return (
+    <div className="dr-strip" aria-label="The coming races">
+      {races.map((r, i) => (
+        <span key={i} className={`dr-race ${r.after === false ? "late" : ""}`} title={`${r.gp}: ${r.f >= 1.15 ? "rewards this a lot" : r.f <= 0.85 ? "barely rewards this" : "rewards this a bit"}${r.after === false ? " (the part would not be ready)" : ""}`}>
+          <i style={{ height: `${Math.round(6 + Math.max(0, Math.min(1.5, r.f - 0.6)) * 34)}px` }} />
+          <small>{r.gp.slice(0, 4).toUpperCase()}</small>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function Briefing({ s, card, res, setAfter, skip }: { s: CareerState; card: Card; res: (o: string) => unknown; setAfter: (a: After) => void; skip: () => void }) {
   const chief = chiefOf(s);
-  const opts = card.options;
-  const rec = opts.find((o) => /recommend/.test(o.label))?.id.slice(6) as Area | undefined;
-  const [sel, setSel] = useState<Area | null>(rec ?? null);
+  const probs = card.options.filter((o) => o.id.startsWith("brief:"));
+  const races = useMemo(() => upcomingRaces(s, 5), [s.day]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [sel, setSel] = useState<string | null>(probs[0]?.id ?? null);
+  const cur = probs.find((o) => o.id === sel);
   const lab = (s.teams[s.teamId].notebook ?? [])[0];
   const labBit = lab && s.day - lab.day < 30 ? ` Your last lab run, the ${lab.inst}, was ${s.day - lab.day} days ago and I have read it.` : "";
-  const line = (rec ? `I have been through the numbers. ${AREA_LABEL[rec]} is where we are furthest behind. We are ${rankIn(s, rec)}th of ${Object.keys(s.teams).length}. That is my read, and I can be wrong.` : "Here is where we stand. Pick where you want the drawing office to spend the next four weeks.") + labBit;
+  const line = `I have been through the data and the next five races. These are the three places we are losing time. We can only send the office after one of them, and I can be wrong about the numbers.${labBit}`;
   const go = (id: string, label: string) => {
     sfx.play("confirm");
     res(id);
-    setAfter({ kind: "focus", title: "THE DIRECTION IS SET", line: `Understood. ${label}. We start this morning.`, author: chief, react: "proud" });
+    setAfter({ kind: "focus", title: "THE BRIEF IS SET", line: `Understood. ${label}. They will have answers for you in a week.`, author: chief, react: "proud" });
   };
-  const opt = (a: Area) => opts.find((o) => o.id === `focus:${a}`);
   return (
-    <Shell title="DRAWING OFFICE: WHERE DO WE POINT THE FACTORY?" skip={skip}>
+    <Shell title="ENGINEERS' REPORT: WHERE ARE WE LOSING TIME?" skip={skip}>
       <div className="dr-row">
         <Person st={chief} say={line} />
         <div className="dr-col">
-          <Blueprint s={s} sel={sel} onPick={setSel} weak={rec ?? null} />
-          <p className="dim small">Click an area. Red means you trail the field there.</p>
+          <p className="small dim">The next five races, and how much each rewards fixing the problem you pick:</p>
+          {cur && sel && (
+            <RaceStrip races={races.map((r) => ({ gp: r.gp, f: trackFactor(sel.slice(6) as Trait, r.circuitId) }))} />
+          )}
         </div>
       </div>
+      <div className="dr-pitches">
+        {probs.map((o) => {
+          const tr = o.id.slice(6) as Trait;
+          return (
+            <button key={o.id} className={`dr-pitch ${o.id === sel ? "on" : ""}`} onClick={() => { sfx.play("click"); setSel(o.id); }}>
+              <span style={{ gridColumn: "1 / -1" }}><b>{o.label}</b></span>
+              <span className="small" style={{ gridColumn: "1 / -1" }}>{o.detail}</span>
+              <RaceStrip races={races.map((r) => ({ gp: r.gp, f: trackFactor(tr, r.circuitId) }))} />
+            </button>
+          );
+        })}
+      </div>
+      {cur && <div className="dr-facts">{cur.lines?.map((l, k) => <p key={k} className="small">{l}</p>)}</div>}
       <div className="dr-foot">
-        <button className="btn primary" disabled={!sel || !opt(sel)} onClick={() => sel && go(`focus:${sel}`, `${AREA_LABEL[sel]} for four weeks`)}>{sel ? `POINT THE FACTORY AT ${AREA_LABEL[sel].toUpperCase()}` : "PICK AN AREA ON THE BLUEPRINT"}</button>
-        {opts.filter((o) => o.id === "focus:balanced" || o.id === "focus:bank").map((o) => <button key={o.id} className="btn" title={o.detail} onClick={() => go(o.id, o.label)}>{o.label.toUpperCase()}</button>)}
+        <button className="btn primary" disabled={!cur} onClick={() => cur && go(cur.id, `${cur.label.replace(" (engineers' top pick)", "")} is the problem`)}>{cur ? "SEND THE OFFICE AFTER THIS" : "PICK A PROBLEM"}</button>
+        {card.options.filter((o) => o.id === "focus:balanced" || o.id === "focus:bank").map((o) => <button key={o.id} className="btn" title={o.detail} onClick={() => go(o.id, o.label)}>{o.label.toUpperCase()}</button>)}
       </div>
     </Shell>
   );
 }
 
 const KIND_WORD: Record<string, string> = { safe: "SAFE", gamble: "GAMBLE", enabler: "GROUNDWORK" };
+const APPROACH_WORD: Record<string, string> = { quick: "QUICK FIX", proper: "PROPER JOB", rethink: "RETHINK" };
 
-function Pitches({ s, card, res, setAfter, skip }: { s: CareerState; card: Card; res: (o: string) => unknown; setAfter: (a: After) => void; skip: () => void }) {
+function Pitches({ s, d, card, res, setAfter, skip, mute }: { s: CareerState; d: Dispatch; card: Card; res: (o: string) => unknown; setAfter: (a: After) => void; skip: () => void; mute: React.MutableRefObject<boolean> }) {
   const t = s.teams[s.teamId];
   const ideas = useMemo(() => card.options.filter((o) => o.id.startsWith("idea:")).map((o) => ({ o, i: t.ideas.find((x) => x.id === Number(o.id.slice(5))) })).filter((x): x is { o: CardOption; i: Idea } => !!x.i), [card, t.ideas]);
   const [foc, setFoc] = useState(ideas[0]?.i.id ?? -1);
+  const [drop, setDrop] = useState<number | null>(null);
+  const [life, setLife] = useState<"short" | "long">("long");
+  const [horizon, setHorizon] = useState<"now" | "next">("now");
+  const dials = { life, horizon };
   const cur = ideas.find((x) => x.i.id === foc) ?? ideas[0];
+  // a card whose ideas have all gone (a new brief cleared the table) has nothing to show: it closes itself
+  useEffect(() => { if (!ideas.length) res("none"); }, [ideas.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const pl = cur ? pitchLine(s, cur.i) : null;
+  const pvOf = (i: Idea) => previewIdea(s, i, dials);
+  const max = maxConcurrent(t);
+  const running = t.projects.filter((p) => p.status === "building");
+  const full = running.length >= max;
+  const prof = cur ? profileOf(s, { ...cur.i, ...pvOf(cur.i) }, max) : null;
+  const brief = briefActive(s);
   const back = () => {
     if (!cur) return;
+    if (full) {
+      const victim = running.find((p) => p.id === drop);
+      if (!victim) return;
+      if (!window.confirm(`Scrap "${victim.name}" to make room? The money already spent is gone (half comes back if it is less than half built) and ${victim.lead ? s.staff[victim.lead]?.name ?? "the author" : "the author"} will remember.`)) return;
+      mute.current = true;
+      d({ type: "scrapProject", id: victim.id });
+    }
     const before = capRoom(t);
     const authors = new Set<string>();
     const others = ideas.filter((x) => x.i.id !== cur.i.id && x.i.lead && x.i.lead !== cur.i.lead).map((x) => s.staff[x.i.lead!]).filter((st): st is Staff => !!st && !authors.has(st.id) && !!authors.add(st.id)).map((st) => ({ st, react: (st.traits.includes("hothead") ? "fume" : st.traits.includes("perfectionist") ? "stung" : "sulk") as DevReact }));
     sfx.play("stamp");
-    const r = res(cur.o.id) as { ok?: boolean } | undefined;
+    const flags = `${life === "short" && horizon === "now" ? "|short" : ""}${horizon === "next" ? "|next" : ""}`;
+    const r = res(cur.o.id + flags) as { ok?: boolean } | undefined;
     if (r && r.ok === false) return;
-    setAfter({ kind: "back", title: "BACKED", line: cur.i.rookie ? "You are giving me a real project? I will not let you down." : "Thank you. We start today.", author: pl?.who, react: cur.i.rookie ? "grin" : "proud", cost: { from: before, to: before - cur.i.cost, label: "CAP ROOM" }, others });
+    setAfter({ kind: "back", title: "BACKED", line: cur.i.rookie ? "You are giving me a real project? I will not let you down." : "Thank you. We start today.", author: pl?.who, react: cur.i.rookie ? "grin" : "proud", cost: { from: before, to: before - pvOf(cur.i).cost, label: "CAP ROOM" }, others });
   };
   const none = card.options.find((o) => o.id === "none");
   return (
-    <Shell title="DRAWING OFFICE: THE PITCHES" skip={skip}>
+    <Shell title={brief ? `DRAWING OFFICE: ${TRAIT_NAME[brief.trait].toUpperCase()}, THREE WAYS` : "DRAWING OFFICE: THE PITCHES"} skip={skip}>
       <div className="dr-row">
         <Person st={pl?.who} say={pl?.line ?? ""} react={cur?.i.rookie ? "grin" : undefined} />
         <div className="dr-col">
           <Blueprint s={s} mark={cur?.i.area} weak={null} />
+          {boostsFor(s, s.teamId).list.length > 0 && (
+            <p className="small pc-data">WEEKEND DATA IN HAND: {boostsFor(s, s.teamId).list.map((b) => `${TRAIT_NAME[b.trait].toLowerCase()} ${Math.round(b.pct * 100)}% (${b.why})`).join("; ")}</p>
+          )}
+          <div className="dr-slots" title="Projects the factory can run at once">
+            <span className="small">FACTORY</span>
+            {Array.from({ length: max }, (_, k) => <i key={k} className={k < running.length ? "on" : ""} />)}
+            <span className="small dim">{running.length} of {max} busy. Cap room {fmtMoney(capRoom(t))}.</span>
+          </div>
           {pl && <p className="dim small">{pl.record}</p>}
         </div>
       </div>
-      <div className="dr-pitches">
+      <div className="dr-dials">
+        <div className="dr-dial">
+          <small>WHICH CAR</small>
+          <button className={horizon === "now" ? "on" : ""} onClick={() => { sfx.play("click"); setHorizon("now"); }}>THIS SEASON</button>
+          <button className={horizon === "next" ? "on" : ""} onClick={() => { sfx.play("click"); setHorizon("next"); }}>NEXT YEAR'S CAR</button>
+          <span className="small dim">{horizon === "next" ? `Banked until January and never races this year, but worth ${Math.round((NEXT_YEAR_GAIN - 1) * 100)}% more. The same slot and money.` : "Fitted at the next race after it is built."}</span>
+        </div>
+        <div className="dr-dial">
+          <small>HOW LONG IT LASTS</small>
+          <button className={life === "long" || horizon === "next" ? "on" : ""} onClick={() => { sfx.play("click"); setLife("long"); }}>BUILT TO LAST</button>
+          <button disabled={horizon === "next"} className={life === "short" && horizon === "now" ? "on" : ""} onClick={() => { sfx.play("click"); setLife("short"); }}>SHORT-LIFE</button>
+          <span className="small dim">{life === "short" && horizon === "now" ? `${Math.round((SHORT_LIFE.gain - 1) * 100)}% more gain and ${Math.round((1 - SHORT_LIFE.cost) * 100)}% cheaper, but it gives out after ${SHORT_LIFE.races} races and has to be built again.` : "Stays on the car until the rules change."}</span>
+        </div>
+      </div>
+      <div className="dr-pitches big">
         {ideas.map(({ o, i }) => {
           const who = i.lead ? s.staff[i.lead] : undefined;
+          const pv = pvOf(i);
+          const p = profileOf(s, { ...i, ...pv }, max);
+          const word = i.rookie ? "ROOKIE PITCH" : i.lab ? "YOUR LAB" : i.offBrief ? "OFF-BRIEF" : i.approach ? APPROACH_WORD[i.approach] : KIND_WORD[i.kind ?? "safe"];
           return (
-            <button key={i.id} className={`dr-pitch ${i.id === cur?.i.id ? "on" : ""} ${i.rookie ? "rookie" : ""}`} onClick={() => { sfx.play("click"); setFoc(i.id); }}>
-              {who && <StaffPortrait seed={who.id} role={who.role} size={36} />}
-              <span><b>{i.name}</b><i className={`k-${i.kind ?? "safe"}`}>{i.rookie ? "ROOKIE PITCH" : i.lab ? "YOUR LAB" : KIND_WORD[i.kind ?? "safe"]}</i></span>
-              <span className="small">{AREA_LABEL[i.area]}: {fmtRange(i.predLo, i.predHi)} a lap, {fmtMoney(i.cost)}, {i.days}d</span>
+            <button key={i.id} className={`dr-pitch card ${i.id === cur?.i.id ? "on" : ""} ${i.rookie ? "rookie" : ""} a-${i.approach ?? i.kind ?? "safe"}`} onClick={() => { sfx.play("click"); setFoc(i.id); }}>
+              <span className="pc-top">{who && <StaffPortrait seed={who.id} role={who.role} size={30} />}<i className={`k-${i.kind ?? "safe"}`}>{word}</i></span>
+              <b className="pc-name">{i.name}</b>
+              <span className="pc-gain">{fmtRange(pv.predLo, pv.predHi)} <small>s a lap</small></span>
+              <span className="pc-row"><small>PRICE</small><b>{fmtMoney(pv.cost)}</b></span>
+              <span className="pc-row"><small>BUILD</small><b>{pv.days} days</b></span>
+              {pv.next ? <span className="pc-row"><small>RACES</small><b>NEXT YEAR'S CAR</b></span> : <span className="pc-row"><small>LANDS BEFORE</small><b>{p.racesAfter} of {p.racesLeft} races</b></span>}
+              {!pv.next && <RaceStrip races={p.fit.map((r) => ({ gp: r.gp, f: r.f, after: r.after }))} />}
+              {pv.boost && <em className="pc-boost" title={pv.boost.why}>WEEKEND DATA: {Math.round(pv.boost.pct * 100)}% CHEAPER, QUICKER, TIGHTER RANGE</em>}
+              {pv.short && <em className="pc-side">GIVES OUT AFTER {SHORT_LIFE.races} RACES</em>}
+              {p.side && <em className="pc-side">COSTS {p.side.amount.toFixed(2)} s OF {p.side.name.toUpperCase()}</em>}
               {o.warn && <em className="warn small">{o.warn}</em>}
             </button>
           );
         })}
       </div>
-      {cur && <div className="dr-facts">{cur.o.lines?.map((l, k) => <p key={k} className="small">{l}</p>)}</div>}
+      {cur && (
+        <div className="dr-facts">
+          {prof?.balance && Math.abs(prof.balance.lopsided) >= 0.005 && <p className="small">{prof.balance.lopsided > 0 ? `Leaves the car more lopsided in this department: a price of about ${prof.balance.lopsided.toFixed(2)} s.` : `Evens out the car in this department: saves about ${Math.abs(prof.balance.lopsided).toFixed(2)} s of lopsided price.`}</p>}
+          {cur.i.note && <p className="small">{cur.i.note}</p>}
+          {cur.i.trait && t.regKnow[cur.i.trait] && t.regKnow[cur.i.trait].err > 0.2 && <p className="small">Your engineers are unsure what {TRAIT_NAME[cur.i.trait].toLowerCase()} is worth under these rules, and the rules are redrawn in January.</p>}
+          {horizon === "now" && prof && prof.racesAfter === 0 && <p className="small warn">It would land after the last race. This season it does nothing.</p>}
+          {life === "short" && horizon === "now" && <p className="small">A short-life part wears out: its gain and any price it carried come off the car together after {SHORT_LIFE.races} races.</p>}
+          {cur.o.lines?.map((l, k) => <p key={k} className="small">{l}</p>)}
+        </div>
+      )}
+      {full && cur && (
+        <div className="dr-full">
+          <p className="small warn">The factory is full. To start this one you must scrap a running project:</p>
+          <div className="dr-droplist">
+            {running.map((p) => <button key={p.id} className={`tiny ${drop === p.id ? "on" : ""}`} onClick={() => setDrop(p.id)}>{p.name} ({Math.round((p.progress / Math.max(1, p.days)) * 100)}% done)</button>)}
+          </div>
+        </div>
+      )}
       <div className="dr-foot">
-        <button className="btn primary" disabled={!cur} onClick={back}>BACK THIS ONE</button>
+        <button className="btn primary" disabled={!cur || (full && drop === null)} onClick={back}>{full ? "SCRAP THE ONE I PICKED AND BACK THIS" : "BACK THIS ONE"}</button>
         {none && <button className="btn" onClick={() => { res("none"); setAfter({ kind: "later", title: "NOT NOW", line: "Nobody gets the money this month. The people who pitched go back to their desks.", others: undefined }); }}>NOT NOW</button>}
       </div>
     </Shell>

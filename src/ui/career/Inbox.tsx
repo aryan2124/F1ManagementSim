@@ -36,7 +36,7 @@ export function inboxItems(s: CareerState): InboxItem[] {
 export const unreadCount = (s: CareerState) => inboxItems(s).filter((x) => x.unread).length + s.cards.filter(isScene).length;
 
 /** Letters from sponsors, scouts and young drivers, every conversation with a driver, and the way to go looking for sponsors yourself. */
-const SCENE_FROM: Record<string, string> = { ideaBatch: "Drawing office", rndDirection: "Drawing office", projectReady: "Drawing office", testDay: "Test crew", staffNotice: "A member of staff", devCrisis: "The whole department", media: "Press office" };
+const SCENE_FROM: Record<string, string> = { ideaBatch: "Drawing office", rndDirection: "Drawing office", projectReady: "Drawing office", testDay: "Test crew", staffNotice: "A member of staff", devCrisis: "The whole department", devEvent: "The factory", media: "Press office" };
 
 export function Inbox({ s, d }: Props) {
   const items = inboxItems(s);

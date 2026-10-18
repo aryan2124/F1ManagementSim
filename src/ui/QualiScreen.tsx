@@ -333,6 +333,7 @@ function QualiCard({ session, car }: { session: QualiSession; car: QCar }) {
               LAST <b>{car.lastLap ? `${fmtTime(car.lastLap)}${car.lastValid ? "" : " DELETED"}` : "--"}</b>
             </span>
           </div>
+          {!hasList && (
           <div className="sets">
             {(["S", "M", "H", "I", "W"] as Compound[]).map((c) => (
               <span key={c} title={`${COMPOUNDS[c].name} sets left`}>
@@ -340,6 +341,7 @@ function QualiCard({ session, car }: { session: QualiSession; car: QCar }) {
               </span>
             ))}
           </div>
+          )}
           {hasList ? (
             <div className="ctl col">
               <span>TYRE SET</span>

@@ -2055,3 +2055,26 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 3
 .fieldlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; margin: 8px 0; }
 .fieldrow { border-left: 4px solid var(--team, #888); padding-left: 8px; display: flex; flex-direction: column; gap: 2px; }
 .pitpick { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+
+/* the tyre rack */
+.rack { display: flex; flex-direction: column; gap: 8px; width: 100%; margin: 4px 0; }
+.rack-auto { font: 700 9px var(--pix, monospace); padding: 6px 8px; border: 2px solid #5b4f8a; background: #1c1631; color: #eee; cursor: pointer; text-align: left; }
+.rack-auto.on { background: #ff9a1a; color: #111; border-color: #ff9a1a; }
+.rack-row { display: flex; flex-direction: column; gap: 4px; }
+.rack-head { display: flex; align-items: center; gap: 6px; font: 700 9px var(--pix, monospace); }
+.rack-head small { color: #9a90c0; font-weight: 400; margin-left: auto; }
+.rack-sets { display: flex; flex-wrap: wrap; gap: 6px; }
+.tyre { position: relative; display: inline-flex; flex-direction: column; align-items: center; gap: 2px; width: 38px; padding: 0; background: none; border: 0; cursor: pointer; color: #eee; font: inherit; }
+.tyre .disc { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--c) var(--life), #2c2548 0); box-shadow: 0 0 0 2px #0b0814; }
+.tyre .disc b { width: 22px; height: 22px; border-radius: 50%; background: #120d22; display: grid; place-items: center; font: 700 10px var(--pix, monospace); }
+.tyre small { font: 700 7px var(--pix, monospace); color: #b7aedd; }
+.tyre.new small { color: #8fe3b0; }
+.tyre.on .disc { box-shadow: 0 0 0 3px #ff9a1a; }
+.tyre.on small { color: #ff9a1a; }
+.tyre.fitted .disc { outline: 2px dashed #fff; outline-offset: 2px; }
+.tyre em { position: absolute; top: -6px; right: -4px; font: 700 7px var(--pix, monospace); font-style: normal; background: #fff; color: #111; padding: 1px 2px; }
+.tyre i { position: absolute; top: -5px; left: -2px; font: 700 12px var(--pix, monospace); font-style: normal; color: #57cc99; }
+.tyre.advised .disc { box-shadow: 0 0 0 3px #57cc99; }
+.tyre.spent { opacity: .35; cursor: default; }
+.tyre:not(.spent):hover .disc { transform: scale(1.08); }
+.rack-note { font-size: 10px; color: #9a90c0; margin: 2px 0 0; }

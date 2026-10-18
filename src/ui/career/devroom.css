@@ -198,8 +198,6 @@
 .dr-over { min-height: 1.6em; margin: 6px 0 0; }
 @keyframes dr-idle { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
 
-.dr-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; animation: dr-flashbulb 1.6s steps(1) 2; z-index: 3; }
-@keyframes dr-flashbulb { 0%, 12%, 40%, 52% { opacity: 0; } 6%, 46% { opacity: .75; } }
 .prof.dr { position: relative; }
 .dr-screens { display: flex; gap: 6px; }
 .dr-screens i { flex: 1; height: 26px; background: #0a1b2a; border: 2px solid #4fc3f7; position: relative; overflow: hidden; }
@@ -230,3 +228,39 @@
 .r-grin .dr-body, .r-proud .dr-body { animation: dr-bounce .5s ease-out 3; }
 .r-nod .dr-body { animation: dr-nod .6s ease-in-out 2; }
 .r-shrug .dr-body { animation: dr-shrug .8s ease-in-out 1; }
+
+/* development board: race strips, pitch cards, slots */
+.dr-strip { display: flex; gap: 6px; align-items: flex-end; min-height: 40px; margin: 4px 0; grid-column: 1 / -1; }
+.dr-race { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 34px; }
+.dr-race i { display: block; width: 18px; background: #4fc3f7; border: 2px solid #0b2233; }
+.dr-race small { font: 700 7px var(--pix); color: #9ec7dc; }
+.dr-race.late i { background: #3a4a55; }
+.dr-race.late small { opacity: .5; }
+.dr-slots { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+.dr-slots i { width: 14px; height: 14px; border: 2px solid #4fc3f7; background: transparent; }
+.dr-slots i.on { background: #ff9a1a; border-color: #ff9a1a; }
+.dr-pitches.big { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.dr-pitch.card { display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
+.dr-pitch.card .pc-top { display: flex; justify-content: space-between; align-items: center; }
+.dr-pitch.card .pc-name { font-size: 11px; line-height: 1.3; }
+.dr-pitch.card .pc-gain { font: 700 11px var(--pix); color: #8fe3b0; white-space: nowrap; }
+.dr-pitch.card .pc-gain small { font-size: 8px; color: #9ec7dc; }
+.dr-pitch.card .pc-row { display: flex; justify-content: space-between; font-size: 10px; }
+.dr-pitch.card .pc-row small { color: #9ec7dc; font-size: 8px; font-family: var(--pix); }
+.dr-pitch.card .pc-side { font: 700 8px var(--pix); background: #5a1a22; color: #ffb3bd; padding: 3px 5px; font-style: normal; }
+.dr-pitch.a-quick { border-top: 4px solid #57cc99; }
+.dr-pitch.a-proper { border-top: 4px solid #4fc3f7; }
+.dr-pitch.a-rethink { border-top: 4px solid #ff4d5e; }
+.dr-full { border: 2px dashed #ff4d5e; padding: 6px; }
+.dr-droplist { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.dr-droplist .tiny.on { background: #ff4d5e; color: #fff; }
+
+/* dials and weekend data on the pitch board */
+.dr-dials { display: grid; gap: 6px; margin: 6px 0; }
+.dr-dial { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.dr-dial small { min-width: 130px; letter-spacing: 1px; opacity: 0.7; }
+.dr-dial button { font: inherit; font-size: 11px; letter-spacing: 1px; padding: 4px 8px; background: transparent; color: inherit; border: 1px solid rgba(255,255,255,0.25); cursor: pointer; }
+.dr-dial button.on { background: #ffcf40; color: #1a1208; border-color: #ffcf40; }
+.dr-dial button:disabled { opacity: 0.35; cursor: default; }
+.pc-boost { display: block; font-style: normal; font-size: 10px; letter-spacing: 0.5px; color: #7dffb0; margin-top: 4px; }
+.pc-data { color: #7dffb0; }

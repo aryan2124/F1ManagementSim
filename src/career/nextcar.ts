@@ -1,4 +1,5 @@
-import { addArea } from "./traits";
+import { AREA_TRAITS, TRAIT_GAIN_K, addArea, addTrait } from "./traits";
+import { news } from "./cards";
 import { staffOf } from "./car";
 import { pushCard } from "./cards";
 import { logSpend } from "./log";
@@ -117,6 +118,23 @@ export function applyNextCar(s: CareerState) {
     for (const a of AREAS) addArea(me, a, round2(dm * 0.8));
     shifts.push(dm);
     s.story.last.designNote = s.day;
+  }
+  // research banked all year for the new car goes on it now; anything still being built becomes an ordinary project
+  let banked = 0;
+  for (const p of me.projects) {
+    if (!p.forNext) continue;
+    if (p.status === "ready") {
+      addTrait(me, p.trait ?? AREA_TRAITS[p.area][0], round2(p.trueGain * TRAIT_GAIN_K));
+      p.status = "fitted";
+      p.fittedYear = s.year;
+      p.delivered = p.trueGain;
+      p.hold = false;
+      banked += p.trueGain;
+    } else p.forNext = false;
+  }
+  if (banked > 0) {
+    shifts.push(banked);
+    news(s, `The research banked last year went onto the new car: about ${banked.toFixed(2)} s a lap.`, { importance: 2, tag: "people" });
   }
   const avg = shifts.reduce((x, y) => x + y, 0) / shifts.length;
   const note =

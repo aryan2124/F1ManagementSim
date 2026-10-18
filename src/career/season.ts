@@ -5,6 +5,7 @@ import { boardMove } from "./board";
 import { addArea, applyConcept, driftRegW } from "./traits";
 import { newCarDoubt, shiftBelief } from "./know";
 import { applyNextCar } from "./nextcar";
+import { regulationShock } from "./crises";
 import { clauseBonuses } from "./silly";
 import { baseTeam, carRating, standingsRank, teamRanking } from "./car";
 import { buildCalendar } from "./calendar";
@@ -180,7 +181,9 @@ export function newSeason(s: CareerState) {
   // the new car is built to its team's concept
   for (const t of Object.values(s.teams)) applyConcept(t, rngFor(s, `concept:${t.id}:${s.year}`));
   for (const t of Object.values(s.teams)) newCarDoubt(t);
+  const regBefore = s.regW ? { ...s.regW } : undefined;
   driftRegW(s, 0.25, "year");
+  regulationShock(s, regBefore);
   launchEra(s);
   newCohort(s);
   const ranking = teamRanking(s);
