@@ -254,3 +254,13 @@
 .dr-full { border: 2px dashed #ff4d5e; padding: 6px; }
 .dr-droplist { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
 .dr-droplist .tiny.on { background: #ff4d5e; color: #fff; }
+
+/* dials and weekend data on the pitch board */
+.dr-dials { display: grid; gap: 6px; margin: 6px 0; }
+.dr-dial { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.dr-dial small { min-width: 130px; letter-spacing: 1px; opacity: 0.7; }
+.dr-dial button { font: inherit; font-size: 11px; letter-spacing: 1px; padding: 4px 8px; background: transparent; color: inherit; border: 1px solid rgba(255,255,255,0.25); cursor: pointer; }
+.dr-dial button.on { background: #ffcf40; color: #1a1208; border-color: #ffcf40; }
+.dr-dial button:disabled { opacity: 0.35; cursor: default; }
+.pc-boost { display: block; font-style: normal; font-size: 10px; letter-spacing: 0.5px; color: #7dffb0; margin-top: 4px; }
+.pc-data { color: #7dffb0; }

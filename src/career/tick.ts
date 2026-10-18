@@ -16,7 +16,8 @@ import { pushCard, ticker, news, recap } from "./cards";
 import { askingSalary, extendDriver, hireStaff, signDriver, staffAsk } from "./contracts";
 import { tickTalks } from "./talks";
 import { budgetBlock, driversOf, monthlyBooks, startFacility, tickFacility } from "./finance";
-import { aiResearch, capRoom, fitParts, generateIdeas, maxConcurrent, resetAllowance, scrapProject, startProject, tickRnd } from "./rnd";
+import { aiResearch, capRoom, fitParts, generateIdeas, maxConcurrent, resetAllowance, scrapProject, startProject, tickRnd, wearOutParts } from "./rnd";
+import { devEventsWeekly, resolveDevEvent } from "./crises";
 import { endOfSeason, isWeakestTeam, newSeason, newSeasonPlayer, playerRank, switchTeam, yearEndPlayer } from "./season";
 import { clamp, isHuman, epochDay, fmtMoney, fmtRange, rngFor, round2, ymd } from "./util";
 import { autoPractice, delegatedParts, simulateWeekend, startWeekend } from "./weekend";
@@ -111,14 +112,18 @@ export function resolveCard(s: CareerState, id: number, option: string, auto = f
     case "devCrisis":
       resolveCrisis(s, option);
       break;
+    case "devEvent":
+      resolveDevEvent(s, c, option);
+      break;
     case "ideaBatch": {
       const offered = String(d.offered ?? "").split(",").filter(Boolean).map(Number);
-      const chosen = option.startsWith("idea:") ? Number(option.slice(5)) : null;
+      const [pickPart, ...flags] = option.split("|");
+      const chosen = pickPart.startsWith("idea:") ? Number(pickPart.slice(5)) : null;
       onBatchDecided(s, s.teamId, offered, chosen);
       // a real tradeoff: whatever was put to you and not taken is shelved for good, the people go back to their desks
       me.ideas = me.ideas.filter((i) => !offered.includes(i.id) || i.id === chosen);
-      if (option.startsWith("idea:")) {
-        const r = startProject(s, s.teamId, Number(option.slice(5)));
+      if (pickPart.startsWith("idea:")) {
+        const r = startProject(s, s.teamId, Number(pickPart.slice(5)), { life: flags.includes("short") ? "short" : "long", horizon: flags.includes("next") ? "next" : "now" });
         if (r.ok) recap(s, "Project started.");
         else if (!auto) recap(s, r.why ?? "Could not start.");
       }
@@ -387,6 +392,7 @@ export function weeklyPlayer(s: CareerState, first: boolean) {
     driverRumours(s, first);
   }
   nextCarWeekly(s);
+  devEventsWeekly(s);
   passiveRead(s, s.teamId);
   generateIdeas(s, s.teamId);
   if (closed) return;
@@ -542,6 +548,7 @@ function raceWeek(s: CareerState) {
       const lines = delegatedParts(s);
       if (dl === "do") for (const l of lines) recap(s, l);
     }
+    wearOutParts(s, s.teamId);
     for (const id of Object.keys(s.teams)) {
       const fitted = fitParts(s, id);
       if (id === s.teamId && fitted.length) {
@@ -661,6 +668,11 @@ export function advanceDay(s: CareerState): void {
 
 function projectCards(s: CareerState, done: Project[]) {
   for (const p of done) {
+    if (p.forNext) {
+      news(s, `"${p.name}" is finished and banked for next year's car. It will not race this season.`, { importance: 1, tag: "people" });
+      recap(s, `Banked for next year: ${p.name}.`);
+      continue;
+    }
     ticker(s, `Project finished: ${p.name}.`, 2);
     recap(s, `Ready to fit: ${p.name}.`);
     logSpend(s, `Finished "${p.name}": used ${Math.round(p.tunnelUsed ?? 0)} tunnel hours in total`, { tunnel: 0 });

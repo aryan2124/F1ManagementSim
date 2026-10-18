@@ -129,3 +129,6 @@ See README "Tyre sets". Open: scrub bonus, online start-set sync.
 
 ## Done: development revamp (briefs and approaches)
 Research notes: interesting decisions need consequences, rough predictability and no dominant option (Meier, via Game Developer); F1 2017's R&D tied upgrades to trade-offs across paths and planning for later seasons. Applied: one problem per brief, three structurally different approaches, a certain side cost on the gamble, race-by-race fit, landing time, slot scarcity. Open: this-year vs next-year on the same board; AI teams on the same flow.
+
+## Done: development revamp round 2 (boosts, dials, banked research, crises)
+Approved by the user as items 2 to 6 of the research proposal (the Rushed/Normal/Intense dial was left out). See README.

@@ -269,13 +269,69 @@ export function generateIdeas(s: CareerState, teamId: string): Idea[] {
 export const maxConcurrent = (t: TeamState) => 3 + (t.facilities.factory >= 4 ? 1 : 0) + (t.facilities.factory >= 5 ? 1 : 0);
 export const capRoom = (t: TeamState) => round2(t.capLimit - CFG.capBaseProgramme - t.capSpent);
 
-export function startProject(s: CareerState, teamId: string, ideaId: number): { ok: boolean; why?: string } {
+export interface Dials {
+  /** Short-life parts gain more and cost less but wear out and must be rebuilt. */
+  life?: "short" | "long";
+  /** Next year's car: the part is banked and never races this season. */
+  horizon?: "now" | "next";
+}
+export const SHORT_LIFE = { gain: 1.3, cost: 0.9, races: 6 };
+export const NEXT_YEAR_GAIN = 1.5;
+
+// ---- weekend findings that make matching projects cheaper
+export const BOOST_DAYS = 35;
+export function addBoost(s: CareerState, teamId: string, trait: Trait, pct: number, why: string) {
+  const plan = planOf(s.teams[teamId]);
+  const list = (plan.boosts ??= []).filter((b) => b.until >= s.day);
+  const ex = list.find((b) => b.trait === trait && b.why === why);
+  if (ex) { ex.pct = Math.min(0.3, Math.max(ex.pct, pct)); ex.until = s.day + BOOST_DAYS; }
+  else list.push({ trait, pct: round2(pct), why, day: s.day, until: s.day + BOOST_DAYS });
+  plan.boosts = list.slice(-6);
+}
+export function boostsFor(s: CareerState, teamId: string, trait?: Trait) {
+  const list = (planOf(s.teams[teamId]).boosts ?? []).filter((b) => b.until >= s.day && (!trait || b.trait === trait));
+  const pct = Math.min(0.35, list.reduce((a, b) => a + b.pct, 0));
+  return { list, pct: round2(pct), why: list.map((b) => b.why).join(", ") };
+}
+function spendBoosts(s: CareerState, teamId: string, trait: Trait) {
+  const plan = planOf(s.teams[teamId]);
+  plan.boosts = (plan.boosts ?? []).filter((b) => b.trait !== trait);
+}
+
+export function startProject(s: CareerState, teamId: string, ideaId: number, dials: Dials = {}): { ok: boolean; why?: string } {
   const t = s.teams[teamId];
   const idea = t.ideas.find((i) => i.id === ideaId);
   if (!idea) return { ok: false, why: "That idea is gone." };
   if (t.projects.filter((p) => p.status === "building").length >= maxConcurrent(t)) return { ok: false, why: "The factory is at its limit of running projects." };
   t.ideas = t.ideas.filter((i) => i.id !== ideaId);
   const plan = planOf(t);
+  const forNext = dials.horizon === "next";
+  const shortLife = dials.life === "short" && !forNext;
+  if (forNext) {
+    idea.trueGain = round2(idea.trueGain * NEXT_YEAR_GAIN);
+    idea.predLo = round2(idea.predLo * NEXT_YEAR_GAIN);
+    idea.predHi = round2(idea.predHi * NEXT_YEAR_GAIN);
+  } else if (shortLife) {
+    idea.trueGain = round2(idea.trueGain * SHORT_LIFE.gain);
+    idea.predLo = round2(idea.predLo * SHORT_LIFE.gain);
+    idea.predHi = round2(idea.predHi * SHORT_LIFE.gain);
+    idea.cost = round2(idea.cost * SHORT_LIFE.cost);
+  }
+  // weekend data on this trait: cheaper, quicker, and the staff can read the range more tightly
+  let boost: { pct: number; why: string } | undefined;
+  if (idea.trait) {
+    const b = boostsFor(s, teamId, idea.trait);
+    if (b.pct > 0) {
+      boost = { pct: b.pct, why: b.why };
+      idea.cost = round2(idea.cost * (1 - b.pct));
+      idea.days = Math.max(3, Math.round(idea.days * (1 - 0.6 * b.pct)));
+      const mid = (idea.predLo + idea.predHi) / 2;
+      const half = ((idea.predHi - idea.predLo) / 2) * (1 - 0.8 * b.pct);
+      idea.predLo = round2(mid - half);
+      idea.predHi = round2(mid + half);
+      spendBoosts(s, teamId, idea.trait);
+    }
+  }
   let cost = idea.cost;
   let cheap = false;
   if (s.day <= plan.cheapUntil) { cost = round2(cost * 0.85); cheap = true; }
@@ -305,6 +361,9 @@ export function startProject(s: CareerState, teamId: string, ideaId: number): { 
     approach: idea.approach,
     side: idea.side,
   };
+  if (boost) p.boost = boost;
+  if (shortLife) { p.life = "short"; p.lifeRaces = SHORT_LIFE.races; }
+  if (forNext) { p.forNext = true; p.hold = true; }
   if (idea.rookie) p.rookie = true;
   t.projects.push(p);
   onBacked(s, teamId, p);
@@ -379,7 +438,7 @@ export function fitParts(s: CareerState, teamId: string): Project[] {
   const quota = rulesOf(s).upgradeQuota;
   let used = t.projects.filter((p) => p.status === "fitted" && p.fittedYear === s.year).length;
   for (const p of t.projects) {
-    if (p.status !== "ready" || p.hold) continue;
+    if (p.status !== "ready" || p.hold || p.forNext) continue;
     if (quota !== undefined && used >= quota) continue;
     used++;
     p.fittedYear = s.year;
@@ -418,6 +477,24 @@ export function fitParts(s: CareerState, teamId: string): Project[] {
     }
     believeFit(t, tr, mid, p.size === "L" ? 2 : p.size === "M" ? 1 : 0);
     out.push(p);
+  }
+  return out;
+}
+
+/** Short-life parts give out after their races: the gain goes, the slot and the money are spent. Returns the parts that wore out. */
+export function wearOutParts(s: CareerState, teamId: string): Project[] {
+  const t = s.teams[teamId];
+  const out: Project[] = [];
+  for (const p of t.projects) {
+    if (p.status !== "fitted" || p.life !== "short" || p.worn || p.fittedRound === undefined) continue;
+    if (s.round < p.fittedRound + (p.lifeRaces ?? SHORT_LIFE.races) - 1) continue;
+    const tr = p.trait ?? AREA_TRAITS[p.area][0];
+    addTrait(t, tr, -round2((p.delivered ?? p.trueGain) * TRAIT_GAIN_K));
+    if (p.side) addTrait(t, p.side.trait, round2(p.side.amount * TRAIT_GAIN_K));
+    believeFit(t, tr, -(p.predLo + p.predHi) / 2, 0);
+    p.worn = true;
+    out.push(p);
+    if (teamId === s.teamId) news(s, `"${p.name}" has run its life and comes off the car. The ${TRAIT_NAME[tr].toLowerCase()} it gave goes with it, unless you build a new one.`, { importance: 2, tag: "people" });
   }
   return out;
 }

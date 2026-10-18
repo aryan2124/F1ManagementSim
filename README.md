@@ -415,3 +415,15 @@ The big development decisions are scenes with people instead of plain cards. All
 ## Tyre rack and fixes
 - One tyre rack (`src/ui/SetPicker.tsx`) on every sim screen: round tyres, ring = life left, NEW or % worn.
 - White flash on pop-ups: an old duplicate CSS rule kept the full-screen camera flash alive; it is now small corner flashes shown once.
+
+## Development: weekends feed the factory, dials, crises (round 2 of the revamp)
+
+Built on the briefs and approaches above, from the research (Civ boosts, F1 Manager's dials, XCOM pressure, Meier's "interesting decisions"):
+
+- **Weekend data (boosts).** Practice runs teach the factory. A tyre wear study makes tyre-life and warm-up projects cheaper and quicker, a race simulation helps wear and platform, a setup run helps grip and platform, a quali sim helps downforce and drivability. A boost is worth 10 to 16 percent per run, up to 35 percent, lasts five weeks, is spent by the first matching project, and also tightens the staff's range. Weak engineers and wet runs teach less.
+- **Which car.** Every pitch can be built for this season or banked for next year's car (worth 50 percent more, never races this year, goes on the car in January).
+- **How long it lasts.** A short-life part gains 30 percent more and costs 10 percent less but comes off the car after six races, taking its gain with it.
+- **Stockpile and rules.** A held part loses about 3 percent a week after three weeks. When the rules are redrawn in January the engineers lose confidence in the numbers for the traits that moved, and groundwork and weekend data on the old rules are void.
+- **Crises** (about one every seven weeks from round 3): a rival copies a part (protest, out-develop them, or accept), a part cracks (emergency redesign, run it at reduced load, or pull it), the wind tunnel balance fails (hire outside time or lose hours).
+
+Files: `src/career/crises.ts`, `rnd.ts` (`addBoost`, dials, `wearOutParts`), `brief.ts` (`previewIdea`), `tests/dials.test.ts`.

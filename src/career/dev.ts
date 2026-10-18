@@ -221,10 +221,12 @@ export function devWeekly(s: CareerState) {
   for (const p of t.projects) {
     if (p.status !== "ready" || !p.hold || p.heldSince === undefined) continue;
     const st = p.lead ? s.staff[p.lead] : undefined;
+    if (p.forNext) continue;
     if (st) bump(st, -0.008 * thinSkin(st));
+    // a held part rots: after three weeks the field starts to catch up, a little each week
+    if (s.day - p.heldSince > 21 && p.trueGain > 0) p.trueGain = round2(p.trueGain * 0.97);
     if (!p.stale && s.day - p.heldSince > 60) {
       p.stale = true;
-      p.trueGain = round2(p.trueGain * 0.88);
       devNote(s, t, { kind: "stale", text: `"${p.name}" has sat in the crate for two months. Rivals have found similar gains, so it is worth less now.`, staffId: st?.id, projectId: p.id, react: st ? "sulk" : undefined });
       news(s, `"${p.name}" has been in the crate too long and has lost some of its edge.`, { importance: 1, tag: "people" });
     }

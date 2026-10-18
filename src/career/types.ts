@@ -69,7 +69,14 @@ export interface Idea {
 }
 
 /** How the player steers the factory. */
+/** Data from a race weekend that makes the next matching project cheaper and quicker. */
+export interface Boost { trait: Trait; pct: number; why: string; day: number; until: number }
+
 export interface RndPlan {
+  /** Weekend findings waiting to be spent on a matching project. */
+  boosts?: Boost[];
+  /** Last day a development crisis hit, so they do not pile up. */
+  eventDay?: number;
   /** The problem the manager sent the design office after: all new pitches are approaches to it until it lapses. */
   brief?: { trait: Trait; area: Area; until: number; day: number; made?: boolean; lastGen?: number };
   focus: Area | "balanced" | "bank";
@@ -125,6 +132,14 @@ export interface Project {
   trait?: Trait;
   approach?: "quick" | "proper" | "rethink";
   side?: { trait: Trait; amount: number };
+  /** Short-life parts gain more but wear out after `lifeRaces` races and must be rebuilt. */
+  life?: "short" | "long";
+  lifeRaces?: number;
+  worn?: boolean;
+  /** Built for next year's car: banked until January, never fitted this season. */
+  forNext?: boolean;
+  /** The weekend data this project used to start cheaper and faster. */
+  boost?: { pct: number; why: string };
   /** Who leads the design, for the fit between the engineer and the job. */
   lead?: string;
 }
@@ -456,7 +471,8 @@ export type CardKind =
   | "pressStory"
   | "rivalry"
   | "mail"
-  | "nextCar";
+  | "nextCar"
+  | "devEvent";
 
 export interface CardOption {
   id: string;

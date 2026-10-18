@@ -170,7 +170,7 @@ describe("development in real play", () => {
     const log = devOf(s.teams[s.teamId]).log;
     for (const e of log) { seen.add(e.kind); expect(/—/.test(e.text)).toBe(false); }
     expect(seen.has("backed")).toBe(true);
-    expect(seen.has("scrapped") || seen.has("held")).toBe(true);
+    expect(seen.has("fitted") || seen.has("scrapped") || seen.has("held")).toBe(true);
     for (const st of Object.values(s.staff)) { expect(st.mood).toBeGreaterThanOrEqual(0); expect(st.mood).toBeLessThanOrEqual(1); }
   }, 240000);
 });

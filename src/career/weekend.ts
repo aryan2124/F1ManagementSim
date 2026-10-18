@@ -23,9 +23,9 @@ import { activeDrivers, entriesFor, staffOf, teamStaff } from "./car";
 import { pushCard, ticker, news, recap } from "./cards";
 import { CFG } from "./config";
 import { driversOf, raceBonuses, raceMoney, type TeamResult } from "./finance";
-import { revealPart } from "./rnd";
+import { addBoost, revealPart } from "./rnd";
 import { clamp, fmtRange, lapDelta, round2 } from "./util";
-import type { AxisInfo, CareerState, Programme, SessionKind, SessionResult, SetupVec, WeekendState } from "./types";
+import type { AxisInfo, CareerState, Programme, SessionKind, SessionResult, SetupVec, Trait, WeekendState } from "./types";
 import { rulesOf } from "./eras";
 import { afterRace, addCause } from "./people";
 import { ensureStatus } from "./status";
@@ -314,6 +314,27 @@ function pickPracticeSet(list: TyreSet[], programme: Programme, fresh: boolean, 
   return [...list].filter((x) => x.compound === comp && x.runs > 0 && x.wear < 0.7).sort((a, b) => a.wear - b.wear)[0] ?? bestSet(list, comp);
 }
 
+/** What each kind of run teaches the factory. Spent on a matching project in the next few weeks. */
+const RUN_LESSONS: Partial<Record<Programme, { trait: Trait; pct: number; what: string }[]>> = {
+  tyres: [{ trait: "wear", pct: 0.16, what: "tyre wear data" }, { trait: "warmup", pct: 0.1, what: "warm-up data" }],
+  raceSim: [{ trait: "wear", pct: 0.1, what: "long-run data" }, { trait: "platform", pct: 0.12, what: "long-run balance data" }],
+  setup: [{ trait: "grip", pct: 0.1, what: "setup data" }, { trait: "platform", pct: 0.1, what: "setup data" }],
+  qualiSim: [{ trait: "downforce", pct: 0.12, what: "low-fuel data" }, { trait: "drive", pct: 0.08, what: "low-fuel data" }],
+};
+function grantRunBoosts(s: CareerState, programme: Programme, eng: number, wet: boolean, out: string[]) {
+  const lessons = RUN_LESSONS[programme];
+  if (!lessons) return;
+  const gp = loadCircuit(s.weekend!.circuitId).meta.short;
+  const given: string[] = [];
+  for (const l of lessons) {
+    const pct = round2(l.pct * (0.7 + 0.6 * eng) * (wet ? 0.5 : 1));
+    if (pct < 0.03) continue;
+    addBoost(s, s.teamId, l.trait, pct, `${gp} ${l.what}`);
+    given.push(`${TRAIT_NAME[l.trait].toLowerCase()} projects ${Math.round(pct * 100)}% cheaper`);
+  }
+  if (given.length) out.push(`The factory can use this: ${given.join(", ")} for the next five weeks.`);
+}
+
 export function practiceRun(s: CareerState, programme: Programme, setup: SetupVec, driverId: string, opts: { fresh?: boolean; setId?: string } = {}): string[] {
   const ws = s.weekend;
   const out: string[] = [];
@@ -355,6 +376,7 @@ export function practiceRun(s: CareerState, programme: Programme, setup: SetupVe
     if (set.wear >= 0.8) out.push(`Set ${set.id} is finished: it is too worn to be worth putting on again.`);
   } else out.push("There was no usable set left in the garage for that run: it went out on scrubbed old rubber.");
   if (wetRun) out.push("Rain at the track during this run: the numbers are rougher than usual.");
+  grantRunBoosts(s, programme, eng, wetRun, out);
   // the car goes out as the sliders say (unless the rules have locked the setup)
   const used: SetupVec = locked ? { ...ws.setup } : { ...setup };
   if (!locked) ws.setup = { ...setup };

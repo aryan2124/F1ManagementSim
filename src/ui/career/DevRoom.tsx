@@ -4,8 +4,8 @@ import { AREA_LABEL, type Area } from "../../career/types";
 import { StaffBody, StaffPortrait } from "../pixel/portraits";
 import { sfx } from "../../audio/sound";
 import { TEST_PLANS, bestEstimate, devOf, pitchLine, scrapReact } from "../../career/dev";
-import { capRoom, maxConcurrent } from "../../career/rnd";
-import { briefActive, profileOf, trackFactor, upcomingRaces } from "../../career/brief";
+import { NEXT_YEAR_GAIN, SHORT_LIFE, boostsFor, capRoom, maxConcurrent } from "../../career/rnd";
+import { briefActive, previewIdea, profileOf, trackFactor, upcomingRaces } from "../../career/brief";
 import { TRAIT_NAME } from "../../career/traits";
 import type { Trait } from "../../career/types";
 import { fmtMoney, fmtRange } from "../../career/util";
@@ -302,14 +302,18 @@ function Pitches({ s, d, card, res, setAfter, skip, mute }: { s: CareerState; d:
   const ideas = useMemo(() => card.options.filter((o) => o.id.startsWith("idea:")).map((o) => ({ o, i: t.ideas.find((x) => x.id === Number(o.id.slice(5))) })).filter((x): x is { o: CardOption; i: Idea } => !!x.i), [card, t.ideas]);
   const [foc, setFoc] = useState(ideas[0]?.i.id ?? -1);
   const [drop, setDrop] = useState<number | null>(null);
+  const [life, setLife] = useState<"short" | "long">("long");
+  const [horizon, setHorizon] = useState<"now" | "next">("now");
+  const dials = { life, horizon };
   const cur = ideas.find((x) => x.i.id === foc) ?? ideas[0];
   // a card whose ideas have all gone (a new brief cleared the table) has nothing to show: it closes itself
   useEffect(() => { if (!ideas.length) res("none"); }, [ideas.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const pl = cur ? pitchLine(s, cur.i) : null;
+  const pvOf = (i: Idea) => previewIdea(s, i, dials);
   const max = maxConcurrent(t);
   const running = t.projects.filter((p) => p.status === "building");
   const full = running.length >= max;
-  const prof = cur ? profileOf(s, cur.i, max) : null;
+  const prof = cur ? profileOf(s, { ...cur.i, ...pvOf(cur.i) }, max) : null;
   const brief = briefActive(s);
   const back = () => {
     if (!cur) return;
@@ -324,9 +328,10 @@ function Pitches({ s, d, card, res, setAfter, skip, mute }: { s: CareerState; d:
     const authors = new Set<string>();
     const others = ideas.filter((x) => x.i.id !== cur.i.id && x.i.lead && x.i.lead !== cur.i.lead).map((x) => s.staff[x.i.lead!]).filter((st): st is Staff => !!st && !authors.has(st.id) && !!authors.add(st.id)).map((st) => ({ st, react: (st.traits.includes("hothead") ? "fume" : st.traits.includes("perfectionist") ? "stung" : "sulk") as DevReact }));
     sfx.play("stamp");
-    const r = res(cur.o.id) as { ok?: boolean } | undefined;
+    const flags = `${life === "short" && horizon === "now" ? "|short" : ""}${horizon === "next" ? "|next" : ""}`;
+    const r = res(cur.o.id + flags) as { ok?: boolean } | undefined;
     if (r && r.ok === false) return;
-    setAfter({ kind: "back", title: "BACKED", line: cur.i.rookie ? "You are giving me a real project? I will not let you down." : "Thank you. We start today.", author: pl?.who, react: cur.i.rookie ? "grin" : "proud", cost: { from: before, to: before - cur.i.cost, label: "CAP ROOM" }, others });
+    setAfter({ kind: "back", title: "BACKED", line: cur.i.rookie ? "You are giving me a real project? I will not let you down." : "Thank you. We start today.", author: pl?.who, react: cur.i.rookie ? "grin" : "proud", cost: { from: before, to: before - pvOf(cur.i).cost, label: "CAP ROOM" }, others });
   };
   const none = card.options.find((o) => o.id === "none");
   return (
@@ -335,6 +340,9 @@ function Pitches({ s, d, card, res, setAfter, skip, mute }: { s: CareerState; d:
         <Person st={pl?.who} say={pl?.line ?? ""} react={cur?.i.rookie ? "grin" : undefined} />
         <div className="dr-col">
           <Blueprint s={s} mark={cur?.i.area} weak={null} />
+          {boostsFor(s, s.teamId).list.length > 0 && (
+            <p className="small pc-data">WEEKEND DATA IN HAND: {boostsFor(s, s.teamId).list.map((b) => `${TRAIT_NAME[b.trait].toLowerCase()} ${Math.round(b.pct * 100)}% (${b.why})`).join("; ")}</p>
+          )}
           <div className="dr-slots" title="Projects the factory can run at once">
             <span className="small">FACTORY</span>
             {Array.from({ length: max }, (_, k) => <i key={k} className={k < running.length ? "on" : ""} />)}
@@ -343,20 +351,37 @@ function Pitches({ s, d, card, res, setAfter, skip, mute }: { s: CareerState; d:
           {pl && <p className="dim small">{pl.record}</p>}
         </div>
       </div>
+      <div className="dr-dials">
+        <div className="dr-dial">
+          <small>WHICH CAR</small>
+          <button className={horizon === "now" ? "on" : ""} onClick={() => { sfx.play("click"); setHorizon("now"); }}>THIS SEASON</button>
+          <button className={horizon === "next" ? "on" : ""} onClick={() => { sfx.play("click"); setHorizon("next"); }}>NEXT YEAR'S CAR</button>
+          <span className="small dim">{horizon === "next" ? `Banked until January and never races this year, but worth ${Math.round((NEXT_YEAR_GAIN - 1) * 100)}% more. The same slot and money.` : "Fitted at the next race after it is built."}</span>
+        </div>
+        <div className="dr-dial">
+          <small>HOW LONG IT LASTS</small>
+          <button className={life === "long" || horizon === "next" ? "on" : ""} onClick={() => { sfx.play("click"); setLife("long"); }}>BUILT TO LAST</button>
+          <button disabled={horizon === "next"} className={life === "short" && horizon === "now" ? "on" : ""} onClick={() => { sfx.play("click"); setLife("short"); }}>SHORT-LIFE</button>
+          <span className="small dim">{life === "short" && horizon === "now" ? `${Math.round((SHORT_LIFE.gain - 1) * 100)}% more gain and ${Math.round((1 - SHORT_LIFE.cost) * 100)}% cheaper, but it gives out after ${SHORT_LIFE.races} races and has to be built again.` : "Stays on the car until the rules change."}</span>
+        </div>
+      </div>
       <div className="dr-pitches big">
         {ideas.map(({ o, i }) => {
           const who = i.lead ? s.staff[i.lead] : undefined;
-          const p = profileOf(s, i, max);
+          const pv = pvOf(i);
+          const p = profileOf(s, { ...i, ...pv }, max);
           const word = i.rookie ? "ROOKIE PITCH" : i.lab ? "YOUR LAB" : i.offBrief ? "OFF-BRIEF" : i.approach ? APPROACH_WORD[i.approach] : KIND_WORD[i.kind ?? "safe"];
           return (
             <button key={i.id} className={`dr-pitch card ${i.id === cur?.i.id ? "on" : ""} ${i.rookie ? "rookie" : ""} a-${i.approach ?? i.kind ?? "safe"}`} onClick={() => { sfx.play("click"); setFoc(i.id); }}>
               <span className="pc-top">{who && <StaffPortrait seed={who.id} role={who.role} size={30} />}<i className={`k-${i.kind ?? "safe"}`}>{word}</i></span>
               <b className="pc-name">{i.name}</b>
-              <span className="pc-gain">{fmtRange(i.predLo, i.predHi)} <small>s a lap</small></span>
-              <span className="pc-row"><small>PRICE</small><b>{fmtMoney(i.cost)}</b></span>
-              <span className="pc-row"><small>BUILD</small><b>{i.days} days</b></span>
-              <span className="pc-row"><small>LANDS BEFORE</small><b>{p.racesAfter} of {p.racesLeft} races</b></span>
-              <RaceStrip races={p.fit.map((r) => ({ gp: r.gp, f: r.f, after: r.after }))} />
+              <span className="pc-gain">{fmtRange(pv.predLo, pv.predHi)} <small>s a lap</small></span>
+              <span className="pc-row"><small>PRICE</small><b>{fmtMoney(pv.cost)}</b></span>
+              <span className="pc-row"><small>BUILD</small><b>{pv.days} days</b></span>
+              {pv.next ? <span className="pc-row"><small>RACES</small><b>NEXT YEAR'S CAR</b></span> : <span className="pc-row"><small>LANDS BEFORE</small><b>{p.racesAfter} of {p.racesLeft} races</b></span>}
+              {!pv.next && <RaceStrip races={p.fit.map((r) => ({ gp: r.gp, f: r.f, after: r.after }))} />}
+              {pv.boost && <em className="pc-boost" title={pv.boost.why}>WEEKEND DATA: {Math.round(pv.boost.pct * 100)}% CHEAPER, QUICKER, TIGHTER RANGE</em>}
+              {pv.short && <em className="pc-side">GIVES OUT AFTER {SHORT_LIFE.races} RACES</em>}
               {p.side && <em className="pc-side">COSTS {p.side.amount.toFixed(2)} s OF {p.side.name.toUpperCase()}</em>}
               {o.warn && <em className="warn small">{o.warn}</em>}
             </button>
@@ -367,6 +392,9 @@ function Pitches({ s, d, card, res, setAfter, skip, mute }: { s: CareerState; d:
         <div className="dr-facts">
           {prof?.balance && Math.abs(prof.balance.lopsided) >= 0.005 && <p className="small">{prof.balance.lopsided > 0 ? `Leaves the car more lopsided in this department: a price of about ${prof.balance.lopsided.toFixed(2)} s.` : `Evens out the car in this department: saves about ${Math.abs(prof.balance.lopsided).toFixed(2)} s of lopsided price.`}</p>}
           {cur.i.note && <p className="small">{cur.i.note}</p>}
+          {cur.i.trait && t.regKnow[cur.i.trait] && t.regKnow[cur.i.trait].err > 0.2 && <p className="small">Your engineers are unsure what {TRAIT_NAME[cur.i.trait].toLowerCase()} is worth under these rules, and the rules are redrawn in January.</p>}
+          {horizon === "now" && prof && prof.racesAfter === 0 && <p className="small warn">It would land after the last race. This season it does nothing.</p>}
+          {life === "short" && horizon === "now" && <p className="small">A short-life part wears out: its gain and any price it carried come off the car together after {SHORT_LIFE.races} races.</p>}
           {cur.o.lines?.map((l, k) => <p key={k} className="small">{l}</p>)}
         </div>
       )}
