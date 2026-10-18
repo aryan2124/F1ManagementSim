@@ -1,3 +1,4 @@
+import { teamColour } from "../../career/brand";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Card, CardOption, CareerState, DevReact, Idea, Project, Staff } from "../../career/types";
 import { AREA_LABEL, type Area } from "../../career/types";
@@ -578,7 +579,7 @@ function Press({ s, card, res, setAfter, skip }: { s: CareerState; card: Card; r
 /** Pre-season test: the car out on track, the numbers coming in on the garage screens. */
 function TestDay({ s, card, res, skip }: { s: CareerState; card: Card; res: (o: string) => unknown; skip: () => void }) {
   const chief = chiefOf(s);
-  const col = hex(teamOf(s.teamId)?.color ?? 0xff8a1f);
+  const col = hex(teamColour(s));
   return (
     <Shell title={card.data?.season ? "TEST DAY" : "PRE-SEASON TEST"} skip={skip}>
       <div className="dr-row">
