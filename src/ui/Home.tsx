@@ -12,7 +12,7 @@ import { juiceUp } from "./skin/juice";
 type Item = { id: string; kind: string; icon: string; label: string; note: string; run: () => void; primary?: boolean; disabled?: boolean };
 
 /** The front door: four ways in. Arrow keys and Enter work too. */
-export function Home({ onNew, onLoad, onOnline, onWeekend }: { onNew: () => void; onLoad: (c: CareerState) => void; onOnline: () => void; onWeekend: () => void }) {
+export function Home({ onNew, onLoad, onOnline, onWeekend, onTutorial }: { onNew: () => void; onLoad: (c: CareerState) => void; onOnline: () => void; onWeekend: () => void; onTutorial: () => void }) {
   const [saved, setSaved] = useState<CareerState | null>(null);
   const [err, setErr] = useState("");
   const [cur, setCur] = useState(0);
@@ -23,6 +23,7 @@ export function Home({ onNew, onLoad, onOnline, onWeekend }: { onNew: () => void
   const team = saved ? TEAMS.find((t) => t.id === saved.teamId) : undefined;
   const items: Item[] = [
     ...(saved ? [{ id: "continue", kind: "good", icon: "car", label: "CONTINUE CAREER", note: `${team?.name ?? saved.teamId}, ${fmtDay(saved.day)}, round ${saved.round + 1}`, run: () => onLoad(saved), primary: true }] : []),
+    { id: "tutorial", kind: "good", icon: "academy", label: "TUTORIAL", note: "Ten minutes on a practice career: where everything is, your first race weekend, and what a rules change does.", run: onTutorial, primary: false },
     { id: "new", kind: "go", icon: "factory", label: "NEW CAREER", note: "Pick a team and run it for seasons: cars, people, money, the academy.", run: onNew, primary: !saved },
     { id: "load", kind: "info", icon: "rules", label: "LOAD CAREER", note: "Open a save file you exported from the settings cog.", run: () => file.current?.click() },
     { id: "online", kind: "tech", icon: "people", label: "ONLINE LEAGUE", note: "Run a team against friends in a shared world.", run: onOnline },

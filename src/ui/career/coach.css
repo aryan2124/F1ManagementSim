@@ -1,0 +1,28 @@
+.coach { position: fixed; z-index: 9500; left: 50%; transform: translateX(-50%); width: min(520px, calc(100vw - 24px)); background: #1c1730; border: 2px solid #ffcf40; box-shadow: 0 6px 0 #0c0a14, 0 0 24px rgba(255,207,64,0.25); padding: 10px 14px 12px; font-size: 13px; line-height: 1.45; }
+.coach.bottom { bottom: 86px; }
+.coach.top { top: 12px; }
+.coach h4 { margin: 6px 0 4px; color: #ffcf40; font-size: 15px; letter-spacing: 1px; }
+.coach p { margin: 4px 0; }
+.coach-top { display: flex; justify-content: space-between; align-items: center; font-size: 10px; letter-spacing: 2px; opacity: 0.8; }
+.coach-bar { height: 4px; background: rgba(255,255,255,0.12); margin: 4px 0; }
+.coach-bar i { display: block; height: 100%; background: #7dffb0; transition: width 0.4s; }
+.coach-hint { color: #8fd8ff; font-size: 12px; }
+.coach-ok { color: #7dffb0; font-weight: bold; letter-spacing: 2px; }
+.coach.ok { border-color: #7dffb0; }
+.coach-btns { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-top: 8px; flex-wrap: wrap; }
+.coach-ring { position: fixed; z-index: 9400; pointer-events: none; border: 3px solid #ffcf40; box-shadow: 0 0 0 3px rgba(0,0,0,0.5), 0 0 18px #ffcf40; animation: coach-pulse 1.1s ease-in-out infinite; }
+@keyframes coach-pulse { 50% { box-shadow: 0 0 0 3px rgba(0,0,0,0.5), 0 0 30px #ffcf40; transform: scale(1.015); } }
+.coach-demo { position: fixed; inset: 0; z-index: 9600; background: rgba(8,6,16,0.88); display: grid; place-items: center; padding: 12px; overflow: auto; }
+.coach-demo-card { width: min(640px, 100%); background: #1c1730; border: 2px solid #ffcf40; padding: 14px 16px; }
+.coach-demo-card h3 { margin: 0 0 8px; color: #ffcf40; letter-spacing: 2px; }
+.coach-table { list-style: none; margin: 8px 0; padding: 0; position: relative; }
+.coach-table li { position: absolute; left: 0; right: 0; height: 24px; display: grid; grid-template-columns: 26px 1fr 64px 70px; align-items: center; gap: 6px; padding: 0 6px; background: rgba(255,255,255,0.05); transition: transform 1.1s cubic-bezier(.3,.8,.3,1); font-size: 13px; }
+.coach-table li.mine { background: rgba(255,138,31,0.25); outline: 1px solid #ff8a1f; }
+.coach-table em { font-style: normal; text-align: right; opacity: 0.8; }
+.coach-table u { text-decoration: none; font-size: 11px; text-align: right; }
+.coach-table u.up { color: #7dffb0; }
+.coach-table u.down { color: #ff7a7a; }
+.coach-explain p { margin: 6px 0; font-size: 12.5px; }
+@media (max-width: 640px) { .coach.bottom { bottom: 70px; } }
+.coach.side { left: auto; right: 8px; top: 8px; bottom: auto; transform: none; width: clamp(170px, calc((100vw - 880px) / 2 - 12px), 250px); font-size: 12px; max-height: calc(100vh - 16px); overflow: auto; }
+.coach.side h4 { font-size: 13px; }

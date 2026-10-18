@@ -132,3 +132,7 @@ Research notes: interesting decisions need consequences, rough predictability an
 
 ## Done: development revamp round 2 (boosts, dials, banked research, crises)
 Approved by the user as items 2 to 6 of the research proposal (the Rushed/Normal/Intense dial was left out). See README.
+
+## Tutorial (done)
+Coach overlay over a sandbox career; offered at New Career, always on the main menu. Mock race = `rulesDemo` in
+`src/career/tutorial.ts` (clones state, shifts regulation weights, re-runs the race). Tests: `tests/tutorial.test.ts`.

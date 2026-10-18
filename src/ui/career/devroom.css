@@ -264,3 +264,9 @@
 .dr-dial button:disabled { opacity: 0.35; cursor: default; }
 .pc-boost { display: block; font-style: normal; font-size: 10px; letter-spacing: 0.5px; color: #7dffb0; margin-top: 4px; }
 .pc-data { color: #7dffb0; }
+
+/* the tutorial offer on a new career */
+.nc-ask { position: fixed; inset: 0; z-index: 9000; background: rgba(8,6,16,0.8); display: grid; place-items: center; padding: 12px; }
+.nc-ask-card { width: min(520px, 100%); background: #1c1730; border: 2px solid #ffcf40; padding: 16px 18px; }
+.nc-ask-card h3 { margin: 0 0 8px; color: #ffcf40; letter-spacing: 2px; }
+.nc-ask-btns { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 6px; }

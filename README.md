@@ -427,3 +427,14 @@ Built on the briefs and approaches above, from the research (Civ boosts, F1 Mana
 - **Crises** (about one every seven weeks from round 3): a rival copies a part (protest, out-develop them, or accept), a part cracks (emergency redesign, run it at reduced load, or pull it), the wind tunnel balance fails (hire outside time or lose hours).
 
 Files: `src/career/crises.ts`, `rnd.ts` (`addBoost`, dials, `wearOutParts`), `brief.ts` (`previewIdea`), `tests/dials.test.ts`.
+
+## Tutorial
+
+New careers offer a tutorial first (YES, SHOW ME / NO THANKS, START), and TUTORIAL is always on the main menu.
+It runs on a throwaway sandbox career (never saved, quick 10-lap races, rookie difficulty), with a Coach overlay
+that points at real UI. Design follows the best tutorials (Football Manager, Into the Breach, Hades, Portal):
+learn by doing in the real interface, one idea per step, a highlight ring on the exact control, steps advance
+from game state rather than a Next button where possible, skippable at any time.
+Flow: factory tour (tabs, car, money, people, rules), the clock and first decisions, first race weekend
+(tyres, practice, quali, race), then a MOCK RACE: the same cars raced under today's rules and under a
+rewritten rulebook, showing who rises and falls. Code: `src/career/tutorial.ts`, `src/ui/career/Coach.tsx`, `coach.css`.
