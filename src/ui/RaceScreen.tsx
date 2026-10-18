@@ -547,7 +547,7 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
             ) : (
               list.length ? (
                 <div className="pitpick">
-                  <SetPicker sets={list.filter((x) => x.id !== car.setId)} value={pitSet} onChange={setPitSet} advice={pitAdv?.set?.id} />
+                  <SetPicker sets={list} value={pitSet} onChange={setPitSet} advice={pitAdv?.set?.id} fitted={car.setId} live={car.setId ? { id: car.setId, wear: car.tyre.wear } : undefined} lockFitted />
                   {pitAdv?.why && <small className="dim">{pitAdv.why}</small>}
                   <button className="btn" disabled={!canPit} onClick={() => {
                     const x = list.find((y) => y.id === pitSet) ?? pitAdv?.set ?? bestSet(list, car.tyre.compound, car.setId);

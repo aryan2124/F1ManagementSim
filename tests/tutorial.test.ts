@@ -23,3 +23,17 @@ describe("tutorial", () => {
     expect(rulesDemo(s).after.map((x) => x.id)).toEqual(r.after.map((x) => x.id));
   }, 120000);
 });
+
+import { launchTutorialEra } from "../src/career/tutorialEra";
+import { rulesOf } from "../src/career/eras";
+import { axesFor } from "../src/career/weekend";
+
+describe("tutorial era", () => {
+  it("adds the battery deployment setting and push to pass tokens", () => {
+    const s = tutorialCareer();
+    expect(axesFor(s).some((a) => a.id === "deploy")).toBe(false);
+    launchTutorialEra(s);
+    expect(axesFor(s).some((a) => a.id === "deploy")).toBe(true);
+    expect(rulesOf(s).pushToPass).toBeGreaterThan(0);
+  });
+});

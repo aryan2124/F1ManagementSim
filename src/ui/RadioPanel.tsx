@@ -187,7 +187,7 @@ function PromptRow({ session, p }: { session: RaceSession; p: Prompt }) {
             <span className="ppick">FIT WHICH {list.length ? "SET" : "TYRE"}?</span>
             {list.length > 0 && (
               <>
-                <SetPicker sets={list.filter((x) => x.id !== car.setId)} value={setId} onChange={setSetId} advice={advised?.id} auto={false} />
+                <SetPicker sets={list} value={setId} onChange={setSetId} advice={advised?.id} auto={false} fitted={car.setId} live={car.setId ? { id: car.setId, wear: car.tyre.wear } : undefined} lockFitted />
                 {adv?.why && <span className="small dim">{adv.why}</span>}
                 <button className="pcomp rec" disabled={!setId} onClick={() => send(`boxset:${setId}`)}>FIT {setId || "..."}</button>
               </>

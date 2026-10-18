@@ -158,6 +158,14 @@ export function CareerApp({ initial, onExit, net, tutorial }: { initial: CareerS
   const pause = useCallback(() => setClock((c) => ({ ...c, running: false })), []);
   const setSpeed = useCallback((v: 1 | 2 | 4) => setClock((c) => ({ ...c, speed: v })), []);
 
+  // tutorial: only the first decision before the weekend is shown; the team settles the rest so the coach can move on
+  const keepCard = useRef<number | null>(null);
+  useEffect(() => {
+    if (!tutorial || s.weekend) return;
+    const pend = s.cards.filter((c) => !c.notice && !c.mail && c.kind !== "launch");
+    if (keepCard.current === null && pend.length) keepCard.current = pend[0]!.id;
+    for (const c of pend) if (c.id !== keepCard.current && c.options.length) d({ type: "card", id: c.id, option: c.defaultOption ?? c.options[0]!.id });
+  }, [s.cards, s.weekend]); // eslint-disable-line react-hooks/exhaustive-deps
   // autosave when the clock is not running
   useEffect(() => {
     if (clock.running || net || tutorial) return;
@@ -223,7 +231,7 @@ export function CareerApp({ initial, onExit, net, tutorial }: { initial: CareerS
   useEffect(() => () => setSettingsExtras(null), []);
 
   // the coach stays mounted through the car unveiling, so the tutorial keeps its place
-  const coach = tutorial ? <Coach s={s} tab={tab} go={setTab} inWeekend={inWeekend && !!s.weekend && !peek} running={clock.running} hidden={reveal} onDone={tutorial} /> : null;
+  const coach = tutorial ? <Coach s={s} d={d} tab={tab} go={setTab} inWeekend={inWeekend && !!s.weekend && !peek} running={clock.running} hidden={reveal} onDone={tutorial} /> : null;
   if (reveal) {
     return <><CarReveal teamColor={teamColour(s)} accent={0xffffff} teamName={teamLabel(s)} year={s.year} onDone={() => setReveal(false)} />{coach}</>;
   }
