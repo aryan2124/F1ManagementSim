@@ -1125,6 +1125,22 @@ export function simulateWeekend(s: CareerState) {
   }
 }
 
+/** Tutorial skip: run the weekend forward to a point (out of practice, to the race, or to the end) and no further. */
+export function simulateTo(s: CareerState, until: "quali" | "race" | "done") {
+  if (!s.weekend) return;
+  const ws = s.weekend;
+  if (ws.stage === "practice") {
+    autoSetup(ws);
+    endPractice(s);
+  }
+  let guard = 0;
+  while (ws.stage !== "done" && guard++ < 6) {
+    if (until === "quali") break;
+    if (until === "race" && ws.stage === "race") break;
+    simulateSession(s, ws.stage as SessionKind);
+  }
+}
+
 export { activeDrivers };
 
 /** The race-format rules in force, in plain words, for the briefing. */

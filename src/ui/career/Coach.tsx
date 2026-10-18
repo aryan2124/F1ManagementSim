@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CareerState } from "../../career/types";
+import type { Action, CareerState } from "../../career/types";
 import type { Tab } from "./common";
 import { rulesDemo, type DemoResult } from "../../career/tutorial";
 import { planOf } from "../../career/rndplan";
@@ -46,12 +46,12 @@ export const STEPS: Step[] = [
   { id: "rules-open", chapter: "1 THE FACTORY", phase: 0, title: "The rulebook", target: tabBtn("rules"), body: ["Click RULES."], done: (c) => c.tab === "rules" },
   { id: "rules", chapter: "1 THE FACTORY", phase: 0, title: "The rules change, and the order changes with them", needsTab: "rules", body: ["Every four to five years the regulations are rewritten. This tab warns you years ahead, lets you vote on the rules, and lets you pick a design route for the new car. Nobody is told which route is best.", "It is the biggest shake-up in the game, so after your first weekend we will play a mock race to show you exactly what it feels like."] },
   { id: "go-today", chapter: "1 THE FACTORY", phase: 0, title: "Back to TODAY, then run the clock", target: (c) => (c.tab === "today" ? { sel: ".c-dock .btn.primary" } : tabBtn("today")), body: ["Time only moves when you press CONTINUE. The days run until something needs a decision, and then the clock stops by itself.", "Press CONTINUE."], done: (c) => c.s.day > c.base.day + 1 || !!c.s.weekend || pending(c.s) },
-  { id: "decision", chapter: "1 THE FACTORY", phase: 0, title: "A decision is waiting", skipIf: (c) => !pending(c.s) || !!c.s.weekend, body: ["The clock stopped because something needs you. This one is the engineers' report: they have found the three places the car loses most time, and you pick which problem to send the design office after. Pick one, read the three pitches they come back with a week later, and back one.", "Choose an option in the scene on screen. If you close it with LATER, the card waits on TODAY under DECISIONS, and the clock will not run until you decide."], done: (c) => !pending(c.s) || !!c.s.weekend },
+  { id: "decision", chapter: "1 THE FACTORY", phase: 0, title: "A decision is waiting", skipIf: (c) => !pending(c.s) || !!c.s.weekend, body: ["The clock stopped because something needs you. Your departments report to you like this: the engineers, the design office, the academy, the board. Read it, then choose an option in the scene on screen.", "In a real career more of these arrive every week. Here the team handles the rest for you so we can get to the racing. If you close this one with LATER, the card waits on TODAY under DECISIONS, and the clock will not run until you decide."], done: (c) => !pending(c.s) || !!c.s.weekend },
   { id: "wait-weekend", chapter: "1 THE FACTORY", phase: 0, title: "Keep going until the race weekend", skipIf: (c) => c.inWeekend, target: { sel: ".c-dock .btn.primary" }, body: ["Press CONTINUE again (or SPACE). The first race is about two months away, so use the 4x speed button if you like. Pause at any time with PAUSE or Escape."], done: (c) => !!c.s.weekend && c.s.weekend.stage !== "done" },
   { id: "start-weekend", chapter: "1 THE FACTORY", phase: 0, title: "The weekend is here", target: { sel: ".c-dock .btn.primary" }, body: ["The big button now names the next thing to do. Press it."], done: (c) => c.inWeekend },
 
   { id: "practice", chapter: "2 THE WEEKEND", phase: 1, title: "Practice: the garage", body: ["A weekend is practice, qualifying, then the race. Practice is your only chance to learn the car. You get a few runs, nobody can tell you the best setup, and everything you learn carries into Sunday.", "The engineers' setup guess comes from a simulator that is never quite right. Your own lap times can prove it wrong."] },
-  { id: "alloc", chapter: "2 THE WEEKEND", phase: 1, title: "Tyres are limited", target: { sel: "button", text: /USE THEIR SPLIT|^CONFIRM \d/ }, skipIf: (c) => !!c.s.weekend?.setList, body: ["You only have so many sets of soft, medium and hard for the whole weekend. Choose how to split them, or press USE THEIR SPLIT to take the engineers' advice. Every set you use in practice is one less on Sunday."], done: (c) => !!c.s.weekend?.setList },
+  { id: "alloc", chapter: "2 THE WEEKEND", phase: 1, title: "Tyres are limited", target: { sel: "button", text: /^CONFIRM \d/ }, skipIf: (c) => !!c.s.weekend?.setList, body: ["You only have so many sets of soft, medium and hard for the whole weekend. Choose how to split them, or press USE THEIR SPLIT to take the engineers' advice. Then press the orange CONFIRM button to lock it in. Every set you use in practice is one less on Sunday."], done: (c) => !!c.s.weekend?.setList },
   { id: "run1", chapter: "2 THE WEEKEND", phase: 1, title: "Send a driver out", target: { sel: "button", text: /SEND HIM OUT/ }, body: ["Pick a programme under RUN PLAN (SETUP is a good first one), then press SEND HIM OUT. Each run is measured against your first run, the baseline, so make one change at a time."], done: (c) => (c.s.weekend?.runsLeft ?? 0) < c.base.runsLeft },
   { id: "feedback", chapter: "2 THE WEEKEND", phase: 1, title: "Read what came back", body: ["Look under THE EVIDENCE: the lap time against your baseline (minus is quicker) and what the driver complained about. Each driver has his own taste, so the two will disagree, and you pick the compromise.", "Under the SEND HIM OUT button there is also a line starting \"The factory can use this\". Practice feeds R&D: the data makes matching projects cheaper and quicker for five weeks."] },
   { id: "run2", chapter: "2 THE WEEKEND", phase: 1, title: "Run a tyre wear study", target: { sel: "button", text: /SEND HIM OUT/ }, body: ["Pick TYRE WEAR STUDY in RUN PLAN and send him out. It does not give a lap time, but it teaches the engineers about tyre life, and it makes tyre projects cheaper back at the factory."], done: (c) => (c.s.weekend?.runsLeft ?? 0) < c.base.runsLeft || (planOf(c.s.teams[c.s.teamId]).boosts ?? []).some((b) => b.trait === "wear") },
@@ -81,7 +81,7 @@ const phaseOf = (c: Pick<Ctx, "s" | "inWeekend" | "startRound">): Phase => {
   return 0;
 };
 
-export function Coach({ s, tab, go, inWeekend, running, hidden, onDone }: { s: CareerState; tab: Tab; go: (t: Tab) => void; inWeekend: boolean; running: boolean; hidden?: boolean; onDone: (finished: boolean) => void }) {
+export function Coach({ s, d, tab, go, inWeekend, running, hidden, onDone }: { s: CareerState; d: (a: Action) => unknown; tab: Tab; go: (t: Tab) => void; inWeekend: boolean; running: boolean; hidden?: boolean; onDone: (finished: boolean) => void }) {
   const [idx, setIdx] = useState(0);
   const [force, setForce] = useState<"bottom" | "top" | null>(null);
   const [okAt, setOkAt] = useState(-1);
@@ -97,6 +97,15 @@ export function Coach({ s, tab, go, inWeekend, running, hidden, onDone }: { s: C
   const idxRef = useRef(idx);
   idxRef.current = idx;
   const timer = useRef<number | undefined>(undefined);
+  // skipping a weekend step runs that session for you, so the tutorial lands on the next one
+  const skipStep = () => {
+    if (s.weekend && s.weekend.stage !== "done") {
+      if (step.id === "end-practice") { d({ type: "simTo", until: "quali" }); return; }
+      if (step.id === "quali") { d({ type: "simTo", until: "race" }); return; }
+      if (step.id === "race") { d({ type: "simTo", until: "done" }); return; }
+    }
+    goTo(idx + 1);
+  };
   const goTo = (i: number) => { window.clearTimeout(timer.current); baseRef.current = snap(); setIdx(i); };
 
   // skip what the player has already got past, or never needs
@@ -155,7 +164,7 @@ export function Coach({ s, tab, go, inWeekend, running, hidden, onDone }: { s: C
           {step.last ? (
             <button className="btn primary" onClick={() => onDone(true)}>FINISH THE TUTORIAL</button>
           ) : step.done || step.passive ? (
-            <button className="tiny" onClick={() => goTo(idx + 1)}>SKIP THIS STEP</button>
+            <button className="tiny" onClick={skipStep}>SKIP THIS STEP</button>
           ) : (
             <button className="btn primary" onClick={() => goTo(idx + 1)}>NEXT</button>
           )}

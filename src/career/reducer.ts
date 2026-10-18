@@ -28,7 +28,7 @@ import { castVote, persuade, trade } from "./vote";
 import { logSpend } from "./log";
 import { rulesOf } from "./eras";
 import { PART_NAME, fitNew } from "./powertrain";
-import { endPractice, practiceRun, recordSession, setAlloc, simulateWeekend } from "./weekend";
+import { endPractice, practiceRun, recordSession, setAlloc, simulateTo, simulateWeekend } from "./weekend";
 import { CFG } from "./config";
 import { fmtMoney, round2 } from "./util";
 import type { Action, CareerState } from "./types";
@@ -363,6 +363,11 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       simulateWeekend(s);
       syncWeekendDay(s);
       return good("The weekend was simulated.");
+    }
+    case "simTo": {
+      simulateTo(s, a.until);
+      syncWeekendDay(s);
+      return good();
     }
     case "sponsor":
       return good();

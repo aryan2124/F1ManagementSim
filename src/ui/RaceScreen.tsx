@@ -446,7 +446,7 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
           </div>
           <div className="tyre-row">
             <CompoundBadge c={car.tyre.compound} size={26} />
-            <Meter label="TYRE" value={1 - wear} color={wearColor} text={lapsPlus >= 1 ? `~${lapsLeft}L \u00b1${lapsPlus}` : `${lapsLeft}L`} />
+            <Meter label="TYRE" value={1 - wear} color={wearColor} text={`${Math.round(Math.max(0, 1 - wear) * 100)}%  ${lapsPlus >= 1 ? `~${lapsLeft}L \u00b1${lapsPlus}` : `${lapsLeft}L`}`} />
           </div>
           <Meter label="FUEL" value={car.fuel} color={car.fuel < 0.04 ? "#e63946" : "#4cc9f0"} text={`${(car.fuel * FUEL_KG).toFixed(1)} kg`} />
           <Meter label="BATT" value={car.soc} color="#ff7a1a" />
