@@ -53,9 +53,11 @@ export function Swirl() {
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     let raf = 0;
     let last = 0;
+    // Firefox upscales and repaints a full-screen canvas on the CPU, so it gets a calmer frame rate
+    const gap = typeof navigator !== "undefined" && /firefox/i.test(navigator.userAgent) ? 260 : 70;
     const draw = (now: number) => {
       raf = requestAnimationFrame(draw);
-      if (document.hidden || now - last < 70) return;
+      if (document.hidden || now - last < gap) return;
       last = now;
       const t = reduce ? 0 : now / 1000;
       mix = Math.min(1, mix + 0.06);
