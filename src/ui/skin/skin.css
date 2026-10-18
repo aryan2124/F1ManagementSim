@@ -2345,3 +2345,16 @@ button.link { background: none; border: 0; padding: 0; color: var(--c-gold, #ffd
 .app .radar.wx2 .wx-card .fcurve { margin: 0; }
 @media (max-width: 560px) { .app .radar.wx2 .wx-tiles { grid-template-columns: repeat(2, 1fr); } }
 .app .radar.wx2 .wx-card h4 { font-size: 12px !important; line-height: 1.3; text-shadow: none; -webkit-text-stroke: 0; background: none; padding: 0; letter-spacing: 0; }
+
+/* Firefox repaints full-screen overlays on the CPU: drop the scanline and vignette layer there */
+@-moz-document url-prefix() {
+  .crt-global { background: none !important; }
+  .swirl { image-rendering: crisp-edges; }
+}
+
+/* Firefox: no 3D tilt and no endless decorative animations, they cost far more there */
+@-moz-document url-prefix() {
+  [style*="--rx"], .tilt { transform: none !important; }
+  .app *, .app *::before, .app *::after { animation-iteration-count: 1 !important; }
+  .coach-ring { animation: none !important; }
+}
