@@ -13,7 +13,8 @@ import { getPrefs, setPref } from "../prefs";
 import type { Guidance } from "../../career/types";
 import { ModuleIcon, CATEGORY_COLOR } from "../pixel/icons";
 
-export function NewCareer({ onStart, onBack }: { onStart: (s: CareerState) => void; onBack: () => void }) {
+export function NewCareer({ onStart, onBack, onTutorial }: { onStart: (s: CareerState) => void; onBack: () => void; onTutorial: (next: CareerState) => void }) {
+  const [ask, setAsk] = useState<CareerState | null>(null);
   const [teamId, setTeamId] = useState("wil");
   const [difficulty, setDifficulty] = useState<0 | 1 | 2>(1);
   const [help, setHelp] = useState<Guidance>(getPrefs().help);
@@ -37,7 +38,8 @@ export function NewCareer({ onStart, onBack }: { onStart: (s: CareerState) => vo
   const shown = MODULES.filter((m) => cat === "all" || m.category === cat);
   const start = () => {
     setPref("help", help);
-    onStart(newCareer(teamId, Math.floor(Math.random() * 1e6), difficulty, length, { eraMode, lockedModules: locked, guidance: help }));
+    // every new career offers the tutorial first; saying no goes straight in
+    setAsk(newCareer(teamId, Math.floor(Math.random() * 1e6), difficulty, length, { eraMode, lockedModules: locked, guidance: help }));
   };
   return (
     <div className="screen menu nc">
@@ -103,6 +105,19 @@ export function NewCareer({ onStart, onBack }: { onStart: (s: CareerState) => vo
             ))}
           </ul>
         </section>
+      )}
+      {ask && (
+        <div className="nc-ask" role="dialog" aria-label="Tutorial">
+          <div className="nc-ask-card">
+            <h3>NEW TO BOX BOX?</h3>
+            <p>A short tutorial on a practice career shows you where everything is, walks you through your first race weekend, and plays a mock race where the regulations change. It takes about ten minutes and your real career waits for you.</p>
+            <div className="nc-ask-btns">
+              <button className="btn primary big" onClick={() => onTutorial(ask)}>YES, SHOW ME</button>
+              <button className="btn big" onClick={() => onStart(ask)}>NO THANKS, START</button>
+            </div>
+            <p className="dim small">You can always find it later on the main menu.</p>
+          </div>
+        </div>
       )}
       <div className="nc-go">
         <button className="btn primary big" onClick={start}>START A NEW CAREER</button>

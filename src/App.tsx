@@ -13,6 +13,7 @@ import { CareerApp } from "./ui/career/CareerApp";
 import { NetCareerApp, NetJoin } from "./ui/career/NetCareer";
 import { NewCareer } from "./ui/career/NewCareer";
 import type { CareerState } from "./career/types";
+import { tutorialCareer } from "./career/tutorial";
 import { Results } from "./ui/Results";
 import { createQualiSession, createWeekend, raceConfigFrom, simulateQualifying, type WeekendSettings } from "./game/setup";
 import { RaceSession } from "./game/session";
@@ -20,7 +21,7 @@ import type { QualiSession } from "./game/qsession";
 import type { QualiRow } from "./sim/qualifying";
 import type { Compound } from "./sim/types";
 
-type Screen = "home" | "weekend" | "netjoin" | "net" | "career" | "newcareer" | "menu" | "quali" | "briefing" | "race" | "results";
+type Screen = "tutorial" | "home" | "weekend" | "netjoin" | "net" | "career" | "newcareer" | "menu" | "quali" | "briefing" | "race" | "results";
 
 export default function App() {
   const invited = new URLSearchParams(location.search).get("league");
@@ -28,11 +29,22 @@ export default function App() {
   const [netRoom, setNetRoom] = useState<{ code: string; name: string } | null>(null);
   const [settings, setSettings] = useState<WeekendSettings>({ teamId: "mer", circuitId: "silverstone", distance: "half", seed: 2026 });
   const [weekendKey, setWeekendKey] = useState(0);
-  const weekend = useMemo(() => (screen === "home" || screen === "weekend" || screen === "career" || screen === "newcareer" || screen === "net" || screen === "netjoin" ? null : createWeekend(settings)), [weekendKey, screen === "home" || screen === "weekend" || screen === "career" || screen === "newcareer" || screen === "net" || screen === "netjoin"]); // eslint-disable-line react-hooks/exhaustive-deps
+  const weekend = useMemo(() => (screen === "home" || screen === "weekend" || screen === "career" || screen === "tutorial" || screen === "newcareer" || screen === "net" || screen === "netjoin" ? null : createWeekend(settings)), [weekendKey, screen === "home" || screen === "weekend" || screen === "career" || screen === "tutorial" || screen === "newcareer" || screen === "net" || screen === "netjoin"]); // eslint-disable-line react-hooks/exhaustive-deps
   const [qsession, setQsession] = useState<QualiSession | null>(null);
   const [quali, setQuali] = useState<QualiRow[] | null>(null);
   const [session, setSession] = useState<RaceSession | null>(null);
   const [career, setCareer] = useState<CareerState | null>(null);
+  // the tutorial runs on a practice career; `next` is the real career to open when it ends, if one was waiting
+  const [tut, setTut] = useState<{ career: CareerState; next: CareerState | null } | null>(null);
+  const startTutorial = (next: CareerState | null) => {
+    setTut({ career: tutorialCareer(next?.teamId ?? "wil"), next });
+    setScreen("tutorial");
+  };
+  const endTutorial = () => {
+    const next = tut?.next ?? null;
+    setTut(null);
+    if (next) { setCareer(next); setScreen("career"); } else setScreen("home");
+  };
 
   // the menus are silent: no music, and the click sounds only run inside the game screens
   useEffect(() => {
@@ -78,11 +90,12 @@ export default function App() {
   return (
     <div className="app">
       <Swirl />
-      {screen === "home" && <Home onNew={() => setScreen("newcareer")} onLoad={(c) => { setCareer(c); setScreen("career"); }} onOnline={() => setScreen("netjoin")} onWeekend={() => setScreen("weekend")} />}
+      {screen === "home" && <Home onNew={() => setScreen("newcareer")} onLoad={(c) => { setCareer(c); setScreen("career"); }} onOnline={() => setScreen("netjoin")} onWeekend={() => setScreen("weekend")} onTutorial={() => startTutorial(null)} />}
       {screen === "weekend" && <Menu settings={settings} onChange={setSettings} onStart={enter} onBack={() => setScreen("home")} />}
       {screen === "netjoin" && <NetJoin code0={invited ?? undefined} onBack={() => setScreen("home")} onJoin={(code, name) => { setNetRoom({ code, name }); setScreen("net"); }} />}
       {screen === "net" && netRoom && <NetCareerApp code={netRoom.code} name={netRoom.name} onExit={() => setScreen("home")} />}
-      {screen === "newcareer" && <NewCareer onBack={() => setScreen("home")} onStart={(c) => { setCareer(c); setScreen("career"); }} />}
+      {screen === "newcareer" && <NewCareer onBack={() => setScreen("home")} onStart={(c) => { setCareer(c); setScreen("career"); }} onTutorial={(c) => startTutorial(c)} />}
+      {screen === "tutorial" && tut && <CareerApp key={`tut${tut.career.seed}`} initial={tut.career} tutorial={endTutorial} onExit={endTutorial} />}
       {screen === "career" && career && <CareerApp key={career.seed} initial={career} onExit={() => setScreen("home")} />}
       {screen === "quali" && qsession && weekend && (
         <QualiScreen

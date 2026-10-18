@@ -31,6 +31,7 @@ import { teamColour, teamLabel } from "../../career/brand";
 import "../pixel/themes.css";
 import type { CareerRoom } from "./net";
 import { NetWeekend, ReadyDock } from "./NetParts";
+import { Coach } from "./Coach";
 
 const SFX_FOR: Partial<Record<Action["type"], SfxName>> = { sign: "signed", extend: "signed", poachStaff: "signed", signStaff: "signed", signProspect: "signed", promote: "signed", promise: "confirm", eraVote: "vote", eraPersuade: "vote", eraTrade: "vote", endSponsor: "coin", startProject: "spend", upgradeFacility: "spend", buyoutProspect: "coin" };
 /** One score for every factory screen: moving between tabs must never restart the music. */
@@ -53,7 +54,7 @@ export const SLOT = "main";
 const MS = { 1: 140, 2: 70, 4: 30 } as const;
 const MAX_DAYS = 120;
 
-export function CareerApp({ initial, onExit, net }: { initial: CareerState; onExit: () => void; net?: CareerRoom }) {
+export function CareerApp({ initial, onExit, net, tutorial }: { initial: CareerState; onExit: () => void; net?: CareerRoom; tutorial?: () => void }) {
   const [local, setS] = useState<CareerState>(initial);
   // online: the server's view of your team, with your own clicks applied at once until the server answers
   const [opt, setOpt] = useState<CareerState | null>(null);
@@ -159,7 +160,7 @@ export function CareerApp({ initial, onExit, net }: { initial: CareerState; onEx
 
   // autosave when the clock is not running
   useEffect(() => {
-    if (clock.running || net) return;
+    if (clock.running || net || tutorial) return;
     void saveCareer(SLOT, s).then(() => setSaved(`Saved ${fmtDay(s.day)}`)).catch(() => setSaved("Could not save"));
   }, [clock.running, s.day, s.cards.length, s.weekend?.stage, s.weekend?.runsLeft, s.round]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -221,10 +222,10 @@ export function CareerApp({ initial, onExit, net }: { initial: CareerState; onEx
   });
   useEffect(() => () => setSettingsExtras(null), []);
 
+  // the coach stays mounted through the car unveiling, so the tutorial keeps its place
+  const coach = tutorial ? <Coach s={s} tab={tab} go={setTab} inWeekend={inWeekend && !!s.weekend && !peek} running={clock.running} hidden={reveal} onDone={tutorial} /> : null;
   if (reveal) {
-    const t0 = s.teams[s.teamId];
-    void t0;
-    return <CarReveal teamColor={teamColour(s)} accent={0xffffff} teamName={teamLabel(s)} year={s.year} onDone={() => setReveal(false)} />;
+    return <><CarReveal teamColor={teamColour(s)} accent={0xffffff} teamName={teamLabel(s)} year={s.year} onDone={() => setReveal(false)} />{coach}</>;
   }
   const toggleDash = (on: boolean) => {
     setPeek(on);
@@ -236,6 +237,7 @@ export function CareerApp({ initial, onExit, net }: { initial: CareerState; onEx
 
 
   return (
+    <>
     <ProfileHost s={s} d={d}>
     {weekendLive && (
       <div style={{ display: peek ? "none" : "block" }}>
@@ -275,5 +277,7 @@ export function CareerApp({ initial, onExit, net }: { initial: CareerState; onEx
     {(!weekendLive || peek) && <DevRoom s={s} d={d} auto={tab === "today"} />}
     <CeremonyOverlay s={s} d={d} />
     </ProfileHost>
+    {coach}
+    </>
   );
 }
