@@ -123,3 +123,6 @@ Still not built: a calendar event for in-season test days (only the pre-season o
 ## Status: fluid stories and playtest fixes
 - Stories are chance-driven and evolving. The rookie thread rolls whether he stays (odds shift with promote / credit / quiet word and the mood and record with him), then can branch into a bolder idea, a demand for a bigger role, or settling in. No ending is a formula.
 - Ideas put in a batch and not taken are shelved for good (the tradeoff the plan wanted); scrapping from any screen plays the bin scene with the author's reaction; sessions have a DASHBOARD button; livery colours reach the sim cars.
+
+## Done: per-set tyres, shared set picker, test fields
+See README "Tyre sets". Open: scrub bonus, online start-set sync.

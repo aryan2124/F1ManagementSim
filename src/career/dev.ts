@@ -2,7 +2,7 @@ import { addFact } from "./facts";
 import { correct, testLearn } from "./know";
 import { nextCarReport } from "./nextcar";
 import { multiply } from "./factors";
-import { news, pushCard, recap } from "./cards";
+import { news, pushCard, recap, sendLetter } from "./cards";
 import { teamPost } from "./social";
 import { AREAS, AREA_LABEL, TRAITS, type Area, type CareerState, type DevEntry, type DevReact, type DevRec, type DevState, type Idea, type Project, type Staff, type TeamState } from "./types";
 import { clamp, fmtMoney, isHuman, rngFor, round2 } from "./util";
@@ -24,6 +24,12 @@ export function devNote(s: CareerState, t: TeamState, e: Omit<DevEntry, "day">) 
   const d = devOf(t);
   d.log.push({ day: s.day, ...e });
   if (d.log.length > 120) d.log.splice(0, d.log.length - 120);
+}
+
+/** A note from someone in the building lands in the Inbox. It never stops the clock. */
+function note(s: CareerState, st: Staff | undefined, subject: string, body: string) {
+  const chief = st ?? Object.values(s.staff).filter((x) => x.teamId === s.teamId && !x.intern && (x.role === "td" || x.role === "designer")).sort((a, b) => b.skill - a.skill)[0];
+  sendLetter(s, { from: chief?.name ?? "The factory", role: chief?.role ?? "staff", subject, body });
 }
 
 const has = (st: Staff, tr: string) => st.traits.includes(tr);
@@ -140,6 +146,7 @@ export function onLanding(s: CareerState, teamId: string, p: Project) {
       r.landed++;
       bump(st, p.rookie ? 0.14 : 0.06);
       devNote(s, t, { kind: "landed", text: `"${p.name}" delivered what ${st.name} said it would.`, staffId: st.id, projectId: p.id, react: "grin" });
+      note(s, st, `${p.name}: it worked`, `The numbers from the track are in. "${p.name}" gave what I told you it would, about ${(p.trueGain).toFixed(2)} s a lap. The garage noticed.\n\n${st.name}`);
       if (p.rookie && st.intern) {
         // the project is real work: it teaches the trainee, a little, never more than his own potential
         const gap = Math.max(0, st.intern.potential - st.skill);
@@ -147,7 +154,7 @@ export function onLanding(s: CareerState, teamId: string, p: Project) {
         st.known = clamp(st.known + 0.2, 0, 1);
         news(s, `${st.name}'s first design works. The garage has noticed the trainee.`, { importance: 2, tag: "people" });
         teamPost(s, `${st.name} is a trainee. Remember the name.`, 0.7);
-        pushCard(s, "info", `${st.name} made a part that works`, `${st.name} is still a trainee and the part he pitched delivered. You can offer him a proper job from the People screen when you are ready, if he would beat the person in the seat.`, [{ id: "ok", label: "OK" }], { urgency: 1, deadline: s.day + 10 });
+        note(s, undefined, `${st.name} made a part that works`, `${st.name} is still a trainee and the part he pitched delivered. You can offer him a proper job from the People screen when you are ready, if he would beat the person in the seat.`);
       }
     }
     if (p.trueGain > 0.12) teamPost(s, `The new ${AREA_LABEL[p.area].toLowerCase()} package works. The factory delivered.`, 0.6);
@@ -158,6 +165,7 @@ export function onLanding(s: CareerState, teamId: string, p: Project) {
       r.missed++;
       bump(st, -0.05 * thinSkin(st));
       devNote(s, t, { kind: "missed", text: `"${p.name}" fell well short of what ${st.name} promised.`, staffId: st.id, projectId: p.id, react: scrapReact(st) });
+      note(s, st, `${p.name}: short of the number`, `I have gone through the data from the weekend. "${p.name}" gave far less than I told you it would. I would rather you heard it from me.\n\n${st.name}`);
       if (p.rookie) news(s, `${st.name}'s first part fell short. He is quiet this week.`, { importance: 1, tag: "people" });
     }
     if (p.size !== "S") teamPost(s, `The upgrade did not do what it should have.`, -0.5);
@@ -424,7 +432,7 @@ function resolveSeasonTest(s: CareerState, option: string) {
   }
   recap(s, said);
   devNote(s, t, { kind: "tested", text: `Test day: ${said}` });
-  pushCard(s, "info", "In-season test report", said, [{ id: "ok", label: "OK" }], { urgency: 1, deadline: s.day + 4 });
+  note(s, undefined, "Test day report", `${said}\n\nYour estimates have moved. The Car screen shows the new picture.`);
 }
 
 export function resolveTestDay(s: CareerState, option: string, season = false) {
@@ -457,5 +465,5 @@ export function resolveTestDay(s: CareerState, option: string, season = false) {
   testLearn(t, learn);
   recap(s, said);
   devNote(s, t, { kind: "tested", text: `Pre-season test: ${said}` });
-  pushCard(s, "info", "Pre-season test report", `${said} Three days of running have given the engineers a better idea of the car's real pace. Your estimates have moved closer to the truth. ${nextCarReport(s)}`, [{ id: "ok", label: "OK" }], { urgency: 1, deadline: s.day + 5 });
+  note(s, undefined, "Pre-season test report", `${said} Three days of running have given the engineers a better idea of the car's real pace. Your estimates have moved closer to the truth. ${nextCarReport(s)}`);
 }

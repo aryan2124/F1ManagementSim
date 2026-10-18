@@ -55,10 +55,11 @@ for (const list of Object.values(DRIVERS)) {
   }
 }
 
-export function buildEntries(humanTeamId: string): EntrySpec[] {
+export function buildEntries(humanTeamId: string, field?: string[]): EntrySpec[] {
   const entries: EntrySpec[] = [];
   for (const team of TEAMS) {
     for (const driver of DRIVERS[team.id]) {
+      if (field && !field.includes(driver.id)) continue;
       entries.push({ id: driver.id, driver, team, human: team.id === humanTeamId });
     }
   }

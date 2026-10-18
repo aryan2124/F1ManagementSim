@@ -1,3 +1,5 @@
+import { SetPicker } from "./SetPicker";
+import { advisePit, bestSet } from "../sim/tyreSets";
 import { SkipPrompt, type NetSkip } from "./SkipPrompt";
 import { useEffect, useRef, useState } from "react";
 import { PLink } from "./career/Profile";
@@ -390,6 +392,9 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
   const inPit = car.status === "pit_in" || car.status === "pit_stop" || car.status === "pit_out";
   const canPit = car.status === "racing" && (car.lap + 1 < sim.cfg.laps || sim.inc.red.active) && !car.pitRequest;
   const [swap, setSwap] = useState(false);
+  const [pitSet, setPitSet] = useState("");
+  const list = sim.setListFor(car);
+  const pitAdv = list.length ? advisePit(list, Math.max(1, sim.cfg.laps - car.lap - 1), 1 / Math.max(10, sim.life.M), !!sim.weather && car.wetD > 0.3, car.setId) : undefined;
   const [fuel, setFuel] = useState<"min" | "std" | "full">("std");
   const rl = sim.cfg.rules;
   const boosting = car.boostUntil > sim.tick;
@@ -540,6 +545,16 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
                 </button>
               </div>
             ) : (
+              list.length ? (
+                <div className="pitpick">
+                  <SetPicker sets={list.filter((x) => x.id !== car.setId)} value={pitSet} onChange={setPitSet} advice={pitAdv?.set?.id} />
+                  {pitAdv?.why && <small className="dim">{pitAdv.why}</small>}
+                  <button className="btn" disabled={!canPit} onClick={() => {
+                    const x = list.find((y) => y.id === pitSet) ?? pitAdv?.set ?? bestSet(list, car.tyre.compound, car.setId);
+                    if (x) sim.command({ type: "pit", carId: car.id, compound: x.compound, setId: x.id, swap, fuel });
+                  }}>BOX FOR {pitSet || pitAdv?.set?.id || "AUTO"}</button>
+                </div>
+              ) : (
               <div className="seg five">
                 {(["S", "M", "H", "I", "W"] as Compound[]).map((c) => (
                   <button key={c} disabled={!canPit} className={sets && (sets[c] ?? 1) <= 0 ? "used" : ""} title={sets && (sets[c] ?? 1) <= 0 ? `No fresh ${COMPOUNDS[c].name}s left: a used set goes on` : `Box for ${COMPOUNDS[c].name}${sets && sets[c] !== undefined ? ` (${sets[c]} fresh left)` : ""}`} onClick={() => sim.command({ type: "pit", carId: car.id, compound: c, swap, fuel })}>
@@ -548,6 +563,7 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
                   </button>
                 ))}
               </div>
+              )
             )}
           </div>
           {(car.damage.aero > 0.03 || car.damage.floor > 0.03 || car.damage.flat > 0.03 || car.damage.puncture) && (

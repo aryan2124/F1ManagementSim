@@ -12,6 +12,8 @@ import { COMPOUNDS, fmtLap } from "../sim/engine";
 import type { Compound } from "../sim/types";
 import { RaceView } from "../render/RaceView";
 import { CompoundBadge } from "./Briefing";
+import { SetPicker } from "./SetPicker";
+import { adviseQuali, findSet } from "../sim/tyreSets";
 import { Minimap, RadioFeed, SECTOR_COLORS, fmtClock, hex } from "./RaceScreen";
 import { SectorsView } from "./SectorTable";
 import { RadarPanel, WeatherChip } from "./WeatherPanel";
@@ -288,16 +290,20 @@ function QualiCard({ session, car }: { session: QualiSession; car: QCar }) {
   const seg = sim.segment - 1;
   const [compound, setCompound] = useState<Compound>("S");
   const [fresh, setFresh] = useState(true);
+  const [setId, setSetId] = useState("");
   const [laps, setLaps] = useState<1 | 2>(1);
   const out = car.eliminatedIn !== 0 && car.eliminatedIn < sim.segment;
   const live = sim.phase === "running" && !sim.chequered && !sim.red.active;
-  const left = car.sets[compound];
-  const fitted = car.compound === compound;
-  const canNew = left > 0;
-  const canUsed = fitted;
-  const wantNew = fresh || !canUsed;
+  const hasList = car.setList.length > 0;
+  const chosen = hasList ? findSet(car.setList, setId) : undefined;
+  const advice = hasList ? adviseQuali(car.setList, sim.segment, sim.wetNow?.() ?? false) : undefined;
+  const left = car.sets[chosen ? chosen.compound : compound];
+  const fitted = chosen ? car.setId === chosen.id : car.compound === compound;
+  const canNew = chosen ? chosen.runs === 0 : left > 0;
+  const canUsed = chosen ? chosen.runs > 0 && chosen.wear < 0.8 : fitted;
+  const wantNew = chosen ? chosen.runs === 0 : fresh || !canUsed;
   const ready = live && car.phase === "garage" && sim.tick >= car.readyTick && !out;
-  const choiceOk = wantNew ? canNew : canUsed;
+  const choiceOk = chosen ? canNew || canUsed : wantNew ? canNew : canUsed;
   const canGo = ready && choiceOk;
   const why = !ready ? "" : wantNew && !canNew ? `No new ${COMPOUNDS[compound].name} sets left. Pick another tyre${canUsed ? " or USED" : ""}.` : false ? `USED only works on the tyre already fitted (${COMPOUNDS[car.compound].name}). A different compound always needs a NEW set.` : "";
 
@@ -334,27 +340,32 @@ function QualiCard({ session, car }: { session: QualiSession; car: QCar }) {
               </span>
             ))}
           </div>
-          <div className="ctl">
-            <span>TYRE</span>
-            <div className="seg five">
-              {(["S", "M", "H", "I", "W"] as Compound[]).map((c) => (
-                <button key={c} className={compound === c ? "on" : ""} onClick={() => setCompound(c)}>
-                  <CompoundBadge c={c} size={16} />
-                </button>
-              ))}
+          {hasList ? (
+            <div className="ctl col">
+              <span>TYRE SET</span>
+              <SetPicker sets={car.setList} value={setId} onChange={(id) => { setSetId(id); const x = findSet(car.setList, id); if (x) setCompound(x.compound); }} fitted={car.setId} advice={advice?.id} />
             </div>
-          </div>
-          <div className="ctl">
-            <span>SET</span>
-            <div className="seg">
-              <button className={wantNew ? "on" : ""} disabled={!canNew} title="A fresh set: full grip, uses up one of your sets" onClick={() => setFresh(true)}>
-                {canNew ? `NEW x${left}` : "NONE LEFT"}
-              </button>
-              <button className={!wantNew ? "on" : ""} disabled={!canUsed} title="Reuse the set already on the car, with the wear it has" onClick={() => setFresh(false)}>
-                {canUsed ? `USED ${Math.round(car.wear * 100)}% worn` : "USED n/a"}
-              </button>
-            </div>
-          </div>
+          ) : (
+            <>
+              <div className="ctl">
+                <span>TYRE</span>
+                <div className="seg five">
+                  {(["S", "M", "H", "I", "W"] as Compound[]).map((c) => (
+                    <button key={c} className={compound === c ? "on" : ""} onClick={() => setCompound(c)}>
+                      <CompoundBadge c={c} size={16} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="ctl">
+                <span>SET</span>
+                <div className="seg">
+                  <button className={wantNew ? "on" : ""} disabled={!canNew} onClick={() => setFresh(true)}>{canNew ? `NEW x${left}` : "NONE LEFT"}</button>
+                  <button className={!wantNew ? "on" : ""} disabled={!canUsed} onClick={() => setFresh(false)}>{canUsed ? `USED ${Math.round(car.wear * 100)}% worn` : "USED n/a"}</button>
+                </div>
+              </div>
+            </>
+          )}
           <div className="ctl">
             <span>LAPS</span>
             <div className="seg">
@@ -369,7 +380,7 @@ function QualiCard({ session, car }: { session: QualiSession; car: QCar }) {
           <div className="ctl pit">
             <span>RUN</span>
             <div className="seg">
-              <button disabled={!canGo || car.auto} onClick={() => sim.command({ type: "go", carId: car.id, compound, fresh: wantNew, laps })}>
+              <button disabled={!canGo || car.auto} onClick={() => sim.command({ type: "go", carId: car.id, compound: chosen ? chosen.compound : compound, fresh: wantNew, laps, setId: chosen?.id })}>
                 GO OUT
               </button>
               <button disabled={car.phase !== "push" && car.phase !== "out"} onClick={() => sim.command({ type: "box", carId: car.id })}>

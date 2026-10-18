@@ -12,6 +12,9 @@ import { QualiScreen } from "../QualiScreen";
 import { RaceScreen } from "../RaceScreen";
 import { Results } from "../Results";
 import { PROGRAMME_LABEL, type Programme, type SessionKind, type SetupVec } from "../../career/types";
+import { setKeyFor, allocTotal } from "../../career/weekend";
+import { setLabel } from "../../sim/tyreSets";
+import { SetPicker } from "../SetPicker";
 import { failuresOf, raceExtras, planSession, extrasFromRows, rulesBrief, setupReview } from "../../career/weekend";
 import { TRIM, changeSummary, engineersGuess } from "../../career/setup";
 import { driversOf } from "../../career/finance";
@@ -51,7 +54,8 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
   const [driver, setDriver] = useState(mine[0]?.id ?? "");
   const [help, setHelp] = useState(false);
   const [ask, setAsk] = useState(false);
-  const [fresh, setFresh] = useState(false);
+  const [setId, setSetId] = useState<string>("");
+  const [alloc, setAllocS] = useState(ws.alloc ?? ws.allocRec?.alloc ?? { S: 4, M: 5, H: 4 });
   const axes = ws.axes;
   const rows = ws.axes.concat([TRIM_AXIS]);
   const runs = ws.runs ?? [];
@@ -67,13 +71,47 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
   peak.current = Math.max(peak.current, ws.runsLeft);
   const total = peak.current;
   const pct = (v: number) => `${((v + 1) / 2) * 100}%`;
-  const used = ws.fresh?.[driver] ?? {};
-  const freshLeft = Math.max(0, 3 - ((used.S ?? 0) + (used.M ?? 0) + (used.H ?? 0)));
+  const myList = ws.setList?.[setKeyFor(s, driver)] ?? [];
+  const dry = myList.filter((x) => x.compound === "S" || x.compound === "M" || x.compound === "H");
+  const picked = dry.find((x) => x.id === setId);
+  const allocTot = allocTotal(ws.sprint);
+  const allocSum = alloc.S + alloc.M + alloc.H;
+  const rec = ws.allocRec;
   const nameOf = (id: string) => s.drivers[id]?.spec.code ?? id;
   return (
     <div className={`theme-garage c-garage${net ? "" : " screen"}`}>
       <ScreenBanner theme="garage" />
       <PartsPanel s={s} d={d} />
+      {!ws.setList && rec && (
+        <section className="panel c-alloc">
+          <h3>TYRE ALLOCATION FOR THE WEEKEND</h3>
+          <p className="small">You take {allocTot} dry sets per car (plus the wets you always carry). Choose the split before anything runs. Sets used in practice and qualifying are not there on Sunday.</p>
+          <div className="c-allocrow">
+            {(["S", "M", "H"] as const).map((c) => (
+              <div key={c} className={`c-allocbox c-${c}`}>
+                <b>{c === "S" ? "SOFT" : c === "M" ? "MEDIUM" : "HARD"}</b>
+                <div className="seg"><button disabled={alloc[c] <= 1} onClick={() => setAllocS({ ...alloc, [c]: alloc[c] - 1 })}>-</button><span>{alloc[c]}</span><button disabled={allocSum >= allocTot} onClick={() => setAllocS({ ...alloc, [c]: alloc[c] + 1 })}>+</button></div>
+              </div>
+            ))}
+            <span className={allocSum === allocTot ? "dim small" : "warn small"}>{allocSum} of {allocTot}</span>
+          </div>
+          <p className="small"><b>The engineers recommend {rec.alloc.S} soft, {rec.alloc.M} medium, {rec.alloc.H} hard{rec.sure ? "" : " (a rough guess)"}.</b></p>
+          <ul className="small dim">{rec.why.map((w, i) => <li key={i}>{w}</li>)}</ul>
+          <div className="row-btns">
+            <button className="btn" onClick={() => setAllocS(rec.alloc)}>USE THEIR SPLIT</button>
+            <button className="btn primary" disabled={allocSum !== allocTot} onClick={() => d({ type: "setAlloc", alloc })}>CONFIRM {alloc.S}/{alloc.M}/{alloc.H}</button>
+          </div>
+        </section>
+      )}
+      {ws.setList && (
+        <section className="panel c-alloc">
+          <h4>YOUR TYRES <span className="dim small">(carried through practice, qualifying and the race)</span></h4>
+          {mine.map((m) => {
+            const l = (ws.setList?.[setKeyFor(s, m.id)] ?? []).filter((x) => x.compound === "S" || x.compound === "M" || x.compound === "H");
+            return <div key={m.id} className="c-setrow"><b>{m.spec.code}</b>{l.map((x) => <span key={x.id} className={`setchip c-${x.compound}`}>{x.id} <i>{setLabel(x)}</i></span>)}</div>;
+          })}
+        </section>
+      )}
       <section className="panel">
         <h3>THE GARAGE: PRACTICE {ws.sprint ? "(SPRINT WEEKEND: ONE SESSION)" : `(${ws.sessionsLeft} SESSION${ws.sessionsLeft === 1 ? "" : "S"} LEFT)`}</h3>
         <div className="c-pips" title="Runs left in this session">
@@ -90,7 +128,7 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
             <p><b>The drivers:</b> after a run the driver tells you his two biggest complaints. They are honest but they are HIS: each driver has his own taste, so the two of them will disagree, and a poor reporter can point the wrong way. You pick the compromise. A driver who is at home in the car is quicker and steadier.</p>
             <p><b>The engineers' guess:</b> it comes from the simulator. It improves with runs but it carries a built-in error that more runs do not remove (a better simulator facility makes it smaller). Your own lap times can prove it wrong.</p>
             <p><b>Trim:</b> toward qualifying buys one-lap pace and costs tyre wear on Sunday; toward the race does the opposite. It only shows in qualifying simulations and race simulations.</p>
-            <p><b>Tyres:</b> a run on fresh tyres is cleaner but uses one of that driver's sets (three at most in practice), and they come off what he has for the weekend.</p>
+            <p><b>Tyres:</b> a run on fresh tyres is cleaner but uses one of that driver's sets and it comes off what the team has for the weekend. A used set carries its wear into the next session.</p>
             <p><b>Conditions:</b> the forecast moves the best setting (a wet race wants more downforce), and the track rubbers in between sessions, so old readings go a little stale. The notebook remembers last year's setup here as a starting point.</p>
             {ws.ruleNotes.map((n, i) => <p key={i} className="warn small">Rule this weekend: {n}</p>)}
             {ws.weatherCard && <p className="small">Weather card: {ws.weatherCard.kind}, rain chance {Math.round(ws.weatherCard.chance[0] * 100)} to {Math.round(ws.weatherCard.chance[1] * 100)}%.</p>}
@@ -173,9 +211,13 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
           </div>
           <div className="c-row"><span>Driver</span><div className="seg">{mine.map((m) => <button key={m.id} className={driver === m.id ? "on" : ""} onClick={() => setDriver(m.id)}>{m.spec.code}</button>)}</div></div>
           <p className="small dim">{nameOf(driver)} is {DRIVER_WORD(ws.confidence[driver] ?? 0.4)} (from his last run).</p>
-          <label className="set-check small"><input type="checkbox" checked={fresh} disabled={freshLeft <= 0} onChange={(e) => setFresh(e.target.checked)} /> Fresh tyres: cleaner times, uses a set ({freshLeft} left for {nameOf(driver)} in practice)</label>
+          <div className="c-sets">
+            <p className="small"><b>Which set goes on?</b> <span className="dim">A new set gives cleaner times. A used set is quicker to get a read on, but it carries its wear, and every set you run now is one less on Sunday. Leave it on AUTO and the garage picks.</span></p>
+            <SetPicker sets={dry} value={setId} onChange={setSetId} />
+            {!ws.setList && <p className="small dim">Your sets are unpacked when you confirm the split above or send the first car out.</p>}
+          </div>
           <div className="row-btns">
-            <button className="btn primary big" disabled={ws.runsLeft <= 0} onClick={() => d({ type: "practiceRun", programme: prog, setup, driverId: driver, fresh })}>
+            <button className="btn primary big" disabled={ws.runsLeft <= 0} onClick={() => d({ type: "practiceRun", programme: prog, setup, driverId: driver, setId: picked?.id })}>
               SEND HIM OUT
             </button>
             <span className="dim small">Programme: {PROGRAMME_LABEL[prog]}</span>
@@ -393,8 +435,8 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
           const r = qs.sim.results();
           rows.current = r;
           const order = r.map((x) => x.carId);
-          const ex = extrasFromRows(r, plan!.humanIds);
-          d({ type: "recordSession", kind: kind as SessionKind, order, points: {}, grid: order, dnf: [], locks: ex.locks, used: ex.used });
+          const ex = extrasFromRows(r, plan!.humanIds, qs.sim.finalSets());
+          d({ type: "recordSession", kind: kind as SessionKind, order, points: {}, grid: order, dnf: [], locks: ex.locks, used: ex.used, sets: ex.sets });
           setQs(null);
           setView("play");
         }}
@@ -425,12 +467,13 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
         onBack={onExit}
         locks={plan!.locks}
         sets={plan!.raceCfg?.tyreSets}
+        setLists={plan!.raceCfg?.tyreSetList}
         pitLane={!!ws.parcBroken}
         extraRules={rulesBrief(plan!.raceCfg?.rules, plan!.laps)}
-        onStart={(tyres: Record<string, Compound>) => {
+        onStart={(tyres: Record<string, Compound>, startSets?: Record<string, string>) => {
           const locked: Record<string, Compound> = {};
           if (plan!.locks) for (const id of plan!.humanIds) if (plan!.locks[id]) locked[id] = plan!.locks[id];
-          const cfg = { ...plan!.raceCfg!, startTyres: { ...plan!.aiTyres, ...tyres, ...locked } };
+          const cfg = { ...plan!.raceCfg!, startTyres: { ...plan!.aiTyres, ...tyres, ...locked }, startSets: { ...(plan!.raceCfg!.startSets ?? {}), ...(startSets ?? {}) } };
           setRs(new RaceSession(cfg, plan!.humanIds));
           lastKind.current = kind as SessionKind;
           setView("race");

@@ -27,6 +27,8 @@ export interface WeekendSettings {
   weather?: "random" | "off";
   /** AI strategy strength, 0 easy, 1 normal, 2 hard. */
   difficulty?: 0 | 1 | 2;
+  /** Test weekends: only these drivers start (all of them when missing). */
+  field?: string[];
 }
 
 export function qualiWeather(s: WeekendSettings): WeatherSpec {
@@ -63,7 +65,7 @@ export function lapsFor(meta: CircuitMeta, track: TrackModel, distance: Distance
 
 export function createWeekend(settings: WeekendSettings): Weekend {
   const { meta, track } = loadCircuit(settings.circuitId);
-  const entries = buildEntries(settings.teamId);
+  const entries = buildEntries(settings.teamId, settings.field);
   const laps = lapsFor(meta, track, settings.distance);
   const rng = new Rng(settings.seed + 77);
   const aiTyres: Record<string, Compound> = {};

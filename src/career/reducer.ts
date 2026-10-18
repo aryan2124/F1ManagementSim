@@ -28,7 +28,7 @@ import { castVote, persuade, trade } from "./vote";
 import { logSpend } from "./log";
 import { rulesOf } from "./eras";
 import { PART_NAME, fitNew } from "./powertrain";
-import { endPractice, practiceRun, recordSession, simulateWeekend } from "./weekend";
+import { endPractice, practiceRun, recordSession, setAlloc, simulateWeekend } from "./weekend";
 import { CFG } from "./config";
 import { fmtMoney, round2 } from "./util";
 import type { Action, CareerState } from "./types";
@@ -309,7 +309,7 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       return good(`${st.name} released. Payout ${fmtMoney(st.salary * left * 0.4)}.`);
     }
     case "practiceRun": {
-      const out = practiceRun(s, a.programme, a.setup, a.driverId, { fresh: a.fresh });
+      const out = practiceRun(s, a.programme, a.setup, a.driverId, { fresh: a.fresh, setId: a.setId });
       return out.length ? good(out[0]) : fail("No runs left.");
     }
     case "setTeller": {
@@ -351,8 +351,12 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       endPractice(s);
       syncWeekendDay(s);
       return good();
+    case "setAlloc": {
+      const r = setAlloc(s, a.alloc);
+      return r.ok ? good(r.message) : fail(r.message);
+    }
     case "recordSession":
-      recordSession(s, a.kind, a.order, a.points, a.grid, a.dnf, a.moods, { locks: a.locks, used: a.used, failed: a.failed, fastest: a.fastest, pit: a.pit, radio: a.radio });
+      recordSession(s, a.kind, a.order, a.points, a.grid, a.dnf, a.moods, { locks: a.locks, used: a.used, sets: a.sets, failed: a.failed, fastest: a.fastest, pit: a.pit, radio: a.radio });
       syncWeekendDay(s);
       return good();
     case "simWeekend": {

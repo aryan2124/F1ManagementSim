@@ -23,6 +23,7 @@ import type {
 
 const KEY_KINDS = new Set<SimEventKind>(["overtake", "crash", "spin", "contact", "penalty", "failure", "sc_deployed", "vsc", "red_flag", "damage", "gravel", "wall", "lockup", "fastest_lap", "weather", "lightning"]);
 import { isWetCompound } from "./types";
+import { bestSet, cloneSets, findSet, freshCounts, type TyreSet } from "./tyreSets";
 
 /** Fixed simulation step in seconds. Everything is deterministic at this step. */
 export const DT = 0.1;
@@ -148,6 +149,7 @@ export class RaceSim {
   private checkpointDone = new Set<number>();
   /** Fresh sets left (copy of the config, so replays stay clean). */
   private setsLeft: Record<string, Partial<Record<Compound, number>>> = {};
+  private setLists: Record<string, TyreSet[]> = {};
   private heatDone = false;
   /** Stage racing: points banked at the end of each stage, by car id. */
   stagePoints = new Map<string, number>();
@@ -189,6 +191,7 @@ export class RaceSim {
     const gridIds = cfg.grid ?? cfg.entries.map((e) => e.id);
     const entryById = new Map(cfg.entries.map((e) => [e.id, e]));
     this.setsLeft = JSON.parse(JSON.stringify(cfg.tyreSets ?? {}));
+    for (const [k, l] of Object.entries(cfg.tyreSetList ?? {})) this.setLists[k] = cloneSets(l);
     const stealth = cfg.noPenalties || cfg.noIncidents;
     gridIds.forEach((id, slot) => {
       const entry = entryById.get(id) as EntrySpec;
@@ -259,7 +262,7 @@ export class RaceSim {
       };
       this.cars.push(car);
       this.byId.set(id, car);
-      this.takeSet(car, compound, true);
+      this.takeSet(car, compound, true, cfg.startSets?.[id]);
     });
     const teamIds = [...new Set(cfg.entries.map((e) => e.team.id))];
     for (const c of this.cars) c.boxOff = teamIds.indexOf(c.entry.team.id) * BOX_SPACING;
@@ -344,12 +347,18 @@ export class RaceSim {
       case "startTyre":
         if (this.phase === "grid" && this.tick < this.lightsAt - 5 && car.entry.human && !this.cfg.startLocks?.[car.id]) {
           const c = this.cfg.rules?.oneCompound && (cmd.compound === "S" || cmd.compound === "H") ? "M" : cmd.compound;
+          // hand the set that was on the car back, as it was before the race (it has not run yet)
+          const l = this.setLists[this.setKey(car)];
+          const was = l ? findSet(l, car.setId) : undefined;
+          if (was) { was.runs = Math.max(0, was.runs - 1); was.log.pop(); car.setId = undefined; }
           car.tyre = { compound: c, wear: 0, ageLaps: 0 };
+          this.takeSet(car, c, true, cmd.setId);
         }
         break;
       case "pit":
         if (car.status === "racing" && car.lap + 1 < this.cfg.laps) {
           car.pitRequest = cmd.compound;
+          car.pitSetId = cmd.setId;
           car.pitSwap = !!cmd.swap && !!this.cfg.rules?.batterySwap;
           car.pitFuel = cmd.fuel ?? "std";
           this.emit("pit_in", car.id, undefined, `${car.entry.driver.code}: Copy, box this lap for ${COMPOUNDS[cmd.compound].name}s.`);
@@ -539,9 +548,43 @@ export class RaceSim {
     }
   }
 
-  /** Uses a fresh set of this compound. When none is left the car gets a used one: it starts worn. */
-  private takeSet(car: CarState, compound: Compound, start: boolean) {
-    const key = this.cfg.rules?.tyrePool ? car.entry.team.id : car.id;
+  private setKey(car: CarState): string {
+    return this.cfg.rules?.tyrePool ? car.entry.team.id : car.id;
+  }
+
+  /** Put the wear of the tyre on the car back onto its set, so the set remembers it. */
+  private stow(car: CarState) {
+    const l = this.setLists[this.setKey(car)];
+    const set = l ? findSet(l, car.setId) : undefined;
+    if (set) set.wear = Math.max(set.wear, car.tyre.wear);
+  }
+
+  /**
+   * Fit a set. With a list of physical sets the one asked for is used (else the best of the compound, a fresh one first);
+   * with only counts a fresh set is used up, and when none is left the car gets a used one that starts worn.
+   */
+  private takeSet(car: CarState, compound: Compound, start: boolean, setId?: string) {
+    const key = this.setKey(car);
+    const list = this.setLists[key];
+    if (list) {
+      let set = findSet(list, setId);
+      if (!set || set.compound !== compound || set.id === car.setId || (set.wear >= 0.8 && set.runs > 0)) set = bestSet(list, compound, car.setId);
+      if (set) {
+        car.setId = set.id;
+        if (set.runs === 0) car.tyre.wear = 0;
+        else {
+          car.tyre.wear = set.wear;
+          car.tyre.ageLaps = Math.round(set.wear * (this.life[compound] ?? 20));
+        }
+        set.runs++;
+        set.log.push(this.cfg.sessionLabel ?? "RACE");
+        return;
+      }
+      car.setId = undefined;
+      car.tyre.wear = 0.3;
+      if (!start) this.emit("rule", car.id, undefined, `${car.entry.driver.code}: no ${COMPOUNDS[compound].name}s left in the garage, a scrubbed old set goes on.`);
+      return;
+    }
     const inv = this.setsLeft[key];
     if (!inv || inv[compound] === undefined) return;
     if ((inv[compound] as number) > 0) inv[compound] = (inv[compound] as number) - 1;
@@ -551,8 +594,21 @@ export class RaceSim {
     }
   }
 
+  /** The sets each human car has, with the wear they carry now. Call when the session is over. */
+  finalSets(): Record<string, TyreSet[]> {
+    for (const c of this.cars) this.stow(c);
+    return Object.fromEntries(Object.entries(this.setLists).map(([k, l]) => [k, cloneSets(l)]));
+  }
+
+  /** The physical sets this car can choose from (empty when the team has no inventory). */
+  setListFor(car: CarState): TyreSet[] {
+    return this.setLists[this.setKey(car)] ?? [];
+  }
+
   /** Fresh sets this car can still use, for the pit wall display. */
   setsFor(car: CarState): Partial<Record<Compound, number>> | undefined {
+    const l = this.setLists[this.setKey(car)];
+    if (l) return freshCounts(l);
     return this.setsLeft[this.cfg.rules?.tyrePool ? car.entry.team.id : car.id];
   }
 
@@ -825,8 +881,10 @@ export class RaceSim {
         car.stintLaps = 0;
         const req = car.pitRequest ?? "M";
         const nc = this.cfg.rules?.oneCompound && (req === "S" || req === "M" || req === "H") ? "M" : req;
+        this.stow(car);
         car.tyre = { compound: nc, wear: 0, ageLaps: 0 };
-        this.takeSet(car, nc, false);
+        this.takeSet(car, nc, false, car.pitSetId);
+        car.pitSetId = undefined;
         if (!car.compoundsUsed.includes(nc)) car.compoundsUsed.push(nc);
         car.stops++;
         this.stopLog.push({ carId: car.id, lap: car.lap + 1, secs: car.stopSecs ?? 0, from: car.stopFrom ?? "M", to: nc, posBefore: car.position });

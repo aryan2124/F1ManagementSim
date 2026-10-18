@@ -1,5 +1,9 @@
 # BOX BOX
 
+**Play it here: https://box-box.f1-box-box.workers.dev**
+
+(That is the live site. Whatever is on the `main` branch of the GitHub repo is what ends up there, a minute or two after each push. See section 3.)
+
 A click-to-advance, multiplayer-ready F1 management game with pixel-art race weekends.
 Real 2026 teams and drivers, real circuit layouts, a playable qualifying session and the real sporting rules.
 Personal and private project: the real names and track shapes are used without licences, so do not publish or sell it.
@@ -34,22 +38,54 @@ npm run typecheck  # app and worker types
 npm run build      # production bundle into dist/
 ```
 
-## 3. Deploy to Cloudflare
+## 3. Put it on GitHub and make Cloudflare deploy it automatically
 
-1. Create a free account at https://dash.cloudflare.com.
-2. Log in from the terminal:
-   ```
-   npx wrangler login
-   ```
-3. Deploy:
-   ```
-   npm run deploy
-   ```
-   Wrangler builds the site, uploads the static assets, the Worker and the `LeagueRoom` Durable Object (migration `v1` is already in `wrangler.jsonc`). It prints a `*.workers.dev` URL.
-4. Optional custom domain: Cloudflare dashboard, Workers & Pages, your `box-box` Worker, Settings, Domains & Routes, Add custom domain.
-5. Optional auto-deploy: push the folder to GitHub, then in the dashboard go to Workers & Pages, box-box, Settings, Build, Connect to Git. Build command `npm run build`, deploy command `npx wrangler deploy`.
+Do this once. After that, every push to `main` goes live by itself.
 
-Durable Objects need the Workers Paid plan or the free SQLite-backed tier; if wrangler complains, check your plan under Workers & Pages, Plans.
+### 3a. Push the code to GitHub
+
+1. Install Git (https://git-scm.com) if `git --version` does not work.
+2. Create an empty repository on GitHub: github.com, New repository. Pick a name (for example `box-box`), choose Private, and do NOT tick "Add a README" or any other starter file.
+3. Unzip the project, open a terminal in the `box-box` folder and run (replace the URL with the one GitHub shows you):
+   ```
+   git remote add origin https://github.com/YOUR-USERNAME/box-box.git
+   git branch -M main
+   git push -u origin main
+   ```
+   The zip already contains a git history with one commit on `main`. If `git remote add` says the remote exists, use `git remote set-url origin <url>` instead. If GitHub asks for a password, use a Personal Access Token (GitHub, Settings, Developer settings) or sign in with the GitHub CLI (`gh auth login`).
+4. Later changes: `git add -A`, `git commit -m "what changed"`, `git push`.
+
+### 3b. Connect GitHub to Cloudflare (auto deploy)
+
+1. Go to https://dash.cloudflare.com and sign in (free account is fine).
+2. Workers & Pages, then Create, then Import a repository (Connect to Git). Authorise the Cloudflare GitHub app and pick your `box-box` repo.
+3. Settings on that screen:
+   - Project name: `box-box` (it must match `name` in `wrangler.jsonc`, otherwise the build fails with a name mismatch)
+   - Production branch: `main`
+   - Build command: `npm run build`
+   - Deploy command: `npx wrangler deploy`
+   - Root directory: leave empty
+4. Save and deploy. The first build takes a couple of minutes. Cloudflare reads `.node-version` (22) so the Node version is right.
+5. When it finishes, your site is at **https://box-box.f1-box-box.workers.dev** (the name is `box-box`, then your Cloudflare account subdomain `f1-box-box`, then `workers.dev`). Dashboard, Workers & Pages, box-box shows the link too.
+6. From now on: push to `main` and Cloudflare builds and deploys it. Watch it under box-box, Deployments (or Builds). Pushes to other branches get a preview build only.
+
+The multiplayer rooms (Durable Objects) are created by the deploy through the migrations already in `wrangler.jsonc`. Nothing else to set up.
+
+### 3c. Deploy by hand (no GitHub)
+
+```
+npx wrangler login
+npm run deploy
+```
+This builds and uploads straight from your computer and prints the same workers.dev URL.
+
+### If something goes wrong
+
+- Build fails on type errors: run `npm run typecheck` locally, fix, push again.
+- Name mismatch error: the Cloudflare project name and `name` in `wrangler.jsonc` must both be `box-box`.
+- Durable Object errors: check Workers & Pages, Plans (the SQLite-backed free tier is what this uses).
+- Old version still showing: hard refresh (Ctrl+Shift+R); check Deployments shows a green latest build.
+- Optional custom domain: Workers & Pages, box-box, Settings, Domains & Routes, Add custom domain.
 
 ## 4. How the code is laid out
 
@@ -359,3 +395,11 @@ The big development decisions are scenes with people instead of plain cards. All
 - **In-season test days:** two a season (about a third and two thirds of the way through, two days after a race, only when there is room before the next weekend). One day on a closed track, you choose what it is for: tyre test, correlate the simulator, run a part back to back (only when one is ready or far enough along), a young engineer day, or rest the garage. Each shifts what the engineers know or the mood of the garage, costs a little, and ends with a report. They are in the diary on the Calendar.
 - **Full-body staff:** in the scenes people now stand as whole figures (the portrait's own head on a torso, arms and legs), with a pose that follows how they feel: arms crossed when furious, slumped when stung or sulking, hands on head when pale, hands on hips when proud or pleased, a shrug. Small faces remain in lists.
 - **Ambient sound:** a quiet looping bed (air handling and a far hum) with random small noises on top (keys, a chair, paper, a phone down the corridor). The Car screen sounds like the factory, the Academy like the lab, everything else like the office. It stops on the race weekend screens, follows the mute switch and scales with the sound effects volume.
+
+## Tyre sets (per-set model)
+
+- Before the weekend you choose the allocation of dry sets (soft/medium/hard). The engineers recommend a split from tyre severity, race length, rain chance and how well the team knows its tyres (a rough picture makes it a guess and says so).
+- Every set is a real object (`src/sim/tyreSets.ts`): id (S1, M2...), wear, runs, log. Practice, qualifying and the race all draw from the same list, and wear carries forward. A new set gives cleaner practice times; a used set carries its wear; every set used early is gone on Sunday.
+- The same `SetPicker` list appears on practice, qualifying, race pit stops, safety car and weather prompts, and the race briefing start-tyre choice. The engineers' pick is marked with `*`.
+- Quick sim (SIMULATE A RACE WEEKEND) has a TEST FIELD section to untick teams and drivers (min two cars). Qualifying cut-offs scale for fields of ten or fewer.
+- Not built: a "scrub" bonus for scrubbed sets; Q2 start set uses the compound lock only. Online start-set choice is not yet carried to other players' race config.

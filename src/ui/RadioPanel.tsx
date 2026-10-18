@@ -1,3 +1,5 @@
+import { SetPicker } from "./SetPicker";
+import { advisePit, bestSet } from "../sim/tyreSets";
 import { useEffect, useRef, useState } from "react";
 import type { LiveSession, LiveSim } from "../game/live";
 import type { RaceSession } from "../game/session";
@@ -158,7 +160,13 @@ const PICK: { c: Compound; name: string }[] = [
 function PromptRow({ session, p }: { session: RaceSession; p: Prompt }) {
   const sim = session.sim;
   const [picking, setPicking] = useState(false);
+  const [setId, setSetId] = useState("");
   const car = sim.car(p.carId);
+  const list = sim.setListFor(car);
+  const lapsLeft = Math.max(1, sim.cfg.laps - car.lap - 1);
+  const wetNow = !!sim.weather && car.wetD > 0.3;
+  const adv = list.length ? advisePit(list, lapsLeft, 1 / Math.max(10, sim.life.M), wetNow, car.setId) : undefined;
+  const advised = p.compound ? bestSet(list, p.compound, car.setId) : adv?.set;
   const left = Math.max(0, Math.min(1, (p.expires - sim.tick) / Math.max(1, p.expires - p.tick)));
   const secs = Math.max(0, Math.ceil(((p.expires - sim.tick) * DT)));
   const urgent = secs <= 5;
@@ -176,8 +184,15 @@ function PromptRow({ session, p }: { session: RaceSession; p: Prompt }) {
       <div className="popts">
         {picking ? (
           <>
-            <span className="ppick">FIT WHICH TYRE?</span>
-            {PICK.map((t) => (
+            <span className="ppick">FIT WHICH {list.length ? "SET" : "TYRE"}?</span>
+            {list.length > 0 && (
+              <>
+                <SetPicker sets={list.filter((x) => x.id !== car.setId)} value={setId} onChange={setSetId} advice={advised?.id} auto={false} />
+                {adv?.why && <span className="small dim">{adv.why}</span>}
+                <button className="pcomp rec" disabled={!setId} onClick={() => send(`boxset:${setId}`)}>FIT {setId || "..."}</button>
+              </>
+            )}
+            {!list.length && PICK.map((t) => (
               <button key={t.c} className={`pcomp ${p.compound === t.c ? "rec" : ""}`} title={p.compound === t.c ? "The pit wall's suggestion" : `Fit ${t.name}`} onClick={() => send(`box:${t.c}`)}>
                 <CompoundBadge c={t.c} size={18} /> {t.name}
               </button>

@@ -271,8 +271,8 @@ export function CareerApp({ initial, onExit, net }: { initial: CareerState; onEx
       {tab === "world" && <World s={s} d={d} />}
       {msg && tab !== "today" && <p className="c-msg floating" role="status" onClick={() => setMsg("")} title="Click to dismiss">{msg}</p>}
     </div>}
-    <ConvoPanel s={s} d={d} />
-    <DevRoom s={s} d={d} />
+    {(!weekendLive || peek) && <ConvoPanel s={s} d={d} />}
+    {(!weekendLive || peek) && <DevRoom s={s} d={d} auto={tab === "today"} />}
     <CeremonyOverlay s={s} d={d} />
     </ProfileHost>
   );

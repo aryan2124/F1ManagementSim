@@ -1,3 +1,4 @@
+import type { TyreSet } from "./tyreSets";
 import type { Climate } from "./weather";
 import type { TrackModel } from "./track";
 
@@ -133,6 +134,12 @@ export interface RaceConfig {
   brainSkill?: Record<string, number>;
   /** Fresh tyre sets left per compound (human cars; keyed by team id when the pool rule shares them). A used set starts worn. */
   tyreSets?: Record<string, Partial<Record<Compound, number>>>;
+  /** The physical sets each human car (or team, with the pool rule) has, with their wear. When given, it replaces the counts above. */
+  tyreSetList?: Record<string, TyreSet[]>;
+  /** Which set each human car starts the race on (otherwise the least worn of the chosen compound). */
+  startSets?: Record<string, string>;
+  /** What the log of a set records this session as (FP1, Q, RACE...). */
+  sessionLabel?: string;
   /** Starting radio moods per car id (the career layer passes how each human driver really feels). */
   moods?: Record<string, { morale: number; trust: number; grievance: number; strat?: number }>;
   /** Career regulation modules that change how the race itself runs. */
@@ -236,6 +243,10 @@ export interface CarState {
   sectors: SectorTimes;
   sectorStartTick: number;
   tyre: { compound: Compound; wear: number; ageLaps: number };
+  /** The physical set on the car, when the team has an inventory. */
+  setId?: string;
+  /** The set the player asked for at the next stop. */
+  pitSetId?: string;
   fuel: number; // 0..1
   soc: number; // battery 0..1
   mode: EnergyMode;
@@ -395,7 +406,7 @@ export interface SimEvent {
 }
 
 export type Command =
-  | { type: "pit"; carId: string; compound: Compound; swap?: boolean; fuel?: "min" | "std" | "full" }
+  | { type: "pit"; carId: string; compound: Compound; setId?: string; swap?: boolean; fuel?: "min" | "std" | "full" }
   | { type: "boost"; carId: string }
   | { type: "defend"; carId: string }
   | { type: "cancelPit"; carId: string }
@@ -408,7 +419,7 @@ export type Command =
   /** Send a decoy call on the open radio to mislead rivals. */
   | { type: "dummy"; carId: string }
   /** Online leagues: choose the starting tyre while the car is still on the grid before the lights. */
-  | { type: "startTyre"; carId: string; compound: Compound };
+  | { type: "startTyre"; carId: string; compound: Compound; setId?: string };
 
 export type TeamOrder = "hold" | "letby" | "free" | "pushnow" | "savetyres" | "stayout";
 

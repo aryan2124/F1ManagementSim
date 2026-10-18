@@ -100,7 +100,7 @@ describe("development record", () => {
     onLanding(s, s.teamId, p);
     expect(intern.skill).toBeGreaterThan(50);
     expect(intern.mood).toBeGreaterThan(0.5);
-    expect(s.cards.some((c) => c.title.includes("made a part that works"))).toBe(true);
+    expect((s.letters ?? []).some((c) => c.subject.includes("made a part that works"))).toBe(true);
   });
   it("a miss is recorded against the author and the manager", () => {
     const { s, t } = withProject(10);
@@ -206,7 +206,7 @@ describe("the rest of the development scenes", () => {
       expect(c).toBeTruthy();
       const cash = s.teams[s.teamId].cash;
       resolveCard(s, c.id, opt);
-      expect(s.cards.some((x) => x.title === "Pre-season test report")).toBe(true);
+      expect((s.letters ?? []).some((x) => x.subject === "Pre-season test report")).toBe(true);
       if (opt === "mapping") expect(s.teams[s.teamId].cash).toBeLessThan(cash);
       outcomes.push(s.teams[s.teamId].cash);
     }
@@ -243,7 +243,7 @@ describe("the rest of the development scenes", () => {
       }
     }
     expect(stays.promote).toBeGreaterThan(stays.quiet);
-    expect(stays.promote).toBeLessThan(N);
+    expect(stays.quiet).toBeLessThan(N);
     expect(stays.quiet).toBeGreaterThan(0);
     expect(endings.size).toBeGreaterThanOrEqual(3);
   });

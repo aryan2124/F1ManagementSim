@@ -572,6 +572,13 @@ export interface WeekendState {
   fam?: Record<string, number>;
   /** Fresh tyre sets each driver has burnt in practice. They come off the weekend's allocation. */
   fresh?: Record<string, Partial<Record<"S" | "M" | "H", number>>>;
+  /** The physical tyre sets for the weekend, with their wear, keyed by driver (or by team under the pool rule). */
+  setList?: Record<string, import("../sim/tyreSets").TyreSet[]>;
+  /** The allocation chosen before the weekend (dry sets per driver), and the engineers' recommendation with their reasons. */
+  alloc?: import("../sim/tyreSets").Alloc;
+  allocRec?: { alloc: import("../sim/tyreSets").Alloc; why: string[]; sure: boolean };
+  /** True once the allocation is confirmed (the first run confirms the recommendation if you never did). */
+  allocDone?: boolean;
 }
 
 export type PartKind = "pu" | "gb";
@@ -932,11 +939,12 @@ export type Action =
   | { type: "promise"; driverId: string; kind: PromiseKind }
   | { type: "poachStaff"; staffId: string; offerSalary: number }
   | { type: "buyoutProspect"; id: string }
-  | { type: "practiceRun"; programme: Programme; setup: SetupVec; driverId: string; fresh?: boolean }
+  | { type: "practiceRun"; programme: Programme; setup: SetupVec; driverId: string; fresh?: boolean; setId?: string }
+  | { type: "setAlloc"; alloc: { S: number; M: number; H: number } }
   | { type: "setSetup"; setup: SetupVec; force?: boolean }
   | { type: "setTeller"; teller: import("./threads").Teller }
   | { type: "setTweak"; driverId: string; tweak: SetupVec }
-  | { type: "recordSession"; kind: SessionKind; order: string[]; points: Record<string, number>; grid?: string[]; dnf: string[]; moods?: Record<string, { morale: number; trust: number; grievance: number; strat?: number }>; locks?: Record<string, "S" | "M" | "H">; used?: Record<string, Partial<Record<"S" | "M" | "H", number>>>; failed?: Record<string, PartKind>; fastest?: string; pit?: { stops: number; slow: number; best?: number }; radio?: { carId: string; tag: "bleep" | "refused" | "fatigue" | "over"; text: string }[] }
+  | { type: "recordSession"; kind: SessionKind; order: string[]; points: Record<string, number>; grid?: string[]; dnf: string[]; moods?: Record<string, { morale: number; trust: number; grievance: number; strat?: number }>; locks?: Record<string, "S" | "M" | "H">; used?: Record<string, Partial<Record<"S" | "M" | "H", number>>>; sets?: Record<string, import("../sim/tyreSets").TyreSet[]>; failed?: Record<string, PartKind>; fastest?: string; pit?: { stops: number; slow: number; best?: number }; radio?: { carId: string; tag: "bleep" | "refused" | "fatigue" | "over"; text: string }[] }
   | { type: "endPractice" }
   | { type: "simWeekend" }
   | { type: "sponsor"; id: number; accept: boolean }

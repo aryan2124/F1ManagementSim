@@ -13,8 +13,9 @@ import { loadCircuit, scheduledLaps } from "../game/circuits";
 import { raceWeather, qualiWeather, type WeekendSettings } from "../game/setup";
 import { runQualifying, type QualiConfig, type QualiRow } from "../sim/qualifying";
 import { baseTeam } from "./car";
-import { RaceSim } from "../sim/engine";
+import { COMPOUNDS, RaceSim } from "../sim/engine";
 import { Rng, hashSeed } from "../sim/rng";
+import { WET_ALLOC, bestSet, cloneSets, findSet, makeSets, type Alloc, type TyreSet } from "../sim/tyreSets";
 import { BRAINS, DEFAULT_BRAIN } from "../sim/strategy";
 import type { Compound, EntrySpec, RaceConfig } from "../sim/types";
 import { bestCompoundFor, makeWeather, targetWetness } from "../sim/weather";
@@ -181,6 +182,8 @@ export function startWeekend(s: CareerState): WeekendState {
     weatherCard,
   };
   if (fanRule === "extraRun") ws.runsLeft += 1;
+  ws.allocRec = recommendAlloc(s, race.circuitId, sprint, ws.seed);
+  ws.alloc = { ...ws.allocRec.alloc };
   // the notebook: what the team ran here last time is where this weekend starts
   const book = s.setupBook?.[race.circuitId];
   if (book) {
@@ -229,17 +232,89 @@ export function setupRange(ws: WeekendState, axis: string): [number, number] {
   return [clamp(ws.hint[axis] - hw, -1, 1), clamp(ws.hint[axis] + hw, -1, 1)];
 }
 
-/** Spend a fresh set of tyres on a run, if one is left. Each driver may use three fresh sets in practice. */
-function takeFresh(ws: WeekendState, driverId: string, programme: Programme): boolean {
-  const comp = programme === "qualiSim" ? "S" : programme === "raceSim" || programme === "tyres" ? "H" : "M";
-  const used = ((ws.fresh ??= {})[driverId] ??= {});
-  const total = (used.S ?? 0) + (used.M ?? 0) + (used.H ?? 0);
-  if (total >= 3) return false;
-  used[comp] = (used[comp] ?? 0) + 1;
-  return true;
+export const allocTotal = (sprint: boolean): number => (sprint ? 12 : 13);
+
+/**
+ * The engineers' advice on how to split the weekend's dry sets. It follows the real conditions: how hard the track is on tyres, how long the race is,
+ * the chance of rain. How firm the advice is depends on how well the team really knows its tyres: with a poor picture it is a guess, and it says so.
+ */
+export function recommendAlloc(s: CareerState, circuitId: string, sprint: boolean, seed: number): NonNullable<WeekendState["allocRec"]> {
+  const total = allocTotal(sprint);
+  const meta = loadCircuit(circuitId).meta;
+  const sev = meta.tyreSeverity * (rulesOf(s).tyreSev ?? 1);
+  const laps = scheduledLaps(meta);
+  const rain = raceRainPeak(s, circuitId, seed + 11);
+  const err = s.teams[s.teamId].know.wear.err;
+  const sure = err <= 0.12;
+  const why: string[] = [];
+  let hard = Math.round(1.6 + 2.2 * (sev - 0.9));
+  let soft = Math.round(6.5 - 2 * (sev - 1));
+  why.push(sev > 1.1 ? "This track is hard on tyres, so we want hards for the long stints." : sev < 0.92 ? "This track is kind to tyres, so softs will last and we can lean on them." : "This track is average on tyres.");
+  if (laps >= 62) { hard += 0; why.push(`A long race (${laps} laps) means stints will matter more than one-lap pace.`); }
+  if (rain >= 0.4) { soft -= 1; why.push(`The forecast carries a real chance of rain (about ${Math.round(rain * 100)} percent), so we keep fewer dry sets back and rely on the intermediates and wets we already have.`); }
+  if (!sure) {
+    // a poor picture of the tyres makes the advice noisy
+    const nudge = new Rng(hashSeed(`alloc:${seed}`)).chance(0.5) ? 1 : -1;
+    soft += nudge;
+    why.push("Our tyre numbers are still rough, so treat this as a good guess, not a plan. Tyre work in practice would make it firmer.");
+  } else why.push("Our tyre picture is good, so we trust this split.");
+  hard = clamp(hard, 1, 4);
+  soft = clamp(soft, 4, 9);
+  let med = total - soft - hard;
+  if (med < 2) { soft -= 2 - med; med = 2; }
+  why.push(`That gives ${soft} soft, ${med} medium and ${hard} hard. Qualifying and practice will use softs fast, and every set used in practice is a set you do not have on Sunday.`);
+  return { alloc: { S: soft, M: med, H: hard }, why, sure };
 }
 
-export function practiceRun(s: CareerState, programme: Programme, setup: SetupVec, driverId: string, opts: { fresh?: boolean } = {}): string[] {
+/** Where a driver's sets live: by driver, or by team when the two cars share one pool. */
+export const setKeyFor = (s: CareerState, driverId: string): string => (rulesOf(s).tyrePool ? (s.drivers[driverId]?.teamId ?? driverId) : driverId);
+
+/** Build the weekend's sets from the chosen allocation, once. Older saves without any get the standard split. */
+export function ensureSets(s: CareerState): Record<string, TyreSet[]> {
+  const ws = s.weekend;
+  if (!ws) return {};
+  if (ws.setList) return ws.setList;
+  const base: Alloc = ws.alloc ?? (ws.sprint ? { S: 4, M: 4, H: 4 } : { S: 4, M: 5, H: 4 });
+  const list: Record<string, TyreSet[]> = {};
+  const pool = !!rulesOf(s).tyrePool;
+  for (const d of driversOf(s, s.teamId)) {
+    const key = setKeyFor(s, d.id);
+    if (list[key]) continue;
+    const n = pool ? driversOf(s, s.teamId).length : 1;
+    list[key] = makeSets({ S: base.S * n, M: base.M * n, H: base.H * n }, { I: WET_ALLOC.I * n, W: WET_ALLOC.W * n });
+  }
+  ws.setList = list;
+  ws.allocDone = true;
+  return list;
+}
+
+/** Confirm (or change) the allocation. Only possible before anything has run. */
+export function setAlloc(s: CareerState, a: Alloc): { ok: boolean; message: string } {
+  const ws = s.weekend;
+  if (!ws) return { ok: false, message: "No weekend is open." };
+  if (ws.allocDone || ws.setList) return { ok: false, message: "The sets are already unpacked for this weekend." };
+  const total = allocTotal(ws.sprint);
+  const S = Math.round(a.S), M = Math.round(a.M), H = Math.round(a.H);
+  if (S < 1 || M < 1 || H < 1) return { ok: false, message: "Take at least one set of each compound." };
+  if (S + M + H !== total) return { ok: false, message: `The allocation is ${total} dry sets, not ${S + M + H}.` };
+  ws.alloc = { S, M, H };
+  ensureSets(s);
+  return { ok: true, message: `Allocation confirmed: ${S} soft, ${M} medium, ${H} hard.` };
+}
+
+/** What a practice run does to a set: the wear it takes. */
+const RUN_WEAR: Record<string, number> = { setup: 0.05, qualiSim: 0.1, raceSim: 0.4, tyres: 0.5, part: 0 };
+
+function pickPracticeSet(list: TyreSet[], programme: Programme, fresh: boolean, setId?: string): TyreSet | undefined {
+  const named = findSet(list, setId);
+  if (named && named.compound !== "I" && named.compound !== "W" && !(named.wear >= 0.8 && named.runs > 0)) return named;
+  const comp = programme === "qualiSim" ? "S" : programme === "raceSim" || programme === "tyres" ? "H" : "M";
+  if (fresh) return bestSet(list, comp) ?? undefined;
+  // a worn set first when none was asked for
+  return [...list].filter((x) => x.compound === comp && x.runs > 0 && x.wear < 0.7).sort((a, b) => a.wear - b.wear)[0] ?? bestSet(list, comp);
+}
+
+export function practiceRun(s: CareerState, programme: Programme, setup: SetupVec, driverId: string, opts: { fresh?: boolean; setId?: string } = {}): string[] {
   const ws = s.weekend;
   const out: string[] = [];
   if (!ws || ws.stage !== "practice" || ws.runsLeft <= 0) return out;
@@ -267,8 +342,18 @@ export function practiceRun(s: CareerState, programme: Programme, setup: SetupVe
   }
   const drv = s.drivers[driverId];
   const wetRun = rng.chance(clamp(raceRainPeak(s, ws.circuitId, ws.seed + 11 * (ws.sessionsLeft + 1)) * 0.9, 0, 0.8));
-  const fresh = !!opts.fresh && takeFresh(ws, driverId, programme);
-  if (opts.fresh && !fresh) out.push("No fresh tyres left for him in practice: the run was on used rubber.");
+  const lists = ensureSets(s);
+  const list = lists[setKeyFor(s, driverId)] ?? [];
+  const set = pickPracticeSet(list, programme, !!opts.fresh, opts.setId);
+  const fresh = !!set && set.runs === 0;
+  const worn = set && set.runs > 0 ? clamp(set.wear, 0, 0.8) : 0;
+  if (set) {
+    set.runs++;
+    set.wear = round2(set.wear + (RUN_WEAR[programme] ?? 0.05) * (programme === "tyres" || programme === "raceSim" ? 1 : 1));
+    set.log.push(`FP${ws.sessions0 - ws.sessionsLeft + 1}`);
+    out.push(`Run on set ${set.id} (${COMPOUNDS[set.compound].name}, ${fresh ? "a new set" : `${Math.round(worn * 100)}% worn before the run`}).`);
+    if (set.wear >= 0.8) out.push(`Set ${set.id} is finished: it is too worn to be worth putting on again.`);
+  } else out.push("There was no usable set left in the garage for that run: it went out on scrubbed old rubber.");
   if (wetRun) out.push("Rain at the track during this run: the numbers are rougher than usual.");
   // the car goes out as the sliders say (unless the rules have locked the setup)
   const used: SetupVec = locked ? { ...ws.setup } : { ...setup };
@@ -286,15 +371,15 @@ export function practiceRun(s: CareerState, programme: Programme, setup: SetupVe
   const runs = (ws.runs ??= []);
   let delta: number | null = null;
   if (timed && drv) {
-    const raw = lapLossSecs(ws, setupFor(ws, driverId, used), poleRef, drv, programme === "raceSim" ? "race" : "quali") + rng.gauss() * runNoise(eng, fresh, wetRun, programme);
+    const raw = lapLossSecs(ws, setupFor(ws, driverId, used), poleRef, drv, programme === "raceSim" ? "race" : "quali") + rng.gauss() * runNoise(eng, fresh, wetRun, programme) * (programme === "raceSim" ? 1 : 1 + worn);
     const first = runs.find((r) => r.delta !== null);
     const base = first?.raw ?? raw;
     delta = round2(raw - base);
-    runs.push({ n: runs.length + 1, session: ws.sessions0 - ws.sessionsLeft + 1, programme, driverId, setup: used, fresh, delta, raw, wet: wetRun });
+    runs.push({ n: runs.length + 1, session: ws.sessions0 - ws.sessionsLeft + 1, programme, driverId, setup: used, fresh, setId: set?.id, delta, raw, wet: wetRun });
     const prev = [...runs].slice(0, -1).reverse().find((r) => r.delta !== null);
     out.push(first ? `Lap time ${delta >= 0 ? "+" : ""}${delta.toFixed(2)}s against your baseline run (${changeSummary(ws, used, prev?.setup)}).` : `Baseline lap set. Everything else is measured against this run.`);
   } else {
-    runs.push({ n: runs.length + 1, session: ws.sessions0 - ws.sessionsLeft + 1, programme, driverId, setup: used, fresh, delta: null, raw: null, wet: wetRun });
+    runs.push({ n: runs.length + 1, session: ws.sessions0 - ws.sessionsLeft + 1, programme, driverId, setup: used, fresh, setId: set?.id, delta: null, raw: null, wet: wetRun });
   }
   if (programme === "setup" || programme === "qualiSim" || programme === "raceSim") {
     if (drv && !wetRun) out.push(...driverComments(ws, setupFor(ws, driverId, used), drv, eng, rng));
@@ -311,10 +396,10 @@ export function practiceRun(s: CareerState, programme: Programme, setup: SetupVe
     }
   }
   if (programme === "tyres") {
-    ws.tyreKnow = clamp(ws.tyreKnow + (0.3 + eng * 0.1) * (wetRun ? 0.4 : 1) * (fresh ? 1.15 : 1), 0, 1);
-    out.push(wetRun ? "Tyre wear study in the wet: little learned about dry wear." : "Tyre wear study done: the engineers have a better picture of how long each compound will last.");
+    ws.tyreKnow = clamp(ws.tyreKnow + (0.3 + eng * 0.1) * (wetRun ? 0.4 : 1) * (0.9 + 1.2 * Math.min(0.35, worn)), 0, 1);
+    out.push(wetRun ? "Tyre wear study in the wet: little learned about dry wear." : worn > 0.15 ? "Tyre wear study on a used set: the engineers learned a lot about how the rubber ages." : "Tyre wear study done on a fresh set: useful, but the wear curve is better learned on rubber that is already a little worn.");
   } else if (programme === "raceSim") {
-    ws.raceKnow = clamp(ws.raceKnow + (0.3 + eng * 0.1) * (wetRun ? 0.5 : 1), 0, 1);
+    ws.raceKnow = clamp(ws.raceKnow + (0.3 + eng * 0.1) * (wetRun ? 0.5 : 1) * (0.9 + 0.35 * Math.min(1, worn / 0.3)), 0, 1);
     out.push("Race simulation done: stint pace and fuel load numbers are firmer. The lap time above is a race-trim lap.");
   } else if (programme === "qualiSim") {
     ws.qualiKnow = clamp(ws.qualiKnow + 0.3 + eng * 0.1, 0, 1);
@@ -518,6 +603,17 @@ function tyreSetsFor(ws: WeekendState, humanIds: string[], entries: EntrySpec[],
   return out;
 }
 
+/** The weekend's physical sets for the human cars in this session, copied so the session can wear them freely. */
+function tyreSetListFor(s: CareerState, humanIds: string[]): Record<string, TyreSet[]> {
+  const all = ensureSets(s);
+  const out: Record<string, TyreSet[]> = {};
+  for (const id of humanIds) {
+    const key = setKeyFor(s, id);
+    if (all[key] && !out[key]) out[key] = cloneSets(all[key]);
+  }
+  return out;
+}
+
 function brainSkillMap(s: CareerState): Record<string, number> {
   const out: Record<string, number> = {};
   for (const id of Object.keys(s.teams)) {
@@ -569,12 +665,14 @@ export function planSession(s: CareerState, kind: SessionKind, allAi = false): S
   const shortFormat = !!rules.formatSplit && kind === "race" && ws.round % 2 === 1;
   if (shortFormat) laps = Math.max(5, Math.round(laps * 0.6));
   const plan: SessionPlan = { kind, entries, humanIds, settings, aiTyres: {}, laps, gp: meta.gp, circuitId: ws.circuitId };
+  const sets = tyreSetListFor(s, humanIds);
   if (kind === "sq" || kind === "quali") {
     const ranked = Object.entries(s.standings.drivers).sort((a, b) => a[1] - b[1]).map(([id]) => id);
     const release = [...entries.map((e) => e.id)].sort((a, b) => ranked.indexOf(a) - ranked.indexOf(b));
     plan.qualiCfg = {
       seed: settings.seed, track, entries, weather: qualiWeather(settings), minutes: kind === "sq" ? [12, 10, 8] : undefined,
-      rules: rules.aggregateQuali || rules.singleShot ? { aggregate: rules.aggregateQuali, singleShot: rules.singleShot, releaseOrder: release } : undefined,
+      rules: rules.aggregateQuali || rules.singleShot || rules.tyrePool ? { aggregate: rules.aggregateQuali, singleShot: rules.singleShot, releaseOrder: release, ...(rules.tyrePool ? { tyrePool: true } : {}) } : undefined,
+      tyreSetList: sets,
     };
     return plan;
   }
@@ -641,6 +739,7 @@ export function planSession(s: CareerState, kind: SessionKind, allAi = false): S
     ...(kind === "sprint" ? { pointsTable: SPRINT_POINTS, twoCompoundRule: false } : {}),
     ...(oneCompound || shortFormat ? { twoCompoundRule: false } : {}),
     ...(kind === "race" ? { tyreSets: tyreSetsFor(ws, humanIds, entries, !!rules.tyrePool) } : {}),
+    ...(kind === "race" || kind === "sprint" ? { tyreSetList: sets, sessionLabel: kind === "sprint" ? "SPRINT" : "RACE" } : {}),
     rules: {
       fixedStop: rules.fixedStop,
       scheduledSC: rules.scheduledSC && kind === "race",
@@ -675,7 +774,7 @@ function recordStandings(s: CareerState, kind: SessionKind, order: string[], poi
 /** Store a finished session. A finished Grand Prix closes the weekend and pays out. */
 const BASE_SETS = { normal: { S: 4, M: 5, H: 4 }, sprint: { S: 4, M: 4, H: 4 } } as const;
 
-export function recordSession(s: CareerState, kind: SessionKind, order: string[], points: Record<string, number>, grid: string[] | undefined, dnf: string[], moods?: Record<string, { morale: number; trust: number; grievance: number; strat?: number }>, extra?: { locks?: Record<string, "S" | "M" | "H">; used?: Record<string, Partial<Record<"S" | "M" | "H", number>>>; skipWorld?: boolean; failed?: Record<string, "pu" | "gb">; fastest?: string; pit?: { stops: number; slow: number; best?: number }; radio?: RadioQuote[] }) {
+export function recordSession(s: CareerState, kind: SessionKind, order: string[], points: Record<string, number>, grid: string[] | undefined, dnf: string[], moods?: Record<string, { morale: number; trust: number; grievance: number; strat?: number }>, extra?: { sets?: Record<string, TyreSet[]>; locks?: Record<string, "S" | "M" | "H">; used?: Record<string, Partial<Record<"S" | "M" | "H", number>>>; skipWorld?: boolean; failed?: Record<string, "pu" | "gb">; fastest?: string; pit?: { stops: number; slow: number; best?: number }; radio?: RadioQuote[] }) {
   const ws = s.weekend;
   if (!ws) return;
   if (kind === "quali" || (kind === "sq" && !ws.sprint)) {
@@ -691,6 +790,11 @@ export function recordSession(s: CareerState, kind: SessionKind, order: string[]
     const poleRef = loadCircuit(ws.circuitId).meta.poleRef ?? 90;
     (s.setupBook ??= {})[ws.circuitId] = { year: s.year, setup: { ...ws.setup }, loss: Math.round(lapLossSecs(ws, ws.setup, poleRef) * 100) / 100 };
     ws.tyreSets = { ...(ws.tyreSets ?? {}), ...sets };
+    // the sets themselves: whatever the session did to them is remembered
+    if (extra?.sets) {
+      ws.setList = { ...(ws.setList ?? ensureSets(s)) };
+      for (const [k, l] of Object.entries(extra.sets)) if (ws.setList[k]) ws.setList[k] = cloneSets(l);
+    }
     if (extra?.locks) ws.locks = { ...(ws.locks ?? {}), ...extra.locks };
   }
   if (moods && (kind === "race" || kind === "sprint")) carryMoods(s, order, dnf, moods);
@@ -740,9 +844,11 @@ export function recordSession(s: CareerState, kind: SessionKind, order: string[]
 
 /** Fastest lap car and the player's pit stop numbers, from a finished race sim. */
 export function raceExtras(sim: RaceSim, mineIds: string[]) {
+  const sets = sim.finalSets();
   const stops = sim.stopLog.filter((x) => mineIds.includes(x.carId));
   const secs = stops.map((x) => x.secs).filter((x) => x > 0);
   return {
+    sets,
     fastest: sim.bestLapCar || undefined,
     pit: { stops: stops.length, slow: secs.filter((x) => x > 4.6).length, best: secs.length ? Math.min(...secs) : undefined },
     radio: (sim.radio?.quotes ?? []).filter((q) => mineIds.includes(q.carId)).map((q) => ({ ...q })),
@@ -866,20 +972,26 @@ function playoffCheck(s: CareerState, round: number) {
 }
 
 /** From qualifying rows: tyre sets used and the tyre each car must start on under the lock rule. */
-export function extrasFromRows(rows: { carId: string; bestTyre?: string | null; setsUsed?: Partial<Record<"S" | "M" | "H", number>> }[], humanIds: string[]) {
+export function extrasFromRows(rows: { carId: string; bestTyre?: string | null; setsUsed?: Partial<Record<"S" | "M" | "H", number>> }[], humanIds: string[], sets?: Record<string, TyreSet[]>) {
   const locks: Record<string, "S" | "M" | "H"> = {};
   const used: Record<string, Partial<Record<"S" | "M" | "H", number>>> = {};
   for (const r of rows) {
     if (r.bestTyre === "S" || r.bestTyre === "M" || r.bestTyre === "H") locks[r.carId] = r.bestTyre;
     if (humanIds.includes(r.carId) && r.setsUsed) used[r.carId] = r.setsUsed;
   }
-  return { locks, used };
+  return { locks, used, ...(sets ? { sets } : {}) };
 }
 
 // ---------------------------------------------------------------- headless sessions
 
 export function runQuali(plan: SessionPlan): QualiRow[] {
   return runQualifying(plan.qualiCfg as QualiConfig).rows;
+}
+
+/** The same, with what it did to the human cars' tyre sets. */
+export function runQualiWithSets(plan: SessionPlan): { rows: QualiRow[]; sets: Record<string, TyreSet[]> } {
+  const r = runQualifying(plan.qualiCfg as QualiConfig);
+  return { rows: r.rows, sets: r.sim.finalSets() };
 }
 
 export function runRace(plan: SessionPlan) {
@@ -893,9 +1005,9 @@ export function simulateSession(s: CareerState, kind: SessionKind, humanIdsAsAi 
   fitAllDead(s);
   const plan = planSession(s, kind, humanIdsAsAi);
   if (kind === "sq" || kind === "quali") {
-    const rows = runQuali(plan);
+    const { rows, sets } = runQualiWithSets(plan);
     const grid = rows.map((r) => r.carId);
-    recordSession(s, kind, grid, {}, grid, [], undefined, extrasFromRows(rows, plan.humanIds));
+    recordSession(s, kind, grid, {}, grid, [], undefined, extrasFromRows(rows, plan.humanIds, sets));
     return;
   }
   const sim = runRace(plan);

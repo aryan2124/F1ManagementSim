@@ -675,6 +675,14 @@ export class RadioSystem {
     if (option.startsWith("box:")) {
       chosen = option.slice(4) as Compound;
       option = "box";
+    } else if (option.startsWith("boxset:")) {
+      // "boxset:S3" means box and fit that exact set
+      const set = sim.setListFor(car).find((x) => x.id === option.slice(7));
+      if (set) {
+        chosen = set.compound;
+        car.pitSetId = set.id;
+      }
+      option = "box";
     }
     pr.answered = option;
 

@@ -179,7 +179,7 @@ export class NetQualiSession extends QualiSession {
     if (this.reported) return;
     this.reported = true;
     const rows = this.sim.results();
-    const ex = extrasFromRows(rows, this.resultIds);
-    this.link.finish({ order: rows.map((r) => r.carId), locks: ex.locks, used: ex.used });
+    const ex = extrasFromRows(rows, this.resultIds, this.sim.finalSets());
+    this.link.finish({ order: rows.map((r) => r.carId), locks: ex.locks, used: ex.used, sets: ex.sets });
   }
 }

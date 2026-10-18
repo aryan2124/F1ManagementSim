@@ -1,3 +1,4 @@
+import { bestSet, cloneSets, findSet, freshCounts, makeSets, type TyreSet } from "./tyreSets";
 import { CAR_LEN, DT, ersFactor, PIT_LIMIT, BOX_SPACING, speedFactor } from "./engine";
 import { Rng } from "./rng";
 import { accelAt, brakeAt, sampleTrack, type TrackModel } from "./track";
@@ -40,13 +41,17 @@ export interface QualiConfig {
   clean?: boolean;
   weather?: WeatherSpec;
   /** Career rule modules. */
-  rules?: { aggregate?: boolean; singleShot?: boolean; tyreLock?: boolean; releaseOrder?: string[] };
+  rules?: { aggregate?: boolean; singleShot?: boolean; tyreLock?: boolean; releaseOrder?: string[]; tyrePool?: boolean };
+  /** The physical sets the human cars have for the weekend (keyed by car, or by team with the pool rule). Cars without one get the standard qualifying pool. */
+  tyreSetList?: Record<string, TyreSet[]>;
 }
 
 export interface QualiCommand {
   type: "go" | "box" | "auto";
   carId: string;
   compound?: Compound;
+  /** The exact set to fit (its compound is used). */
+  setId?: string;
   /** Fit a fresh set (default) or stay on the used one. */
   fresh?: boolean;
   /** Flying laps in this run (1 or 2). */
@@ -67,6 +72,10 @@ export interface QCar {
   wear: number;
   fresh: boolean;
   sets: Record<Compound, number>;
+  /** The physical sets this car can use, shared with its team mate under the pool rule. */
+  setList: TyreSet[];
+  /** The set on the car now. */
+  setId?: string;
   fuel: number;
   soc: number;
   runsDone: number;
@@ -158,6 +167,7 @@ export class QualiSim {
   segmentOrder: string[][] = [[], [], []];
   private events: SimEvent[] = [];
   private byId = new Map<string, QCar>();
+  private lists: Record<string, TyreSet[]> = {};
   private exitReadyTick = 0;
   private segLength = 0;
   private fastest = Infinity;
@@ -175,9 +185,17 @@ export class QualiSim {
     this.track = cfg.track;
     this.rng = new Rng(cfg.seed ^ 0x51ed270b);
     const n = cfg.entries.length;
-    const out1 = Math.floor((n - 10) / 2);
-    const out2 = n - 10 - out1;
-    this.keepers = [n - out1, n - out1 - out2, 10];
+    if (n > 10) {
+      const out1 = Math.floor((n - 10) / 2);
+      const out2 = n - 10 - out1;
+      this.keepers = [n - out1, n - out1 - out2, 10];
+    } else {
+      // a small test field: a quarter drops in each of Q1 and Q2, but never below two cars
+      const cut = Math.floor(n / 4);
+      const k1 = Math.max(Math.min(2, n), n - cut);
+      const k2 = Math.max(Math.min(2, n), k1 - cut);
+      this.keepers = [k1, k2, k2];
+    }
     const teamIds = [...new Set(cfg.entries.map((e) => e.team.id))];
     for (const e of cfg.entries) {
       const boxOff = teamIds.indexOf(e.team.id) * BOX_SPACING;
@@ -193,6 +211,7 @@ export class QualiSim {
         wear: 0,
         fresh: true,
         sets: { ...QUALI_SETS },
+        setList: [],
         fuel: 0.1,
         soc: 1,
         runsDone: 0,
@@ -229,6 +248,10 @@ export class QualiSim {
         mode: "attack",
         push: 2,
       };
+      const key = cfg.rules?.tyrePool ? e.team.id : e.id;
+      this.lists[key] ??= cfg.tyreSetList?.[key] ? cloneSets(cfg.tyreSetList[key]) : makeSets({ S: QUALI_SETS.S, M: QUALI_SETS.M, H: QUALI_SETS.H }, { I: QUALI_SETS.I, W: QUALI_SETS.W });
+      car.setList = this.lists[key];
+      car.sets = freshCounts(car.setList);
       this.cars.push(car);
       this.byId.set(e.id, car);
     }
@@ -322,10 +345,11 @@ export class QualiSim {
     if (cmd.type === "go") {
       if (car.phase !== "garage" || this.phase !== "running" || this.chequered || this.red.active) return;
       if (this.tick < car.readyTick) return;
-      const compound = cmd.compound ?? "S";
-      const fresh = cmd.fresh ?? true;
-      if (fresh && car.sets[compound] <= 0) return;
-      this.release(car, compound, fresh, cmd.laps ?? 1);
+      const asked = findSet(car.setList, cmd.setId);
+      const compound = asked?.compound ?? cmd.compound ?? "S";
+      const fresh = asked ? asked.runs === 0 : (cmd.fresh ?? true);
+      if (!asked && fresh && car.sets[compound] <= 0) return;
+      this.release(car, compound, fresh, cmd.laps ?? 1, asked?.id);
     } else if (cmd.type === "box") {
       if (car.phase === "push" && car.flyingLeft > 0) {
         car.flyingLeft = 0;
@@ -339,7 +363,30 @@ export class QualiSim {
     }
   }
 
-  private release(car: QCar, compound: Compound, fresh: boolean, laps: 1 | 2) {
+  /** Write the wear on the car back onto the set that is on it. */
+  private stow(car: QCar) {
+    const set = findSet(car.setList, car.setId);
+    if (set) set.wear = Math.max(set.wear, car.wear);
+  }
+
+  /** Fit a set. A named set is used as it is; otherwise a new set, or the one already on the car. */
+  private fit(car: QCar, set: TyreSet) {
+    this.stow(car);
+    car.setId = set.id;
+    car.wear = set.runs === 0 ? 0.01 : set.wear;
+    set.runs++;
+    const label = `Q${this.segment}`;
+    if (set.log[set.log.length - 1] !== label) set.log.push(label);
+    for (const c of this.cars) if (c.setList === car.setList) c.sets = freshCounts(c.setList);
+  }
+
+  /** What each human car's sets look like now. Call when qualifying is over. */
+  finalSets(): Record<string, TyreSet[]> {
+    for (const c of this.cars) this.stow(c);
+    return Object.fromEntries(Object.entries(this.lists).map(([k, l]) => [k, cloneSets(l)]));
+  }
+
+  private release(car: QCar, compound: Compound, fresh: boolean, laps: 1 | 2, setId?: string) {
     const qr = this.cfg.rules;
     if (qr?.aggregate) laps = 2;
     if (qr?.singleShot) {
@@ -350,14 +397,18 @@ export class QualiSim {
       laps = 1;
       car.shotUsed = this.segment;
     }
-    if (fresh) {
-      car.sets[compound]--;
-      car.wear = 0.01;
-    } else if (car.compound !== compound) {
-      // switching compound always means a fresh set
-      if (car.sets[compound] <= 0) return;
-      car.sets[compound]--;
-      car.wear = 0.01;
+    const named = findSet(car.setList, setId);
+    if (named) {
+      if (named.id !== car.setId) this.fit(car, named);
+    } else if (fresh) {
+      const f = car.setList.find((x) => x.compound === compound && x.runs === 0);
+      if (!f) return;
+      this.fit(car, f);
+    } else if (car.compound !== compound || !car.setId) {
+      // switching compound (or nothing on the car yet) always means a fresh set
+      const f = car.setList.find((x) => x.compound === compound && x.runs === 0) ?? bestSet(car.setList, compound);
+      if (!f) return;
+      this.fit(car, f);
     }
     car.compound = compound;
     car.fresh = fresh;
@@ -539,6 +590,11 @@ export class QualiSim {
     const pick = this.aiCompound(car);
     const fresh = car.sets[pick] > 0;
     this.release(car, pick, fresh, 1);
+  }
+
+  /** The pit wall's read on whether wets are wanted (used for advice only). */
+  wetNow(): boolean {
+    return !!this.wx && this.wx.wetMean > 0.25;
   }
 
   /** Each team judges the wetness a little differently, so the field does not all switch at once. */
@@ -969,7 +1025,8 @@ export class QualiSim {
       r.position = i + 1;
       r.time = c.best[seg(c)];
       r.bestTyre = c.bestComp[seg(c)];
-      r.setsUsed = { S: QUALI_SETS.S - c.sets.S, M: QUALI_SETS.M - c.sets.M, H: QUALI_SETS.H - c.sets.H };
+      const usedOf = (k: Compound) => c.setList.filter((x) => x.compound === k && x.runs > 0).length;
+      r.setsUsed = { S: usedOf("S"), M: usedOf("M"), H: usedOf("H") };
     });
     return grid.map((c) => byId.get(c.id) as QualiRow);
   }

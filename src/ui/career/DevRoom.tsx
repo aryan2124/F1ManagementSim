@@ -9,8 +9,11 @@ import { fmtMoney, fmtRange } from "../../career/util";
 import { hex, teamOf, type Dispatch } from "./common";
 import "./devroom.css";
 
-const KINDS: Card["kind"][] = ["devCrisis", "staffNotice", "testDay", "projectReady", "ideaBatch", "rndDirection", "media", "info"];
-const isScene = (c: Card) => KINDS.includes(c.kind) && (c.kind === "info" ? /^(Pre|In)-season test report/.test(c.title) : !c.notice);
+const KINDS: Card["kind"][] = ["devCrisis", "staffNotice", "testDay", "projectReady", "ideaBatch", "rndDirection", "media"];
+export const isScene = (c: Card) => KINDS.includes(c.kind) && !c.notice;
+/** Only the really urgent scenes (a resignation, a split office) interrupt you away from the dashboard. Everything else waits in the Inbox. */
+const interrupts = (c: Card) => c.kind === "devCrisis" || c.kind === "staffNotice";
+export const openScene = (id: number) => window.dispatchEvent(new CustomEvent("boxbox-open-scene", { detail: id }));
 const ICON: Record<DevReact, string> = { fume: "!!", stung: "...", nod: "ok", shrug: "~", sulk: "...", pale: "?!", grin: ":D", proud: "^^" };
 
 /** Typewriter text. */
@@ -152,10 +155,16 @@ function scrapLine(who: Staff | undefined, react: DevReact | undefined): string 
 type After = { kind: "back" | "fit" | "hold" | "scrap" | "focus" | "notice" | "crisis" | "later" | "press"; title: string; line: string; author?: Staff; react?: DevReact; cost?: { from: number; to: number; label: string }; others?: { st: Staff; react: DevReact }[] };
 
 /** The scenes where the manager's big development calls are made. Replaces the plain decision cards for them. */
-export function DevRoom({ s, d }: { s: CareerState; d: Dispatch }) {
+export function DevRoom({ s, d, auto = true }: { s: CareerState; d: Dispatch; auto?: boolean }) {
   const [later, setLater] = useState<number[]>([]);
   const [after, setAfter] = useState<After | null>(null);
-  const card = after ? undefined : s.cards.find((c) => isScene(c) && !later.includes(c.id));
+  const [asked, setAsked] = useState<number | null>(null);
+  useEffect(() => {
+    const on = (e: Event) => { const id = (e as CustomEvent<number>).detail; setLater((l) => l.filter((x) => x !== id)); setAsked(id); };
+    window.addEventListener("boxbox-open-scene", on);
+    return () => window.removeEventListener("boxbox-open-scene", on);
+  }, []);
+  const card = after ? undefined : s.cards.find((c) => isScene(c) && !later.includes(c.id) && (c.id === asked || auto || interrupts(c)));
   // a part scrapped from anywhere (the Car screen, the weekend, the verdict) gets the same scene
   const binned = devOf(s.teams[s.teamId]).scrapped?.length ?? 0;
   const seenBin = useRef(binned);
@@ -191,7 +200,7 @@ function Shell({ title, children, skip }: { title: string; children: React.React
   return (
     <div className="prof-back over dr-back" role="presentation">
       <div className="prof dr" role="dialog" aria-modal="true" aria-label={title}>
-        <header className="dr-head"><h2>{title}</h2>{skip && <button className="tiny" onClick={skip}>LATER (it stays in your inbox)</button>}</header>
+        <header className="dr-head"><h2>{title}</h2>{skip && <button className="tiny" onClick={skip}>LATER (it waits in your Inbox)</button>}</header>
         {children}
       </div>
     </div>

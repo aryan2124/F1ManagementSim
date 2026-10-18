@@ -98,7 +98,7 @@ export function Menu({
                   key={t.id}
                   className={`team-card ${settings.teamId === t.id ? "selected" : ""}`}
                   style={{ ["--team" as string]: hex(t.color) }}
-                  onClick={() => onChange({ ...settings, teamId: t.id })}
+                  onClick={() => onChange({ ...settings, teamId: t.id, field: settings.field ? [...new Set([...settings.field, ...DRIVERS[t.id].map((d) => d.id)])] : undefined })}
                 >
                   <div className="stripe" />
                   <div className="tname">{t.name}</div>
@@ -110,6 +110,53 @@ export function Menu({
                 </button>
               ))}
             </div>
+          </section>
+
+          <section className="panel">
+            <h3>TEST FIELD <span className="dim small">(untick teams and drivers to run a smaller weekend)</span></h3>
+            {(() => {
+              const all = TEAMS.flatMap((t) => DRIVERS[t.id].map((d) => d.id));
+              const field = settings.field ?? all;
+              const mine = DRIVERS[settings.teamId].map((d) => d.id);
+              const set = (f: string[]) => {
+                // always at least two cars, and at least one of your own
+                const keep = new Set(f);
+                if (!mine.some((id) => keep.has(id))) keep.add(mine[0]);
+                const next = all.filter((id) => keep.has(id));
+                if (next.length < 2) return;
+                onChange({ ...settings, field: next.length === all.length ? undefined : next });
+              };
+              const toggle = (id: string) => set(field.includes(id) ? field.filter((x) => x !== id) : [...field, id]);
+              return (
+                <>
+                  <div className="seg">
+                    <button onClick={() => onChange({ ...settings, field: undefined })}>ALL {all.length}</button>
+                    <button onClick={() => set(mine)}>ONLY MY TEAM</button>
+                    <button onClick={() => set([mine[0], ...all.filter((id) => !mine.includes(id)).slice(0, 1)])}>TWO CARS</button>
+                  </div>
+                  <div className="fieldlist">
+                    {TEAMS.map((t) => {
+                      const ids = DRIVERS[t.id].map((d) => d.id);
+                      const on = ids.filter((id) => field.includes(id));
+                      return (
+                        <div key={t.id} className="fieldrow" style={{ ["--team" as string]: hex(t.color) }}>
+                          <label className="set-check small">
+                            <input type="checkbox" checked={on.length === ids.length} ref={(el) => { if (el) el.indeterminate = on.length > 0 && on.length < ids.length; }} onChange={() => set(on.length === ids.length ? field.filter((id) => !ids.includes(id)) : [...new Set([...field, ...ids])])} />
+                            <b>{t.name}</b>
+                          </label>
+                          {DRIVERS[t.id].map((d) => (
+                            <label key={d.id} className="set-check small">
+                              <input type="checkbox" checked={field.includes(d.id)} onChange={() => toggle(d.id)} /> {d.name}
+                            </label>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="small dim">{field.length} car{field.length === 1 ? "" : "s"} on the grid. Qualifying cut-offs scale to the field.</p>
+                </>
+              );
+            })()}
           </section>
 
           <section className="panel">

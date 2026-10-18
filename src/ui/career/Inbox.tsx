@@ -1,4 +1,5 @@
 import { Linked } from "./Profile";
+import { isScene, openScene } from "./DevRoom";
 import { useState } from "react";
 import { HUNT, huntCooldown, type HuntMode } from "../../career/mail";
 import type { CareerState } from "../../career/types";
@@ -32,11 +33,14 @@ export function inboxItems(s: CareerState): InboxItem[] {
   return out.sort((a, b) => b.day - a.day);
 }
 
-export const unreadCount = (s: CareerState) => inboxItems(s).filter((x) => x.unread).length;
+export const unreadCount = (s: CareerState) => inboxItems(s).filter((x) => x.unread).length + s.cards.filter(isScene).length;
 
 /** Letters from sponsors, scouts and young drivers, every conversation with a driver, and the way to go looking for sponsors yourself. */
+const SCENE_FROM: Record<string, string> = { ideaBatch: "Drawing office", rndDirection: "Drawing office", projectReady: "Drawing office", testDay: "Test crew", staffNotice: "A member of staff", devCrisis: "The whole department", media: "Press office" };
+
 export function Inbox({ s, d }: Props) {
   const items = inboxItems(s);
+  const waiting = s.cards.filter(isScene);
   const cool = huntCooldown(s);
   const [sel, setSel] = useState<string | null>(null);
   const cur = items.find((x) => x.key === sel) ?? null;
@@ -50,6 +54,25 @@ export function Inbox({ s, d }: Props) {
     <div className="c-cols">
       <section className="panel c-inbox">
         <h3>INBOX ({items.filter((x) => x.unread).length} UNREAD OF {items.length})</h3>
+        {waiting.length > 0 && (
+          <div className="c-card mail waiting">
+            <h4>WAITING FOR YOU ({waiting.length})</h4>
+            <ul className="c-mails">
+              {waiting.map((c) => (
+                <li key={c.id} className="unread">
+                  <button onClick={() => openScene(c.id)}>
+                    <i className="dot" aria-label="needs you" />
+                    <span className="who">{SCENE_FROM[c.kind] ?? "The factory"}</span>
+                    <span className="subj">{c.title}</span>
+                    <em className="when">{c.deadline !== undefined ? `by ${fmtDay(c.deadline)}` : ""}</em>
+                    <b className="tag">OPEN</b>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="dim small">These do not interrupt you any more unless they are urgent. Open one when you are ready; if the date passes, the default is taken.</p>
+          </div>
+        )}
         {items.length === 0 && <p className="dim">Nothing yet. Sponsors write when the team is doing well, scouts write after a race weekend, and young drivers write whenever they feel brave. Every conversation with a driver is kept here too.</p>}
         <ul className="c-mails">
           {items.map((x) => (

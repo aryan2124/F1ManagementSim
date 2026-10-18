@@ -31,6 +31,8 @@ export interface RunRec {
   /** The setting used. */
   setup: SetupVec;
   fresh: boolean;
+  /** The set the run was made on. */
+  setId?: string;
   /** Measured lap time against the first run of the weekend, seconds (negative is quicker). Null when there was nothing to time. */
   delta: number | null;
   /** The measured loss itself (the delta is this minus the first timed run's). */

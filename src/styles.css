@@ -2034,3 +2034,24 @@ input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 3
 .plink { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline dotted; }
 .plink:hover { color: #ffd23f; }
 .app .btn.dash-btn { position: fixed; top: auto; bottom: 10px; left: 10px; z-index: 60; padding: 6px 12px; font-size: 9px; }
+
+/* tyre sets */
+.c-allocrow { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+.c-allocbox { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.c-allocbox .seg { display: inline-flex; align-items: center; gap: 6px; width: auto; }
+.c-allocbox .seg button { width: 30px; min-width: 0; padding: 4px 0; }
+.c-allocbox .seg span { min-width: 22px; text-align: center; font-weight: 700; }
+.c-allocbox.c-S b { color: #ff4d5e; } .c-allocbox.c-M b { color: #f9c74f; } .c-allocbox.c-H b { color: #e8e8e8; }
+.setpicker, .c-setrow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0; }
+.setgroup { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-right: 8px; }
+.setchip { font: 700 9px var(--pix, monospace); padding: 4px 6px; border: 2px solid #5b4f8a; background: #1c1631; color: #eee; cursor: pointer; }
+.setchip i { font-style: normal; font-weight: 400; opacity: .8; }
+.setchip.c-S { border-color: #ff4d5e; } .setchip.c-M { border-color: #f9c74f; } .setchip.c-H { border-color: #e8e8e8; } .setchip.c-I { border-color: #57cc99; } .setchip.c-W { border-color: #4cc9f0; }
+.setchip.on { background: #ff9a1a; color: #111; }
+.setchip.fitted { outline: 2px dashed #fff; }
+.setchip.advised { box-shadow: 0 0 0 2px #57cc99; }
+.setchip:disabled { opacity: .35; cursor: default; }
+.ctl.col { flex-direction: column; align-items: flex-start; }
+.fieldlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; margin: 8px 0; }
+.fieldrow { border-left: 4px solid var(--team, #888); padding-left: 8px; display: flex; flex-direction: column; gap: 2px; }
+.pitpick { display: flex; flex-direction: column; gap: 4px; width: 100%; }

@@ -6,7 +6,7 @@ import { defaultBudgets } from "./finance";
 import { newBrand } from "./brand";
 import { newPress, newRift } from "./dressing";
 import { advanceDay, playerDay, stopNow } from "./tick";
-import { endPractice, extrasFromRows, planSession, recordSession, runQuali, runRace, startWeekend, type SessionPlan } from "./weekend";
+import { endPractice, extrasFromRows, planSession, recordSession, runQualiWithSets, runRace, setKeyFor, startWeekend, type SessionPlan } from "./weekend";
 import { rulesOf } from "./eras";
 import { noisyRanking } from "./car";
 import { clamp, rngFor } from "./util";
@@ -321,6 +321,10 @@ export const careerEngine: CareerEngine<MultiState> & CareerEngineExtras = {
     const humanIds = plans.flatMap((p) => p.plan.humanIds);
     const cfg = (base.qualiCfg ?? base.raceCfg) as QualiConfig | RaceConfig;
     const strip = { ...cfg, entries, track: undefined } as unknown as Record<string, unknown>;
+    // everyone brings their own physical sets to the session
+    const mergedSets: Record<string, unknown> = {};
+    for (const p of plans) Object.assign(mergedSets, ((p.plan.qualiCfg ?? p.plan.raceCfg) as { tyreSetList?: Record<string, unknown> } | undefined)?.tyreSetList ?? {});
+    strip.tyreSetList = mergedSets;
     if (base.raceCfg) {
       const rc = strip as unknown as RaceConfig & { tyreSets?: Record<string, unknown>; moods?: Record<string, unknown>; startTyres?: Record<string, string> };
       const sets: Record<string, unknown> = {};
@@ -365,7 +369,9 @@ export const careerEngine: CareerEngine<MultiState> & CareerEngineExtras = {
         if (k === "quali") {
           const used: NonNullable<SessionResultIn["used"]> = {};
           for (const id of own) if (res!.used?.[id]) used[id] = res!.used[id];
-          recordSession(s, "quali", res!.order, {}, res!.order, [], undefined, { locks: res!.locks, used, skipWorld: !first });
+          const sets: NonNullable<SessionResultIn["sets"]> = {};
+          for (const id of own) { const k = setKeyFor(s, id); if (res!.sets?.[k]) sets[k] = res!.sets[k]; }
+          recordSession(s, "quali", res!.order, {}, res!.order, [], undefined, { locks: res!.locks, used, sets, skipWorld: !first });
         } else {
           const moods: Record<string, { morale: number; trust: number; grievance: number; strat?: number }> = {};
           for (const id of own) if (res!.moods?.[id]) moods[id] = res!.moods[id];
@@ -398,6 +404,7 @@ export interface SessionResultIn {
   moods?: Record<string, { morale: number; trust: number; grievance: number; strat?: number }>;
   locks?: Record<string, "S" | "M" | "H">;
   used?: Record<string, Partial<Record<"S" | "M" | "H", number>>>;
+  sets?: Record<string, import("../sim/tyreSets").TyreSet[]>;
 }
 
 function ownDrivers(s: CareerState, teamId: string): string[] {
@@ -409,9 +416,9 @@ function headless(ms: MultiState, lead: string, k: "quali" | "race"): SessionRes
   return as(ms, lead, (s) => {
     const plan: SessionPlan = planSession(s, k, true);
     if (k === "quali") {
-      const rows = runQuali(plan);
-      const ex = extrasFromRows(rows, plan.humanIds);
-      return { order: rows.map((r) => r.carId), locks: ex.locks, used: ex.used };
+      const { rows, sets } = runQualiWithSets(plan);
+      const ex = extrasFromRows(rows, plan.humanIds, sets);
+      return { order: rows.map((r) => r.carId), locks: ex.locks, used: ex.used, sets: ex.sets };
     }
     const sim = runRace(plan);
     const rows = sim.results();

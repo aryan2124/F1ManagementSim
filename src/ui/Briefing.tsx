@@ -1,3 +1,5 @@
+import { SetPicker } from "./SetPicker";
+import type { TyreSet } from "../sim/tyreSets";
 import { useMusic } from "../audio/useMusic";
 import { useMemo, useState } from "react";
 import type { Weekend } from "../game/setup";
@@ -26,6 +28,7 @@ export function Briefing({
   onStart,
   locks,
   sets,
+  setLists,
   pitLane,
   extraRules,
   title,
@@ -35,7 +38,9 @@ export function Briefing({
   title?: string;
   quali: QualiRow[];
   onBack: () => void;
-  onStart: (tyres: Record<string, Compound>) => void;
+  onStart: (tyres: Record<string, Compound>, startSets?: Record<string, string>) => void;
+  /** Career: the physical sets each car can start on (keyed by driver, or by team when the pool rule is on). */
+  setLists?: Record<string, TyreSet[]>;
   /** Career: start tyres fixed by the qualifying lock rule. */
   locks?: Record<string, Compound>;
   /** Career: fresh sets left per car (or per team when the pool rule is on). */
@@ -46,6 +51,7 @@ export function Briefing({
   extraRules?: string[];
 }) {
   useMusic("garage");
+  const [startSets, setStartSets] = useState<Record<string, string>>({});
   const [tyres, setTyres] = useState<Record<string, Compound>>(() => Object.fromEntries(weekend.humanIds.map((id) => [id, (locks?.[id] ?? "M") as Compound])));
   const byId = new Map(weekend.entries.map((e) => [e.id, e]));
   const finite = quali.map((q) => q.time).filter((x) => isFinite(x));
@@ -148,6 +154,27 @@ export function Briefing({
                     </button>
                   ))}
                 </div>
+                {setLists && (() => {
+                  const list = setLists[id] ?? setLists[weekend.entries.find((x) => x.id === id)?.team.id ?? ""] ?? [];
+                  if (!list.length) return null;
+                  const lock = locks?.[id];
+                  const mine = Object.values(startSets);
+                  return (
+                    <div className="ctl col">
+                      <span>START SET</span>
+                      <SetPicker
+                        sets={list.filter((x) => (!lock || x.compound === lock) && !(x.runs > 0 && x.wear >= 0.8) && !mine.includes(x.id) || startSets[id] === x.id)}
+                        value={startSets[id] ?? ""}
+                        onChange={(sid) => {
+                          const x = list.find((y) => y.id === sid);
+                          const next = { ...startSets };
+                          if (x) { next[id] = x.id; setTyres({ ...tyres, [id]: x.compound }); } else delete next[id];
+                          setStartSets(next);
+                        }}
+                      />
+                    </div>
+                  );
+                })()}
                 {locks?.[id] && <p className="hint">Qualifying tyre lock: the fastest Q3 lap was on {COMPOUNDS[locks[id]].name}s, so that is the start tyre.</p>}
                 {sets && (() => {
                   const inv = sets[weekend.entries.find((x) => x.id === id)?.team.id ?? ""] ?? sets[id];
@@ -184,7 +211,7 @@ export function Briefing({
               ))}
             </ul>
           </div>
-          <button className="btn primary big" onClick={() => onStart(tyres)}>
+          <button className="btn primary big" onClick={() => onStart(tyres, startSets)}>
             GO TO THE GRID
           </button>
         </section>
