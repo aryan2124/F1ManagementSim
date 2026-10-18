@@ -45,10 +45,10 @@ Do this once. After that, every push to `main` goes live by itself.
 ### 3a. Push the code to GitHub
 
 1. Install Git (https://git-scm.com) if `git --version` does not work.
-2. Create an empty repository on GitHub: github.com, New repository. Pick a name (for example `box-box`), choose Private, and do NOT tick "Add a README" or any other starter file.
-3. Unzip the project, open a terminal in the `box-box` folder and run (replace the URL with the one GitHub shows you):
+2. Your repository is https://github.com/aryan2124/F1ManagementSim (if you ever need a fresh one: github.com, New repository, Private, and do NOT tick "Add a README" or any other starter file).
+3. Unzip the project, open a terminal in the `box-box` folder and run (this is your repo URL):
    ```
-   git remote add origin https://github.com/YOUR-USERNAME/box-box.git
+   git remote add origin https://github.com/aryan2124/F1ManagementSim.git
    git branch -M main
    git push -u origin main
    ```
@@ -58,7 +58,7 @@ Do this once. After that, every push to `main` goes live by itself.
 ### 3b. Connect GitHub to Cloudflare (auto deploy)
 
 1. Go to https://dash.cloudflare.com and sign in (free account is fine).
-2. Workers & Pages, then Create, then Import a repository (Connect to Git). Authorise the Cloudflare GitHub app and pick your `box-box` repo.
+2. Workers & Pages, then Create, then Import a repository (Connect to Git). Authorise the Cloudflare GitHub app and pick the `F1ManagementSim` repo.
 3. Settings on that screen:
    - Project name: `box-box` (it must match `name` in `wrangler.jsonc`, otherwise the build fails with a name mismatch)
    - Production branch: `main`
