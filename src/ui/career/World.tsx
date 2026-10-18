@@ -3,6 +3,7 @@ import { circuitMeta } from "../../game/circuits";
 import { fmtDay } from "../../career/util";
 import { legacyScore, CAUSE_LABEL } from "../../career/people";
 import { NewsAnchor } from "../pixel/NewsAnchor";
+import { teamColour, teamLabel } from "../../career/brand";
 import { driverName, hex, teamOf, type Props } from "./common";
 import { PLink, Cup, Linked } from "./Profile";
 import { Social } from "./Social";
@@ -85,7 +86,7 @@ export function World({ s, d }: Props) {
               <h3>CONSTRUCTORS</h3>
               <ol className="c-table">
                 {teams.map(([id, p]) => (
-                  <li key={id} className={id === s.teamId ? "mine" : ""} style={{ ["--team" as string]: hex(teamOf(id)?.color ?? 0) }}><i className="chip" /> <PLink kind="team" id={id}>{teamOf(id)?.name}</PLink> <b>{p}</b></li>
+                  <li key={id} className={id === s.teamId ? "mine" : ""} style={{ ["--team" as string]: hex(teamColour(s, id)) }}><i className="chip" /> <PLink kind="team" id={id}>{teamLabel(s, id)}</PLink> <b>{p}</b></li>
                 ))}
               </ol>
             </section>

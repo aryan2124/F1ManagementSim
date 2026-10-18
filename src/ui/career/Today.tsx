@@ -9,8 +9,8 @@ import { standingsRank } from "../../career/car";
 import { agenda, type AgendaItem } from "../../career/agenda";
 import { eraNote } from "../../career/eras";
 import { ordinal } from "../../career/world";
-import { teamColour } from "../../career/brand";
-import { Bar, CardView, Tip, driverName, hex, teamOf, type Props, type Tab } from "./common";
+import { teamColour, teamLabel } from "../../career/brand";
+import { Bar, CardView, Tip, driverName, hex, type Props, type Tab } from "./common";
 import { FactoryScene } from "../pixel/FactoryScene";
 import { DeptIcon } from "../pixel/icons";
 import { Num } from "../skin/Num";
@@ -212,8 +212,8 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
             <h3>CONSTRUCTORS</h3>
             <ol className="c-table">
               {topTeams.slice(0, 11).map(([id, p]) => (
-                <li key={id} className={id === s.teamId ? "mine" : ""} style={{ ["--team" as string]: hex(teamOf(id)?.color ?? 0) }}>
-                  <i className="chip" /> {teamOf(id)?.name} <b>{p}</b>
+                <li key={id} className={id === s.teamId ? "mine" : ""} style={{ ["--team" as string]: hex(teamColour(s, id)) }}>
+                  <i className="chip" /> <PLink kind="team" id={id}>{teamLabel(s, id)}</PLink> <b>{p}</b>
                 </li>
               ))}
             </ol>

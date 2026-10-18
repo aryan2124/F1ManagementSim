@@ -1,3 +1,4 @@
+import { teamColour } from "../../career/brand";
 import { LabBay } from "./LabBay";
 import { useMemo, useState } from "react";
 import { DESIGN_ENDS, DESIGN_HINT, DESIGN_KEYS, DESIGN_LABEL, clampDesign, describeDesign, designOf, frontSection, rearSection, type Design } from "../../career/design";
@@ -92,7 +93,7 @@ export function DesignLab({ s, d }: Props) {
       <div>
         <section className="panel">
           <h3>TEST THE SHAPE</h3>
-          {bay && <LabBay inst={bay} model={model} color={hex(teamOf(s.teamId)?.color ?? 0xff8a1f)} onDone={() => setBay(null)} />}
+          {bay && <LabBay inst={bay} model={model} color={hex(teamColour(s))} onDone={() => setBay(null)} />}
           {INST_ORDER.map((id) => {
             const I = INSTRUMENTS[id];
             const why = allowanceCost(id, me);
