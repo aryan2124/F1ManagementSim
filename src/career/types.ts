@@ -973,6 +973,7 @@ export type Action =
   | { type: "recordSession"; kind: SessionKind; order: string[]; points: Record<string, number>; grid?: string[]; dnf: string[]; moods?: Record<string, { morale: number; trust: number; grievance: number; strat?: number }>; locks?: Record<string, "S" | "M" | "H">; used?: Record<string, Partial<Record<"S" | "M" | "H", number>>>; sets?: Record<string, import("../sim/tyreSets").TyreSet[]>; failed?: Record<string, PartKind>; fastest?: string; pit?: { stops: number; slow: number; best?: number }; radio?: { carId: string; tag: "bleep" | "refused" | "fatigue" | "over"; text: string }[] }
   | { type: "endPractice" }
   | { type: "simWeekend" }
+  | { type: "tutorialEra" }
   | { type: "simTo"; until: "quali" | "race" | "done" }
   | { type: "sponsor"; id: number; accept: boolean }
   | { type: "endSponsor"; id: number }

@@ -446,7 +446,7 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
           </div>
           <div className="tyre-row">
             <CompoundBadge c={car.tyre.compound} size={26} />
-            <Meter label="TYRE" value={1 - wear} color={wearColor} text={`${Math.round(Math.max(0, 1 - wear) * 100)}%  ${lapsPlus >= 1 ? `~${lapsLeft}L \u00b1${lapsPlus}` : `${lapsLeft}L`}`} />
+            <Meter label="TYRE" value={1 - wear} color={wearColor} text={lapsPlus >= 1 ? `~${lapsLeft}L \u00b1${lapsPlus}` : `${lapsLeft}L`} />
           </div>
           <Meter label="FUEL" value={car.fuel} color={car.fuel < 0.04 ? "#e63946" : "#4cc9f0"} text={`${(car.fuel * FUEL_KG).toFixed(1)} kg`} />
           <Meter label="BATT" value={car.soc} color="#ff7a1a" />
@@ -547,7 +547,7 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
             ) : (
               list.length ? (
                 <div className="pitpick">
-                  <SetPicker sets={list.filter((x) => x.id !== car.setId)} value={pitSet} onChange={setPitSet} advice={pitAdv?.set?.id} />
+                  <SetPicker sets={list} value={pitSet} onChange={setPitSet} advice={pitAdv?.set?.id} fitted={car.setId} live={car.setId ? { id: car.setId, wear: car.tyre.wear } : undefined} lockFitted />
                   {pitAdv?.why && <small className="dim">{pitAdv.why}</small>}
                   <button className="btn" disabled={!canPit} onClick={() => {
                     const x = list.find((y) => y.id === pitSet) ?? pitAdv?.set ?? bestSet(list, car.tyre.compound, car.setId);

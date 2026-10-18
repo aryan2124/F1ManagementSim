@@ -9,7 +9,10 @@ const COL: Record<Compound, string> = { S: "#ff4d5e", M: "#f9c74f", H: "#e8e8e8"
  * The one tyre rack used on every sim screen (practice, qualifying, race, pit stops, briefing).
  * Each set is a round tyre: the coloured ring is the life it has left, the number is its id, the caption says NEW or how worn it is.
  */
-export function SetPicker({ sets, value, onChange, fitted, advice, only, auto = true, readonly = false, note = true }: {
+export function SetPicker({ sets, value, onChange, fitted, advice, only, auto = true, readonly = false, note = true, live, lockFitted = false }: {
+  /** The set on the car right now: its wear changes every lap, so it is shown live. */
+  live?: { id: string; wear: number };
+  lockFitted?: boolean;
   sets: TyreSet[];
   value?: string;
   onChange?: (id: string) => void;
@@ -20,7 +23,7 @@ export function SetPicker({ sets, value, onChange, fitted, advice, only, auto = 
   readonly?: boolean;
   note?: boolean;
 }) {
-  const list = sets.filter((x) => !only || only.includes(x.compound));
+  const list = sets.filter((x) => !only || only.includes(x.compound)).map((x) => (live && x.id === live.id ? { ...x, wear: live.wear, runs: Math.max(1, x.runs) } : x));
   const groups = (["S", "M", "H", "I", "W"] as Compound[]).map((c) => list.filter((x) => x.compound === c)).filter((g) => g.length);
   return (
     <div className="rack">
@@ -56,7 +59,7 @@ export function SetPicker({ sets, value, onChange, fitted, advice, only, auto = 
                 return readonly || !onChange ? (
                   <span key={x.id} className={cls} title={tip}>{inner}</span>
                 ) : (
-                  <button key={x.id} className={cls} title={tip} disabled={spent && fitted !== x.id} onClick={() => onChange(x.id)}>{inner}</button>
+                  <button key={x.id} className={cls} title={tip} disabled={(spent && fitted !== x.id) || (lockFitted && fitted === x.id)} onClick={() => onChange(x.id)}>{inner}</button>
                 );
               })}
             </div>

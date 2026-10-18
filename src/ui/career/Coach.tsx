@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Action, CareerState } from "../../career/types";
 import type { Tab } from "./common";
-import { rulesDemo, type DemoResult } from "../../career/tutorial";
 import { planOf } from "../../career/rndplan";
 import { sfx } from "../../audio/sound";
 import "./coach.css";
@@ -10,7 +9,7 @@ import "./coach.css";
  * The tutorial coach: a small card that walks a new player through the real screens of a practice career.
  * It waits for the player to do each thing instead of talking at them, can be moved out of the way, and can be left at any time.
  */
-type Phase = 0 | 1 | 2 | 3 | 4 | 5;
+type Phase = number;
 interface Base { day: number; round: number; runsLeft: number }
 interface Ctx { s: CareerState; tab: Tab; inWeekend: boolean; running: boolean; base: Base; startRound: number }
 interface Target { sel: string; text?: RegExp }
@@ -59,8 +58,15 @@ export const STEPS: Step[] = [
   { id: "quali", chapter: "2 THE WEEKEND", phase: 2, title: "Qualifying", passive: true, target: { sel: "button", text: /GO TO THE GARAGE|^START Q\d/ }, body: ["Qualifying decides your grid slot. It is three knock-out segments: the slowest cars are out after each. Press GO TO THE GARAGE, then START Q1, and send your cars out from the panel on the right (GO OUT) on the tyre set you pick in the tyre rack, or let the team run them.", "A set used here carries its wear into the race. This step moves on by itself when qualifying is over."], done: (c) => ["sprint", "race", "done"].includes(c.s.weekend?.stage ?? "") },
   { id: "race", chapter: "2 THE WEEKEND", phase: 3, title: "The race: you are the pit wall", passive: true, body: ["Your two cars are highlighted in the timing tower. Watch each car's TYRE meter and press the PIT button before the tyres fall off a cliff: pick the set you want to bolt on. PUSH and SAVE trade pace for tyres, and the energy mode (HARVEST, BALANCE, ATTACK) trades battery for speed.", "Radio prompts pop up when something happens: a safety car, rain, a team-mate battle. Answer them, or the default happens. This race is only ten laps. The step moves on when it is over."], done: (c) => c.s.round > c.startRound },
   { id: "after", chapter: "2 THE WEEKEND", phase: 4, title: "That was your first weekend", body: ["Points go into the standings (WORLD tab), prize money and sponsor bonuses arrive, and drivers and fans remember how it went. Back at the factory the cycle repeats: brief the office, back a pitch, practise to feed it, race.", "Press BACK TO THE FACTORY when you are ready, then press NEXT."] },
-  { id: "rules-demo", chapter: "3 THE RULES", phase: 4, title: "The mock race: new rules", demo: true, body: ["Two short races on the same grid, one under today's rules and one after a drastic rewrite."] },
-  { id: "finish", chapter: "3 THE RULES", phase: 5, last: true, title: "You are ready", body: ["The loop: brief the office every six weeks, back a pitch, practise to feed it, race, and keep an eye on the cap.", "The long game: re-sign your people before their contracts end, grow the academy, and read the RULES tab early. When the rules change, the team that prepared wins.", "You can replay this any time from the main menu. Good luck."] },
+  { id: "rules-demo", chapter: "3 THE RULES CHANGE", phase: 4, title: "The rules change", demo: true, body: ["A drastic rewrite, played out for real."] },
+  { id: "era-rules-open", chapter: "3 THE RULES CHANGE", phase: 5, title: "The new rulebook is in", target: tabBtn("rules"), body: ["The rules have just changed, and a second race weekend is coming up under them. Click RULES to see what is different."], done: (c) => c.tab === "rules" },
+  { id: "era-rules", chapter: "3 THE RULES CHANGE", phase: 5, title: "Two new modules", needsTab: "rules", body: ["A rulebook is a set of modules. This one has two: DEPLOYMENT MAPS (a much bigger electric share of the power, with a new setting for when to spend the battery) and PUSH TO PASS (boost tokens in the race).", "Real eras mix four or five modules, some add a setting, some take a control away, and you vote on them years ahead. The old figures matter less now, so the order is about to shuffle."] },
+  { id: "era-wait", chapter: "3 THE RULES CHANGE", phase: 5, title: "On to the next race", skipIf: (c) => c.inWeekend, target: { sel: ".c-dock .btn.primary" }, body: ["Press CONTINUE until the race weekend arrives, then press the big button again to enter it. This one is only days away."], done: (c) => c.inWeekend },
+  { id: "era-practice", chapter: "3 THE RULES CHANGE", phase: 6, title: "A new setting in practice", body: ["Look at the setup panel: there is a new slider, BATTERY DEPLOYMENT. Save the battery for the end of the straight, or spend it early out of corners? Nobody knows the right answer under new rules. Run the SETUP programme and read the engineers' feedback to find out.", "Your old data is worth less, so treat your first runs as exploring. Press END PRACTICE when you are done."], target: { sel: "button", text: /END PRACTICE/ }, done: (c) => !!c.s.weekend && c.s.weekend.stage !== "practice" },
+  { id: "era-quali", chapter: "3 THE RULES CHANGE", phase: 7, title: "Qualifying under new rules", passive: true, target: { sel: "button", text: /GO TO THE GARAGE|^START Q\d/ }, body: ["Qualifying works as before, but watch the grid: the teams that suited the old rules may not be on the front rows any more. Run it or skip it."], done: (c) => !!c.s.weekend && (c.s.weekend.stage === "race" || c.s.weekend.stage === "done") },
+  { id: "era-race", chapter: "3 THE RULES CHANGE", phase: 8, title: "The race: boost tokens", passive: true, body: ["New in the pit wall panel: the BOOST button. Each driver has a few tokens, and each gives about twelve seconds of extra power. Spend them to attack the car ahead or defend, and do not waste them early.", "Also watch BATT: the electric power is a much bigger part of lap time now. Compare the finishing order with your first weekend. The step moves on when the race is over."], done: (c) => c.s.round > c.startRound + 1 },
+  { id: "era-after", chapter: "3 THE RULES CHANGE", phase: 9, title: "Same cars, new order", body: ["That is what a regulation change does: the same teams, the same drivers, a different order. Open the WORLD tab and compare the standings with last week.", "In a real career you see this coming years ahead. Teams that read the rulebook early, picked the right route and prepared their cars lead the new era. Teams that did not fall back."] },
+  { id: "finish", chapter: "3 THE RULES CHANGE", phase: 10, last: true, title: "You are ready", body: ["The loop: brief the office every six weeks, back a pitch, practise to feed it, race, and keep an eye on the cap.", "The long game: re-sign your people before their contracts end, grow the academy, and read the RULES tab early. When the rules change, the team that prepared wins.", "You can replay this any time from the main menu. Good luck."] },
 ];
 
 function findTarget(t: Target | undefined): HTMLElement | null {
@@ -71,8 +77,14 @@ function findTarget(t: Target | undefined): HTMLElement | null {
 }
 
 const phaseOf = (c: Pick<Ctx, "s" | "inWeekend" | "startRound">): Phase => {
-  if (c.s.round > c.startRound) return 4;
   const ws = c.s.weekend;
+  if (c.s.era.current) {
+    // act two: the rules have changed and a second weekend is played under them
+    if (c.s.round > c.startRound + 1) return 9;
+    if (c.inWeekend && ws) return ws.stage === "practice" ? 6 : ws.stage === "quali" || ws.stage === "sq" ? 7 : 8;
+    return 5;
+  }
+  if (c.s.round > c.startRound) return 4;
   if (c.inWeekend && ws) {
     if (ws.stage === "practice") return 1;
     if (ws.stage === "quali" || ws.stage === "sq") return 2;
@@ -100,9 +112,9 @@ export function Coach({ s, d, tab, go, inWeekend, running, hidden, onDone }: { s
   // skipping a weekend step runs that session for you, so the tutorial lands on the next one
   const skipStep = () => {
     if (s.weekend && s.weekend.stage !== "done") {
-      if (step.id === "end-practice") { d({ type: "simTo", until: "quali" }); return; }
-      if (step.id === "quali") { d({ type: "simTo", until: "race" }); return; }
-      if (step.id === "race") { d({ type: "simTo", until: "done" }); return; }
+      if (step.id === "end-practice" || step.id === "era-practice") { d({ type: "simTo", until: "quali" }); return; }
+      if (step.id === "quali" || step.id === "era-quali") { d({ type: "simTo", until: "race" }); return; }
+      if (step.id === "race" || step.id === "era-race") { d({ type: "simTo", until: "done" }); return; }
     }
     goTo(idx + 1);
   };
@@ -142,7 +154,7 @@ export function Coach({ s, d, tab, go, inWeekend, running, hidden, onDone }: { s
   const auto: "bottom" | "top" = box && box.y + box.height / 2 > window.innerHeight * 0.45 ? "top" : "bottom";
   const pos = force ?? auto;
   if (hidden) return null;
-  if (step.demo) return <RulesDemo s={s} onDone={() => goTo(idx + 1)} />;
+  if (step.demo) return <NewRules onGo={() => { d({ type: "tutorialEra" }); goTo(idx + 1); }} onSkip={() => goTo(STEPS.length - 1)} />;
   const n = STEPS.length;
   return (
     <>
@@ -175,49 +187,22 @@ export function Coach({ s, d, tab, go, inWeekend, running, hidden, onDone }: { s
   );
 }
 
-function RulesDemo({ s, onDone }: { s: CareerState; onDone: () => void }) {
-  const [res, setRes] = useState<DemoResult | null>(null);
-  const [changed, setChanged] = useState(false);
-  useEffect(() => {
-    const id = window.setTimeout(() => setRes(rulesDemo(s)), 80);
-    return () => window.clearTimeout(id);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const rows = useMemo(() => {
-    if (!res) return [];
-    const order = changed ? res.after : res.before;
-    return order.map((r, i) => {
-      const was = res.before.findIndex((x) => x.id === r.id);
-      return { ...r, i, was, mine: r.id === s.teamId };
-    });
-  }, [res, changed, s.teamId]);
+function NewRules({ onGo, onSkip }: { onGo: () => void; onSkip: () => void }) {
   return (
-    <div className="coach-demo" role="dialog" aria-label="Mock race">
+    <div className="coach-demo" role="dialog" aria-label="The rules change">
       <div className="coach-demo-card">
-        <h3>MOCK RACE: THE RULES CHANGE</h3>
-        {!res ? <p>Running a ten lap race...</p> : (
-          <>
-            <p className="small">{changed ? "THE NEW RULES: the same cars on the same grid, ten laps. The rulebook has been rewritten." : "TODAY'S RULES: the same cars, ten laps. This is how the race finishes right now."}</p>
-            <ol className="coach-table" style={{ height: rows.length * 38 }}>
-              {rows.map((r) => (
-                <li key={r.id} className={r.mine ? "mine" : ""} style={{ transform: `translateY(${r.i * 38}px)` }}>
-                  <span>{r.i + 1}</span><b>{r.team}</b><em>{r.pts} pts</em>
-                  {changed && r.was !== r.i && <u className={r.was > r.i ? "up" : "down"}>{r.was > r.i ? `UP ${r.was - r.i}` : `DOWN ${r.i - r.was}`}</u>}
-                </li>
-              ))}
-            </ol>
-            {changed && (
-              <div className="coach-explain">
-                <p><b>What the rules now pay for:</b> {res.weights.map((w) => `${w.name.toLowerCase()} ${w.to > w.from ? "worth more" : "worth less"}`).join(", ")}.</p>
-                <p>Your team's strongest points are now worth the least, and its weakest the most, so it moved. Every team's figures were also pulled toward the middle, as a new era does.</p>
-                <p><b>What it means for you:</b> parts you built for the old rules lose value, your engineers are less sure of their numbers, and weekend data and groundwork on the old rules are void. The teams that read the rulebook early and picked the right route lead the pack. Watch the RULES tab.</p>
-              </div>
-            )}
-            <div className="coach-btns">
-              {!changed ? <button className="btn primary" onClick={() => setChanged(true)}>CHANGE THE RULES</button> : <button className="btn primary" onClick={onDone}>GOT IT</button>}
-              <button className="tiny" onClick={onDone}>SKIP THIS</button>
-            </div>
-          </>
-        )}
+        <h3>THE RULES CHANGE: THE ELECTRIC ERA</h3>
+        <p>Every four to five years the sport rewrites the rulebook, and the order of the grid is thrown up in the air. Here is a big, simple one, switched on right now:</p>
+        <div className="coach-explain">
+          <p><b>1. Much more electric power.</b> The battery now supplies a big share of the power. NEW SETTING: BATTERY DEPLOYMENT. Save the battery for the end of the straight, or spend it early out of the corners.</p>
+          <p><b>2. Push to pass.</b> Every driver gets boost tokens each race, about twelve seconds of extra power each. NEW BUTTON on the pit wall: BOOST.</p>
+          <p><b>3. A shuffled order.</b> What the old rules rewarded is worth less, what they ignored is worth more, and every team's figures are pulled toward the middle. Parts built for the old rules lose value and your engineers are less sure of their numbers.</p>
+        </div>
+        <p>Press the button, then play a second race weekend under the new rules and see how different it feels.</p>
+        <div className="coach-btns">
+          <button className="btn primary" onClick={onGo}>CHANGE THE RULES</button>
+          <button className="tiny" onClick={onSkip}>SKIP THIS</button>
+        </div>
       </div>
     </div>
   );

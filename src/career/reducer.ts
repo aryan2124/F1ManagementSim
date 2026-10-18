@@ -30,6 +30,7 @@ import { rulesOf } from "./eras";
 import { PART_NAME, fitNew } from "./powertrain";
 import { endPractice, practiceRun, recordSession, setAlloc, simulateTo, simulateWeekend } from "./weekend";
 import { CFG } from "./config";
+import { launchTutorialEra } from "./tutorialEra";
 import { fmtMoney, round2 } from "./util";
 import type { Action, CareerState } from "./types";
 
@@ -364,6 +365,9 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       syncWeekendDay(s);
       return good("The weekend was simulated.");
     }
+    case "tutorialEra":
+      launchTutorialEra(s);
+      return good();
     case "simTo": {
       simulateTo(s, a.until);
       syncWeekendDay(s);
