@@ -51,6 +51,12 @@ export interface Idea {
   expires: number;
   /** Safe: small and sure. Gamble: wide range, could flop. Enabler: little gain now, makes the next part in the area better. */
   kind?: "safe" | "gamble" | "enabler";
+  /** How the design office would tackle the problem in the brief: a quick fix, a proper job, or a rethink. */
+  approach?: "quick" | "proper" | "rethink";
+  /** A price paid on the partner trait when the part goes on the car. Known up front, unlike the gain. */
+  side?: { trait: Trait; amount: number };
+  /** Came from outside the brief. */
+  offBrief?: boolean;
   note?: string;
   /** A trainee brought this one. */
   rookie?: boolean;
@@ -64,6 +70,8 @@ export interface Idea {
 
 /** How the player steers the factory. */
 export interface RndPlan {
+  /** The problem the manager sent the design office after: all new pitches are approaches to it until it lapses. */
+  brief?: { trait: Trait; area: Area; until: number; day: number; made?: boolean; lastGen?: number };
   focus: Area | "balanced" | "bank";
   stance: "safe" | "balanced" | "bold";
   /** The focus lapses back to balanced on this day. */
@@ -115,6 +123,8 @@ export interface Project {
   /** Started by a delegated head of R&D, without the player's brief: built to a general spec. */
   unbriefed?: boolean;
   trait?: Trait;
+  approach?: "quick" | "proper" | "rethink";
+  side?: { trait: Trait; amount: number };
   /** Who leads the design, for the fit between the engineer and the job. */
   lead?: string;
 }

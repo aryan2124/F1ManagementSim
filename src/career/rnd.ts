@@ -16,6 +16,7 @@ import { rulesOf } from "./eras";
 import { news } from "./cards";
 import { logSpend } from "./log";
 import { activePlan, areaChance, pickKind, planOf } from "./rndplan";
+import { briefActive as briefOf } from "./brief";
 import { fmtMoney } from "./util";
 import { factorsOf } from "./factors";
 
@@ -151,6 +152,45 @@ export function designPart(s: CareerState, teamId: string, area: Area, trait: Tr
   return { ok: true, idea };
 }
 
+/**
+ * The design office's answer to a brief: three different ways of attacking the same problem.
+ * A quick fix is cheap and fast and small. A proper job is the solid middle. A rethink is bigger and slower, its gain is a real gamble,
+ * and it costs something on the partner trait that the staff can state exactly.
+ */
+export function proposeApproaches(s: CareerState, teamId: string, trait: Trait): Idea[] {
+  const t = s.teams[teamId];
+  const area = TRAIT_AREA[trait];
+  const rng = rngFor(s, `approach:${teamId}:${s.day}:${trait}`);
+  const lead = leadFor(s, teamId, trait);
+  const out: Idea[] = [];
+  const quick = makeIdea(s, t, area, rng, "safe", { trait, lead, size: "S" });
+  quick.approach = "quick";
+  quick.name = `Quick fix: ${quick.name.toLowerCase()}`;
+  quick.cost = round2(quick.cost * 0.55);
+  quick.days = Math.max(4, Math.round(quick.days * 0.5));
+  quick.tunnelHours = Math.round(quick.tunnelHours * 0.4);
+  quick.note = "Cheap and fast, and it does not tie up the wind tunnel for long. The gain is small.";
+  out.push(quick);
+  const proper = makeIdea(s, t, area, rng, "safe", { trait, lead, size: "M" });
+  proper.approach = "proper";
+  proper.name = `Proper job: ${proper.name.toLowerCase()}`;
+  proper.note = "The solid middle: a real gain at a normal price and a normal time.";
+  out.push(proper);
+  const re = makeIdea(s, t, area, rng, "gamble", { trait, lead, size: "L" });
+  re.approach = "rethink";
+  re.name = `Rethink: ${re.name.toLowerCase()}`;
+  re.days = Math.round(re.days * 1.25);
+  re.cost = round2(re.cost * 1.2);
+  const [x, y] = AREA_TRAITS[area];
+  const partner: Trait = trait === x ? y : x;
+  const mid = (re.predLo + re.predHi) / 2;
+  re.side = { trait: partner, amount: round2(Math.max(0.01, 0.3 * mid)) };
+  re.note = `A new concept for ${TRAIT_NAME[trait].toLowerCase()}. It could be big, do nothing, or go backwards, and it costs ${TRAIT_NAME[partner].toLowerCase()} for certain.`;
+  out.push(re);
+  for (const i of out) { t.ideas.push(i); }
+  return out;
+}
+
 /** Puts a hand-made idea on the table (from an event). `gainMul` scales its real gain. */
 export function injectIdea(s: CareerState, teamId: string, area: Area, kind: NonNullable<Idea["kind"]>, opts: { gainMul?: number; costMul?: number; daysMul?: number; note?: string; name?: string } = {}): Idea {
   const t = s.teams[teamId];
@@ -189,6 +229,28 @@ export function generateIdeas(s: CareerState, teamId: string): Idea[] {
       t.ideas.push(idea);
       fresh.push(idea);
     }
+  }
+  const brief = isHuman(s, teamId) ? briefOf(s, teamId) : undefined;
+  if (brief && !slow && !frozen.includes(brief.area)) {
+    // a week after the brief the office comes back with its answers; once the table is cleared they return with a follow-up round every ten days
+    const due = brief.lastGen === undefined ? s.day - brief.day >= 7 : s.day - brief.lastGen >= 10 && !t.ideas.some((i) => i.approach);
+    if (due) {
+      brief.made = true;
+      brief.lastGen = s.day;
+      for (const i of proposeApproaches(s, teamId, brief.trait)) fresh.push(i);
+    }
+    // outside the brief only the odd stray idea turns up, and it says so
+    if (rng.next() < 0.1) {
+      const area = AREAS.filter((a) => a !== brief.area && !frozen.includes(a))[Math.floor(rng.next() * (AREAS.length - 1))];
+      if (area && t.ideas.filter((i) => i.area === area).length < CFG.maxIdeasPerArea) {
+        const idea = makeIdea(s, t, area, rng, pickKind(plan, rng.next()));
+        idea.offBrief = true;
+        idea.name = `Off-brief: ${idea.name.toLowerCase()}`;
+        t.ideas.push(idea);
+        fresh.push(idea);
+      }
+    }
+    return fresh;
   }
   for (const area of AREAS) {
     if (frozen.includes(area)) continue;
@@ -240,6 +302,8 @@ export function startProject(s: CareerState, teamId: string, ideaId: number): { 
     cheap,
     trait: idea.trait,
     lead: idea.lead,
+    approach: idea.approach,
+    side: idea.side,
   };
   if (idea.rookie) p.rookie = true;
   t.projects.push(p);
@@ -347,6 +411,11 @@ export function fitParts(s: CareerState, teamId: string): Project[] {
     p.delivered = p.trueGain;
     const tr = p.trait ?? AREA_TRAITS[p.area][0];
     addTrait(t, tr, round2(p.trueGain * TRAIT_GAIN_K));
+    if (p.side) {
+      // the price of a rethink is paid in full, and the team knows it
+      addTrait(t, p.side.trait, -round2(p.side.amount * TRAIT_GAIN_K));
+      if (teamId === s.teamId) news(s, `"${p.name}" cost ${TRAIT_NAME[p.side.trait].toLowerCase()}, as the staff said it would.`, { importance: 1, tag: "people" });
+    }
     believeFit(t, tr, mid, p.size === "L" ? 2 : p.size === "M" ? 1 : 0);
     out.push(p);
   }

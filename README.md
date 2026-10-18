@@ -403,3 +403,15 @@ The big development decisions are scenes with people instead of plain cards. All
 - The same `SetPicker` list appears on practice, qualifying, race pit stops, safety car and weather prompts, and the race briefing start-tyre choice. The engineers' pick is marked with `*`.
 - Quick sim (SIMULATE A RACE WEEKEND) has a TEST FIELD section to untick teams and drivers (min two cars). Qualifying cut-offs scale for fields of ten or fewer.
 - Not built: a "scrub" bonus for scrubbed sets; Q2 start set uses the compound lock only. Online start-set choice is not yet carried to other players' race config.
+
+## Development: briefs and approaches (replaces "pick an area, pick the biggest number")
+
+- **Where are we losing time?** Every six weeks the engineers report the three biggest problems (traits, such as tyre life or drivability), from your own numbers, a rough picture of the other cars, and the next five races. The report can be wrong; its error bars come from your staff and tools. You choose ONE problem. That is the brief.
+- **Three ways to solve it.** A week later the design office comes back with a QUICK FIX (cheap, fast, small), a PROPER JOB (the solid middle) and a RETHINK (bigger, slower, a real gamble, and it costs the partner trait for certain). Every follow-up round (every ten days once the table is clear) is again about the brief. Odd stray ideas from other departments are marked OFF-BRIEF. Trainee and lab pitches still arrive.
+- **What you judge a pitch on** (no single "best number"): the gain range, price, build time, how many of the remaining races it lands before, how much each coming race rewards it (a bar per track, greyed where the part would be too late), the exact side cost, whether it evens out or tilts the department's balance, and how many factory slots are busy. A full factory means scrapping a running project to start a new one.
+- **Not built yet:** the this-year vs next-year split on the same board (it still lives in the separate Next car card), and AI teams still use the old random idea flow.
+- Code: `src/career/brief.ts` (diagnosis, race fit, pitch profile), `proposeApproaches` in `src/career/rnd.ts`, the cards in `src/career/tick.ts`, scenes in `src/ui/career/DevRoom.tsx`. Tests: `tests/brief.test.ts`.
+
+## Tyre rack and fixes
+- One tyre rack (`src/ui/SetPicker.tsx`) on every sim screen: round tyres, ring = life left, NEW or % worn.
+- White flash on pop-ups: an old duplicate CSS rule kept the full-screen camera flash alive; it is now small corner flashes shown once.

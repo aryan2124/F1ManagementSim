@@ -509,7 +509,7 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
               {rl?.refuelling && <span>FUEL <b>{(car.fuel * FUEL_KG).toFixed(1)} kg</b></span>}
               {rl?.stopWindow && <span>WINDOW <b>L{rl.stopWindow[0]}-{rl.stopWindow[1]}</b></span>}
               {rl?.radioQuota !== undefined && <span>RADIO <b>{car.radioLeft}</b> left</span>}
-              {sets && (
+              {sets && !list.length && (
                 <div className="setsrow">
                   <em>FRESH SETS</em>
                   {(["S", "M", "H", "I", "W"] as const).filter((k) => sets[k] !== undefined).map((k) => (

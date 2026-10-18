@@ -13,7 +13,6 @@ import { RaceScreen } from "../RaceScreen";
 import { Results } from "../Results";
 import { PROGRAMME_LABEL, type Programme, type SessionKind, type SetupVec } from "../../career/types";
 import { setKeyFor, allocTotal } from "../../career/weekend";
-import { setLabel } from "../../sim/tyreSets";
 import { SetPicker } from "../SetPicker";
 import { failuresOf, raceExtras, planSession, extrasFromRows, rulesBrief, setupReview } from "../../career/weekend";
 import { TRIM, changeSummary, engineersGuess } from "../../career/setup";
@@ -108,7 +107,7 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
           <h4>YOUR TYRES <span className="dim small">(carried through practice, qualifying and the race)</span></h4>
           {mine.map((m) => {
             const l = (ws.setList?.[setKeyFor(s, m.id)] ?? []).filter((x) => x.compound === "S" || x.compound === "M" || x.compound === "H");
-            return <div key={m.id} className="c-setrow"><b>{m.spec.code}</b>{l.map((x) => <span key={x.id} className={`setchip c-${x.compound}`}>{x.id} <i>{setLabel(x)}</i></span>)}</div>;
+            return <div key={m.id}><b>{m.spec.code}</b><SetPicker sets={l} readonly /></div>;
           })}
         </section>
       )}
