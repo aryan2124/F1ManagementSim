@@ -188,9 +188,9 @@ function RulesDemo({ s, onDone }: { s: CareerState; onDone: () => void }) {
         {!res ? <p>Running a ten lap race...</p> : (
           <>
             <p className="small">{changed ? "THE NEW RULES: the same cars on the same grid, ten laps. The rulebook has been rewritten." : "TODAY'S RULES: the same cars, ten laps. This is how the race finishes right now."}</p>
-            <ol className="coach-table" style={{ height: rows.length * 26 }}>
+            <ol className="coach-table" style={{ height: rows.length * 38 }}>
               {rows.map((r) => (
-                <li key={r.id} className={r.mine ? "mine" : ""} style={{ transform: `translateY(${r.i * 26}px)` }}>
+                <li key={r.id} className={r.mine ? "mine" : ""} style={{ transform: `translateY(${r.i * 38}px)` }}>
                   <span>{r.i + 1}</span><b>{r.team}</b><em>{r.pts} pts</em>
                   {changed && r.was !== r.i && <u className={r.was > r.i ? "up" : "down"}>{r.was > r.i ? `UP ${r.was - r.i}` : `DOWN ${r.i - r.was}`}</u>}
                 </li>

@@ -26,3 +26,22 @@
 @media (max-width: 640px) { .coach.bottom { bottom: 70px; } }
 .coach.side { left: auto; right: 8px; top: 8px; bottom: auto; transform: none; width: clamp(170px, calc((100vw - 880px) / 2 - 12px), 250px); font-size: 12px; max-height: calc(100vh - 16px); overflow: auto; }
 .coach.side h4 { font-size: 13px; }
+
+/* bigger, readable tutorial text */
+.coach { width: min(720px, calc(100vw - 24px)); font-size: 20px; line-height: 1.5; padding: 14px 20px 18px; }
+.coach h4 { font-size: 26px; margin: 8px 0 8px; }
+.coach p { margin: 8px 0; }
+.coach-top { font-size: 14px; }
+.coach-hint { font-size: 18px; }
+.coach-ok { font-size: 20px; }
+.coach .btn, .coach button { font-size: 18px !important; padding: 10px 18px !important; }
+.coach-bar { height: 6px; }
+.coach.bottom { bottom: 96px; }
+.coach.side { width: clamp(280px, 30vw, 460px); font-size: 18px; }
+.coach.side h4 { font-size: 22px; }
+.coach-demo-card { width: min(900px, 100%); padding: 20px 24px; }
+.coach-demo-card h3 { font-size: 28px; }
+.coach-demo-card p { font-size: 18px; }
+.coach-table li { height: 34px; font-size: 18px; grid-template-columns: 34px 1fr 90px 90px; }
+.coach-table u { font-size: 15px; }
+.coach-explain p { font-size: 17px; line-height: 1.45; }

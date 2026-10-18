@@ -2351,3 +2351,10 @@ button.link { background: none; border: 0; padding: 0; color: var(--c-gold, #ffd
   .crt-global { background: none !important; }
   .swirl { image-rendering: crisp-edges; }
 }
+
+/* Firefox: no 3D tilt and no endless decorative animations, they cost far more there */
+@-moz-document url-prefix() {
+  [style*="--rx"], .tilt { transform: none !important; }
+  .app *, .app *::before, .app *::after { animation-iteration-count: 1 !important; }
+  .coach-ring { animation: none !important; }
+}
