@@ -16,6 +16,11 @@ export interface LiveCar {
   removed?: boolean;
   damage?: { aero: number; floor: number; flat: number; puncture: boolean };
   incident?: unknown;
+  /** Race only: the pit stop in progress and the push to pass window, for the crew and flame effects. */
+  pitTimer?: number;
+  stopSecs?: number;
+  slowStop?: boolean;
+  boostUntil?: number;
 }
 
 export interface LiveSim {

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Grid, PAL, gridRects, hash, rng, shade } from "./grid";
 
 /** Pixel portraits (24x24 logical). Everything is drawn from a seed so the same person always looks the same. */
@@ -33,11 +34,39 @@ function Svg({ g, pal, size, label, data }: { g: Grid; pal: Record<string, strin
   );
 }
 
-export function driverGrid(seed: number, mood: Mood): { g: Grid; look: number } {
+/**
+ * A face that is alive: it blinks every few seconds and now and then glances sideways.
+ * Each face keeps its own random rhythm, and nothing runs for people who asked for reduced motion.
+ */
+function useIdle(seed: number): { blink: boolean; glance: boolean } {
+  const [st, setSt] = useState({ blink: false, glance: false });
+  useEffect(() => {
+    if (typeof window === "undefined" || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    let alive = true;
+    const timers: number[] = [];
+    const later = (ms: number, fn: () => void) => { timers.push(window.setTimeout(() => alive && fn(), ms)); };
+    const R = rng((seed ^ 0x51ed270b) >>> 0);
+    const loop = () => {
+      later(2200 + R() * 4200, () => {
+        setSt((v) => ({ ...v, blink: true }));
+        later(130, () => setSt((v) => ({ ...v, blink: false })));
+        if (R() < 0.3) later(260, () => { setSt((v) => ({ ...v, blink: true })); later(110, () => setSt((v) => ({ ...v, blink: false }))); });
+        if (R() < 0.35) { setSt((v) => ({ ...v, glance: !v.glance })); }
+        loop();
+      });
+    };
+    loop();
+    return () => { alive = false; timers.forEach((t) => window.clearTimeout(t)); };
+  }, [seed]);
+  return st;
+}
+
+export function driverGrid(seed: number, mood: Mood, idle: { blink?: boolean; glance?: boolean } = {}): { g: Grid; look: number } {
   const R = rng(seed);
   const hairStyle = Math.floor(R() * 3); // 0 none, 1 fringe, 2 sideburns
   const facial = Math.floor(R() * 5); // 0 none 1 stubble 2 moustache 3 beard 4 none
-  const look = R() < 0.5 ? 0 : 1;
+  const look0 = R() < 0.5 ? 0 : 1;
+  const look = idle.glance ? 1 - look0 : look0;
   const g = new Grid(24, 24);
   // suit and shoulders
   g.r(7, 18, 10, 1, "Q").r(4, 19, 16, 1, "Q").r(1, 20, 22, 4, "Q");
@@ -77,6 +106,7 @@ export function driverGrid(seed: number, mood: Mood): { g: Grid; look: number } 
   } else {
     g.r(7, 11, 3, 2, "E").r(14, 11, 3, 2, "E");
     g.r(8 + look, 11, 1, 2, "k").r(15 + look, 11, 1, 2, "k");
+    if (idle.blink) g.r(7, 11, 3, 2, "S").r(14, 11, 3, 2, "S").r(7, 12, 3, 1, "k").r(14, 12, 3, 1, "k");
     if (mood === "ok") g.r(7, 9, 3, 1, "H").r(14, 9, 3, 1, "H");
     if (mood === "tense") {
       g.p(7, 9, "H").p(8, 9, "H").p(9, 10, "H").p(14, 10, "H").p(15, 9, "H").p(16, 9, "H");
@@ -105,7 +135,8 @@ export function DriverPortrait({ code, teamColor, seed, mood = "ok", size = 64 }
   const hair = HAIRS[Math.floor(R() * HAIRS.length)];
   const visor = VISORS[Math.floor(R() * VISORS.length)];
   const stripe = [ "#f4e9d0", "#14111f", "#f9c74f" ][Math.floor(R() * 3)];
-  const { g } = driverGrid(sd, mood);
+  const idle = useIdle(sd);
+  const { g } = driverGrid(sd, mood, idle);
   const gone = mood === "gone";
   const pal = palette(
     {
@@ -132,13 +163,14 @@ const HEADSET_ROLES = /engineer|strateg|mechanic|race|coach|pit|spotter|radio|cr
 const GLASSES_ROLES = /design|aero|analyst|financ|scout|data|science|lawyer|legal/i;
 const SUIT_ROLES = /boss|principal|director|financ|sponsor|media|lawyer|legal|commercial|chair|owner/i;
 
-export function staffGrid(seed: number, role: string): Grid {
+export function staffGrid(seed: number, role: string, idle: { blink?: boolean; glance?: boolean } = {}): Grid {
   const R = rng(seed);
   const hairStyle = Math.floor(R() * 5); // 0 bald 1 short 2 long 3 parted 4 cap-cut
   const headset = HEADSET_ROLES.test(role);
   const glasses = GLASSES_ROLES.test(role) || R() < 0.25;
   const suit = SUIT_ROLES.test(role);
-  const look = R() < 0.5 ? 0 : 1;
+  const look0 = R() < 0.5 ? 0 : 1;
+  const look = idle.glance ? 1 - look0 : look0;
   const g = new Grid(24, 24);
   // shoulders
   g.r(8, 18, 8, 1, "Q").r(5, 19, 14, 1, "Q").r(1, 20, 22, 4, "Q");
@@ -166,6 +198,7 @@ export function staffGrid(seed: number, role: string): Grid {
   g.r(8, 9, 3, 1, "H").r(13, 9, 3, 1, "H");
   g.r(8, 11, 3, 2, "E").r(13, 11, 3, 2, "E");
   g.r(9 + look, 11, 1, 2, "k").r(14 + look, 11, 1, 2, "k");
+  if (idle.blink) g.r(8, 11, 3, 2, "S").r(13, 11, 3, 2, "S").r(8, 12, 3, 1, "k").r(13, 12, 3, 1, "k");
   g.r(10, 14, 4, 1, "e").p(9, 13, "e").p(14, 13, "e");
   if (glasses) {
     g.r(7, 10, 5, 1, "G").r(7, 13, 5, 1, "G").r(7, 11, 1, 2, "G").r(11, 11, 1, 2, "G");
@@ -197,7 +230,8 @@ export function StaffPortrait({ seed, role = "staff", size = 64 }: { seed: numbe
   const hair = HAIRS[Math.floor(R() * HAIRS.length)];
   const suit = SUIT_ROLES.test(role);
   const body = suit ? SUITS[Math.floor(R() * SUITS.length)] : POLOS[Math.floor(R() * POLOS.length)];
-  const g = staffGrid(sd, role);
+  const idle = useIdle(sd);
+  const g = staffGrid(sd, role, idle);
   const pal = palette(
     { S: skin, D: shade(skin, 0.8), H: hair, Q: body, q: shade(body, 0.7), W: shade(body, 1.5), T: body, E: "#f4e9d0", R: "#e63946", G: "#6a5a8a" },
     false,

@@ -14,6 +14,8 @@ import { makeCarTexture, makeCarTextureHi, makeSafetyCarTexture, makeSafetyCarTe
 import { getPrefs, setPref } from "../ui/prefs";
 import { useUiTick } from "../ui/hooks";
 import { WeatherFx } from "./weatherFx";
+import { drawCrew, lift } from "./pitCrew";
+import { DT } from "../sim/engine";
 
 export const VIEW_W = 640;
 export const VIEW_H = 360;
@@ -359,6 +361,7 @@ export function RaceView({ session, meta, children }: { session: LiveSession<Liv
           anim.update(dt, cam.x, cam.y, vw, vh, session.sim.weather?.windBase ?? 3);
 
           // cars
+          const crewJobs: { x: number; y: number; h: number; p: number; colour: number; slow: boolean }[] = [];
           for (const c of session.sim.cars) {
             const s = sprites.get(c.id);
             if (!s) continue;
@@ -378,6 +381,24 @@ export function RaceView({ session, meta, children }: { session: LiveSession<Liv
             }
             s.sprite.visible = !c.removed;
             s.sprite.alpha = c.status === "dnf" ? 0.55 : 1;
+            if (c.status === "pit_stop" && c.stopSecs && !c.removed) {
+              const prog = Math.max(0, Math.min(1, 1 - ((c.pitTimer ?? 0) * DT) / c.stopSecs));
+              const up = lift(prog);
+              if (up > 0) s.sprite.scale.set(s.sprite.scale.x * (1 + 0.05 * up));
+              crewJobs.push({ x: p.x, y: p.y, h: p.heading, p: prog, colour: c.entry.team.color, slow: !!c.slowStop });
+            }
+            // boost: a flame of hot pixels streams out of the back while the push to pass is on
+            if (!c.removed && (c.boostUntil ?? 0) > session.sim.tick && c.v > 20 && Math.random() < 0.6) {
+              const bfx = Math.cos(p.heading);
+              const bfy = Math.sin(p.heading);
+              particles.push({ x: p.x - bfx * 3 + (Math.random() - 0.5), y: p.y - bfy * 3 + (Math.random() - 0.5), vx: -bfx * 22, vy: -bfy * 22, life: 0, max: 0.18 + Math.random() * 0.12, color: Math.random() < 0.5 ? 0x4cc9f0 : 0xffffff, size: 1 });
+            }
+            // a car with a damaged floor throws sparks off the tarmac
+            if (!c.removed && (c.damage?.floor ?? 0) > 0.03 && c.v > 40 && Math.random() < 0.12) {
+              const sfx = Math.cos(p.heading);
+              const sfy = Math.sin(p.heading);
+              particles.push({ x: p.x - sfx * 2.4, y: p.y - sfy * 2.4, vx: -sfx * 20 + (Math.random() - 0.5) * 14, vy: -sfy * 20 + (Math.random() - 0.5) * 14, life: 0, max: 0.25 + Math.random() * 0.2, color: Math.random() < 0.5 ? 0xffd23f : 0xff7a1a, size: 1 });
+            }
             if (c.removed && s.label) s.label.visible = false;
             // wet spray behind a fast car, smoke from a damaged or stricken one
             const wxw = session.sim.weather;
@@ -436,6 +457,7 @@ export function RaceView({ session, meta, children }: { session: LiveSession<Liv
 
           // particles
           fx.clear();
+          for (const j of crewJobs) drawCrew(fx, j.x, j.y, j.h, j.p, j.colour, performance.now(), j.slow, []);
           if (incs) {
             for (let k = 0; k < 3; k++) {
               if (!incs.yellowAt(k)) continue;

@@ -2358,3 +2358,15 @@ button.link { background: none; border: 0; padding: 0; color: var(--c-gold, #ffd
   .app *, .app *::before, .app *::after { animation-iteration-count: 1 !important; }
   .coach-ring { animation: none !important; }
 }
+
+/* ---------- motion polish ---------- */
+@keyframes tab-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.tab-in { animation: tab-in 0.22s ease-out both; }
+.mbar i, .bar i, .meter .mbar i { transition: width 0.45s var(--ease-pop, ease-out), background-color 0.4s; }
+.stat-tile b, .stat-tile i { transition: color 0.3s; }
+@media (prefers-reduced-motion: reduce) {
+  .tab-in { animation: none; }
+}
