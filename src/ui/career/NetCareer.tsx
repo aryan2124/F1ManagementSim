@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { shareOrigin, sharePath } from "../host";
 import { TEAMS } from "../../game/data";
 import type { CareerState, Guidance } from "../../career/types";
 import { HelpPicker } from "./HelpPicker";
@@ -107,7 +108,7 @@ function LeagueSetup({ room, code }: { room: CareerRoom; code: string }) {
   const [length, setLength] = useState<"full" | "half" | "quick">("half");
   const [eraMode, setEraMode] = useState<"natural" | "locked">("natural");
   const [help, setHelp] = useState<Guidance>(getPrefs().help);
-  const link = `${location.origin}${location.pathname}?league=${encodeURIComponent(code)}`;
+  const link = `${shareOrigin()}${sharePath()}?league=${encodeURIComponent(code)}`;
   const create = () => {
     setPref("help", help);
     room.create(teamId, { timer, speedMode, teamIds: TEAMS.map((t) => t.id), extra: { difficulty, raceLength: length, eraMode, guidance: help } });

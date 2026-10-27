@@ -438,3 +438,9 @@ from game state rather than a Next button where possible, skippable at any time.
 Flow: factory tour (tabs, car, money, people, rules), the clock and first decisions, first race weekend
 (tyres, practice, quali, race), then a MOCK RACE: the same cars raced under today's rules and under a
 rewritten rulebook, showing who rises and falls. Code: `src/career/tutorial.ts`, `src/ui/career/Coach.tsx`, `coach.css`.
+
+## Desktop app (for Steam)
+
+`npm run desktop` builds the game and opens it in Electron. `npm run desktop:win` (or `desktop:linux`) writes a ready-to-run folder and zip to `release/`.
+The app serves the built game from a private `app://` address, so saves live in the app's own storage, and the online league talks to the live site (`BOXBOX_HOST` overrides the host).
+F11 toggles fullscreen, Ctrl+F12 opens dev tools. Steamworks (achievements, cloud saves) is the next step.

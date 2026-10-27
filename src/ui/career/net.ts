@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { apiHost, wsProto } from "../host";
 import {
   LockstepClient,
   PROTOCOL,
@@ -102,8 +103,7 @@ export function useCareerRoom(roomCode: string | null, humanId: string, name: st
 
     const open = () => {
       setConn(attempt === 0 ? "connecting" : "reconnecting");
-      const proto = location.protocol === "https:" ? "wss" : "ws";
-      const sock = new WebSocket(`${proto}://${location.host}/api/career/${encodeURIComponent(roomCode)}`);
+      const sock = new WebSocket(`${wsProto()}://${apiHost()}/api/career/${encodeURIComponent(roomCode)}`);
       wsRef.current = sock;
       let t0 = 0;
       const ping = () => {

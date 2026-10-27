@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { apiHost, wsProto } from "./host";
 import type { ClientMsg, LeagueView, ServerMsg } from "../shared/league";
 
 export type LeagueConn = "idle" | "connecting" | "online" | "offline";
@@ -31,8 +32,7 @@ export function useLeague(code: string | null, name: string) {
     }
     let closed = false;
     setConn("connecting");
-    const proto = location.protocol === "https:" ? "wss" : "ws";
-    const sock = new WebSocket(`${proto}://${location.host}/api/league/${encodeURIComponent(code)}/ws`);
+    const sock = new WebSocket(`${wsProto()}://${apiHost()}/api/league/${encodeURIComponent(code)}/ws`);
     ws.current = sock;
     sock.onopen = () => {
       setConn("online");

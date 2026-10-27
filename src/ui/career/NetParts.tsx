@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { shareOrigin, sharePath } from "../host";
 import { TEAMS } from "../../game/data";
 import { loadCircuit } from "../../game/circuits";
 import { configFromPlan } from "../../career/multi";
@@ -44,7 +45,7 @@ function Countdown({ room }: { room: CareerRoom }) {
 export function InviteLink({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
   if (!code) return null;
-  const link = `${location.origin}${location.pathname}?league=${encodeURIComponent(code)}`;
+  const link = `${shareOrigin()}${sharePath()}?league=${encodeURIComponent(code)}`;
   return (
     <div className="n-invite">
       <span className="dim small">INVITE A FRIEND</span>
