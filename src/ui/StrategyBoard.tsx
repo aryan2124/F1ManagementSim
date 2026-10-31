@@ -6,7 +6,7 @@ import { CompoundBadge } from "./Briefing";
  * The strategy board: the plan, set before the race and changeable during it. The pit wall carries it out on its own,
  * so you are only asked about what the plan did not cover.
  */
-export function StrategyBoard({ orders, onChange, laps, compact }: { orders: StandingOrders; onChange: (o: StandingOrders) => void; laps: number; compact?: boolean }) {
+export function StrategyBoard({ orders, onChange, laps, compact, copyFrom }: { orders: StandingOrders; onChange: (o: StandingOrders) => void; laps: number; compact?: boolean; copyFrom?: { label: string; orders: StandingOrders } }) {
   const set = (p: Partial<StandingOrders>) => onChange({ ...orders, ...p, delegated: false });
   const step = (cur: number | null, d: number, lo: number, hi: number, start: number) => Math.min(hi, Math.max(lo, (cur ?? start) + d));
   return (
@@ -17,6 +17,7 @@ export function StrategyBoard({ orders, onChange, laps, compact }: { orders: Sta
           <button className={orders.delegated ? "on" : ""} onClick={() => onChange(orders.delegated ? NO_ORDERS : DELEGATED)} title="The strategist runs sensible standing orders for the whole race. You are only asked about the big calls.">
             LEAVE IT TO THE STRATEGIST
           </button>
+          {copyFrom && <button onClick={() => onChange({ ...copyFrom.orders })} title="Use the same plan as the other car">SAME AS {copyFrom.label}</button>}
           <button onClick={() => onChange(NO_ORDERS)} title="Clear every order. The driver and engineer ask you about everything.">CLEAR</button>
         </div>
       </div>
