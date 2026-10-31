@@ -42,3 +42,49 @@ describe("strategy rulebook", () => {
     expect(readUndercut(sim, x, y, "H", 0.8).why).toBe("late");
   });
 });
+
+describe("race IQ in the radio", () => {
+  function raceWith(iq: number, seed: number) {
+    const { track } = loadCircuit("spa");
+    const entries = buildEntries("mer");
+    for (const e of entries) if (e.human) e.driver = { ...e.driver, iq };
+    const { rows } = runQualifying({ seed, track, entries });
+    const sim = new RaceSim({ seed, laps: 30, track, entries, grid: rows.map((q) => q.carId), weather: undefined } as never);
+    const mine = sim.cars.find((c) => c.entry.human)!;
+    for (let i = 0; i < 200; i++) sim.step();
+    return { sim, mine };
+  }
+
+  it("a raw driver misjudges his tyres more than a sharp one", () => {
+    let sharp = 0;
+    let raw = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      const a = raceWith(0.95, seed);
+      const b = raceWith(0.25, seed);
+      a.mine.tyre.wear = 0.5;
+      b.mine.tyre.wear = 0.5;
+      sharp = Math.max(sharp, Math.abs(a.sim.radio!.perceivedWear(a.mine) - 0.5));
+      raw = Math.max(raw, Math.abs(b.sim.radio!.perceivedWear(b.mine) - 0.5));
+    }
+    expect(sharp).toBeLessThan(0.02);
+    expect(raw).toBeGreaterThan(0.06);
+  }, 120000);
+
+  it("a sharp driver speaks up when the wall boxes him on tyres that are barely used, a raw one does not", () => {
+    let sharpSaid = 0;
+    let rawSaid = 0;
+    for (let seed = 1; seed <= 8; seed++) {
+      for (const [iq, bump] of [[0.95, () => sharpSaid++], [0.2, () => rawSaid++]] as const) {
+        const { sim, mine } = raceWith(iq, seed);
+        mine.tyre = { compound: "M", wear: 0.1, ageLaps: 3 };
+        mine.lap = 4;
+        sim.command({ type: "pit", carId: mine.id, compound: "H" });
+        for (let i = 0; i < 400; i++) sim.step();
+        const said = (sim.radio?.log ?? []).some((l) => l.carId === mine.id && /laps? old|percent|percent worn/i.test(l.text) && /tyre|gone|worn|old/i.test(l.text));
+        if (said) bump();
+      }
+    }
+    expect(sharpSaid).toBeGreaterThan(0);
+    expect(rawSaid).toBe(0);
+  }, 120000);
+});

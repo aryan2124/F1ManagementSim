@@ -16,6 +16,7 @@ import { cvOf } from "../../career/cv";
 import { STAFF_LABEL } from "../../career/types";
 import { ATTRS, ATTR_LABEL as PATTR_LABEL, reportOf } from "../../career/academy";
 import { ATTR_GROUPS, ATTR_LABEL, ATTR_TIP, attributesOf, readAttr } from "../../career/attributes";
+import { iqWord, raceIQ } from "../../sim/iq";
 
 /**
  * Profiles. Click any driver or team name in a table and this opens: the trophy cabinet, the numbers, and what you know
@@ -219,6 +220,7 @@ export function DriverProfile({ s, d, id }: { s: CareerState; d: Dispatch; id: s
           <dl className="skills">
             <dt>Pace</dt><dd>{know >= 0.3 ? `${paceWord(s, x)}` : SECRET}</dd>
             <dt>Consistency</dt><dd>{know >= 0.45 ? <><Bar v={x.spec.consistency} /> <span className="small">{WORD(x.spec.consistency)}</span></> : SECRET}</dd>
+            <dt>Race IQ</dt><dd>{know >= 0.45 ? <><Bar v={raceIQ(x.spec, s.year)} /> <span className="small">{iqWord(raceIQ(x.spec, s.year))}</span></> : SECRET}</dd>
             <dt>Tyre care</dt><dd>{know >= 0.45 ? <><Bar v={x.spec.tyreMgmt} /> <span className="small">{WORD(x.spec.tyreMgmt)}</span></> : SECRET}</dd>
             <dt>Wet weather</dt><dd>{know >= 0.6 ? <><Bar v={x.spec.wet ?? 0.5} /> <span className="small">{WORD(x.spec.wet ?? 0.5)}</span></> : SECRET}</dd>
             <dt>Aggression</dt><dd>{know >= 0.6 ? <><Bar v={x.spec.aggression} /> <span className="small">{trait(x.spec.aggression, "Cautious", "Balanced", "Hard racer")}</span></> : SECRET}</dd>

@@ -7,6 +7,7 @@ import { isWetCompound } from "./types";
 import { bestCompoundFor, wetLoss } from "./weather";
 import { sampleTrack } from "./track";
 import { evidence, readUndercut, stopKind } from "./situation";
+import { iqFacets, stintBias, type IQFacets } from "./iq";
 
 /**
  * Everything said on the radio.
@@ -400,7 +401,7 @@ export class RadioSystem {
     }
 
     // ---- tyres
-    if (car.tyre.wear > 0.78 && remaining > 3 && !car.pitRequest && (this.suppress.get(car.id + "t") ?? 0) < sim.tick && this.canPrompt(car, 900)) {
+    if ((this.perceivedWear(car) > 0.78 || car.tyre.wear > 0.97) && remaining > 3 && !car.pitRequest && (this.suppress.get(car.id + "t") ?? 0) < sim.tick && this.canPrompt(car, 900)) {
       if (this.rng.chance(talk)) this.promptTyres(car);
     }
 
@@ -453,6 +454,37 @@ export class RadioSystem {
 
   private carBy(id: string | undefined): CarState | undefined {
     return id ? this.sim.cars.find((c) => c.id === id) : undefined;
+  }
+
+  /** What this driver can read of a race. See sim/iq.ts. */
+  iq(car: CarState): IQFacets {
+    return iqFacets(car.entry.driver, this.sim.cfg.year ?? 2026);
+  }
+
+  /** How worn the driver thinks his tyres are. A sharp driver is close to the data, a raw one can be well out, and holds that view all stint. */
+  perceivedWear(car: CarState): number {
+    const err = stintBias(`${car.id}:${this.sim.cfg.seed}`, car.stops) * (1 - this.iq(car).reading) * 0.22;
+    return Math.min(1.4, Math.max(0, car.tyre.wear + err));
+  }
+
+  /** A suggestion for an undercut: a sharp driver only brings real ones, a raw one sometimes brings one that is plausible but too small. */
+  private undercutIdea(car: CarState, ahead: CarState): boolean {
+    const rd = readUndercut(this.sim, car, ahead, this.sim.chooseCompoundDry(car), car.gapAhead);
+    if (rd.real) return true;
+    return rd.why === "small" && rd.value > rd.gap * 0.6 && this.rng.chance((1 - this.iq(car).strategy) * 0.5);
+  }
+
+  /** The player called a stop. A sharp driver says so when the tyres are barely used. The call stands either way. */
+  onPitCall(car: CarState) {
+    const sim = this.sim;
+    if (!car.entry.human || this.iq(car).strategy < 0.65) return;
+    const p = this.psy(car);
+    const remaining = sim.cfg.laps - car.lap;
+    const wet = !!sim.weather && car.wetD > 0.2;
+    const early = car.tyre.ageLaps < 6 && car.tyre.wear < 0.3 && remaining > 8 && !sim.neutral.active && !wet && !car.damage.puncture && car.damage.flat < 0.05;
+    if (!early || (this.lastTalk.get(car.id + "o") ?? 0) > sim.tick) return;
+    this.lastTalk.set(car.id + "o", sim.tick + 2400);
+    if (this.rng.chance(0.4 + 0.5 * p.talkative)) this.say(car, TALK.pushEarly, { age: car.tyre.ageLaps, wear: Math.round(car.tyre.wear * 100) });
   }
 
   private hit(car: CarState, sev: number) {
@@ -547,7 +579,7 @@ export class RadioSystem {
         const n = s && s.rival === ahead.id ? s.n + 1 : 1;
         this.stuck.set(car.id, { rival: ahead.id, n });
         const remaining = sim.cfg.laps - car.lap;
-        if (n > 350 && car.tyre.wear > 0.3 && remaining > 8 && !car.pitRequest && (this.lastTalk.get(car.id + "u") ?? 0) < t && this.canPrompt(car, 1500) && this.rng.chance(0.25 + 0.4 * p.talkative) && ahead.stops <= car.stops && car.tyre.ageLaps >= 5 && readUndercut(sim, car, ahead, sim.chooseCompoundDry(car), car.gapAhead).real) {
+        if (n > 350 && car.tyre.wear > 0.3 && remaining > 8 && !car.pitRequest && (this.lastTalk.get(car.id + "u") ?? 0) < t && this.canPrompt(car, 1500) && this.rng.chance(0.25 + 0.4 * p.talkative) && ahead.stops <= car.stops && car.tyre.ageLaps >= 5 && this.undercutIdea(car, ahead)) {
           const rd = readUndercut(sim, car, ahead, sim.chooseCompoundDry(car), car.gapAhead);
           this.stuck.set(car.id, { rival: ahead.id, n: 0 });
           this.lastTalk.set(car.id + "u", t + 2500);
@@ -605,12 +637,15 @@ export class RadioSystem {
 
   private promptTyres(car: CarState) {
     const choose = this.sim.chooseCompoundDry(car);
+    const feel = this.perceivedWear(car);
+    const wear = car.tyre.wear;
+    const ev = [`Tyres: ${car.tyre.ageLaps} laps old`, `Our data: ${Math.round(wear * 100)}% worn`, feel > wear + 0.08 ? "Driver feels them worse than the data says" : feel < wear - 0.08 ? "Driver feels them better than the data says" : "Driver agrees with the data"];
     const text = fill(this.pick(SAY.tyresGone[this.psy(car).voice]), this.vars(car));
     this.openPrompt(car, "tyres", `${car.entry.driver.code}: ${text}`.replace(/^[A-Z]{3}: /, ""), [
       { id: "box", label: `Box now (${compName(choose)})`, note: "Pit this lap" },
       { id: "stay", label: "Stay out a few more laps", note: "Driver keeps pushing" },
       { id: "manage", label: "Manage them, I will tell you when", note: "Save tyres for 4 laps" },
-    ], { compound: choose });
+    ], { compound: choose, evidence: ev });
   }
 
   private promptWeather(car: CarState, best: Compound) {
@@ -854,7 +889,7 @@ export class RadioSystem {
     const disagree = Math.max(0, -want);
     const stubborn = p.selfBelief * 0.5 + p.ego * 0.3 + p.volatility * 0.2;
     const crowd = Math.max(0, (this.chatter.get(car.id) ?? 0) - 3) * 0.04;
-    const compliance = p.obedience * 0.55 + m.trust * 0.3 + (1 - stubborn) * 0.15 - disagree * 0.5 * (0.4 + stubborn) + (m.morale - 0.5) * 0.1 - crowd;
+    const compliance = p.obedience * 0.55 + m.trust * 0.3 + (1 - stubborn) * 0.15 - disagree * 0.5 * (0.4 + stubborn) + (m.morale - 0.5) * 0.1 + (this.iq(car).composure - 0.5) * 0.15 - crowd;
     const r = this.rng.next();
     if (r < compliance) return disagree > 0.35 ? "grumble" : "accept";
     return strict ? "refuse" : "grumble";

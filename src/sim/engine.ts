@@ -362,6 +362,7 @@ export class RaceSim {
           car.pitSwap = !!cmd.swap && !!this.cfg.rules?.batterySwap;
           car.pitFuel = cmd.fuel ?? "std";
           this.emit("pit_in", car.id, undefined, `${car.entry.driver.code}: Copy, box this lap for ${COMPOUNDS[cmd.compound].name}s.`);
+          this.radio?.onPitCall(car);
           if (this.cfg.rules?.openRadio) this.rivalsHear(car);
         }
         break;

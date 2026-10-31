@@ -259,6 +259,16 @@ export function fill(text: string, vars: Record<string, string | number>): strin
  * {gap} (seconds) and {n} (laps).
  */
 export const TALK = {
+  /** A sharp driver pushes back when the pit wall calls a stop on tyres that are barely used. Tokens: {age} laps old, {wear} percent worn. */
+  pushEarly: {
+    blunt: ["The tyres are {age} laps old. We are throwing time away. Your call.", "Box now? They are only {wear} percent gone. I disagree, but fine."],
+    fire: ["Already?! They are only {age} laps old, I have loads left!", "Why are we boxing, {eng}? The tyres are fine, {wear} percent!"],
+    sunny: ["Hmm, the tyres still feel pretty good, {age} laps. Are you sure, {eng}?", "Happy to box, but they are only {wear} percent worn!"],
+    analyst: ["Tyres are {age} laps old, about {wear} percent worn. A stop now loses time. I would stay out.", "The data says {wear} percent. Pitting now is a net loss unless something has changed."],
+    elder: ["Early. Tyres have plenty in them, {age} laps. Your call, {eng}.", "I would run longer. They are only {wear} percent gone."],
+    anxious: ["Are we sure? The tyres feel okay, {age} laps. I do not want to waste a stop.", "They are only {wear} percent worn, I think. Should we really box?"],
+  } satisfies Bank,
+
   undercutWon: {
     blunt: ["Good. Ahead of {rival}.", "Undercut worked. Keep it coming.", "Clear of {rival}. Fine."],
     fire: ["YES! Past {rival} in the pits, brilliant, {eng}!", "That is how you do it! The undercut was perfect!", "Get in! Told you the early stop would work!"],

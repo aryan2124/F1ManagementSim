@@ -33,6 +33,8 @@ export interface DriverSpec {
   fuelSave?: number;
   /** 0..1, skill in the wet (0.5 is average). */
   wet?: number;
+  /** Race IQ, 0..1, if fixed for this driver. Otherwise derived from consistency, tyre care and experience. See sim/iq.ts. */
+  iq?: number;
   /** How this driver talks, thinks and reacts. See game/personalities.ts. */
   psyche?: Psyche;
   /** 0..1, higher = gentler on tyres. */
@@ -98,6 +100,8 @@ export interface EntrySpec {
 
 export interface RaceConfig {
   seed: number;
+  /** The season's year, used for age and experience (Race IQ). Defaults to 2026. */
+  year?: number;
   laps: number;
   track: TrackModel;
   entries: EntrySpec[];

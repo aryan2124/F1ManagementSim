@@ -746,6 +746,7 @@ export function planSession(s: CareerState, kind: SessionKind, allAi = false): S
   if (oneCompound && w0 <= 0.08) for (const e of entries) plan.aiTyres[e.id] = "M";
   plan.raceCfg = {
     seed: settings.seed,
+    year: s.year,
     laps,
     track,
     entries,
