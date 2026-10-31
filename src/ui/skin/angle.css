@@ -191,3 +191,6 @@ body.fx-wash { animation: tier-wash 0.7s ease-out; }
 .ceremony{display:flex;flex-direction:column;gap:8px;margin:12px 0;align-items:stretch;min-width:320px}
 .cer-row{display:flex;align-items:center;gap:12px;background:rgba(10,12,20,.9);border-left:6px solid var(--team,#fff);padding:8px 14px;font-size:20px}
 .cer-pos{margin-left:auto;color:#f9c74f;font-size:26px}.cer-pts{color:#57cc99}
+
+.found-bar{height:14px;background:#10162a;border:2px solid #3a4666;position:relative}
+.found-bar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#f9c74f,#57cc99);transition:width .6s var(--ease-out,ease-out)}

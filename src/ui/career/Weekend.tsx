@@ -1,3 +1,4 @@
+import { PEP, type PepTone } from "../../career/focus";
 import type { CareerState } from "../../career/types";
 import { donutDrivers } from "../../career/sendoff";
 import { useMusic } from "../../audio/useMusic";
@@ -85,6 +86,11 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
     <div className={`theme-garage c-garage${net ? "" : " screen"}`}>
       <ScreenBanner theme="garage" />
       <PartsPanel s={s} d={d} />
+      <section className="panel found">
+        <h3>SETUP FOUND</h3>
+        <div className="found-bar"><i style={{ width: `${Math.round(Math.max(0, Math.min(1, knownAvg)) * 100)}%` }} /></div>
+        <p className="small dim">{Math.round(Math.max(0, Math.min(1, knownAvg)) * 100)}% of the car's sweet spot found. {ws.runsLeft} run{ws.runsLeft === 1 ? "" : "s"} left. Each timed run teaches the engineers more.</p>
+      </section>
       {!ws.setList && rec && (
         <section className="panel c-alloc">
           <h3>TYRE ALLOCATION FOR THE WEEKEND</h3>
@@ -466,6 +472,7 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
       <>
       {ws.parc && <ParcStrip s={s} d={d} />}
       <PartsPanel s={s} d={d} />
+      {kind === "race" && <PepTalk s={s} d={d} />}
       <Briefing
         weekend={wk!}
         title={sessionTitle(wk!.meta.gp, ws.stage === "sprint" ? "sprint" : "race")}
@@ -530,6 +537,29 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
 }
 
 /** Who your drivers have history with, and where they start: the world remembers every pass and every touch. */
+const MOOD_WORD = (m: number) => (m > 0.7 ? "HAPPY" : m > 0.5 ? "FINE" : m > 0.3 ? "ANNOYED" : "FURIOUS");
+/** B8: one talk before the race, with the consequences shown first. */
+function PepTalk({ s, d }: Props) {
+  const ws = s.weekend!;
+  const mine = driversOf(s, s.teamId);
+  return (
+    <section className="panel pep">
+      <h3>PEP TALK</h3>
+      <p className="small dim">Mood now: {mine.map((x) => `${x.spec.code} ${MOOD_WORD(x.morale)}`).join(", ")}. One talk per weekend.</p>
+      <div className="gamble-cards">
+        {(Object.keys(PEP) as PepTone[]).map((k) => (
+          <button key={k} disabled={!!ws.pep} className={`gcard clickable ${ws.pep === k ? "sel" : ""}`} onClick={() => d({ type: "pepTalk", tone: k })}>
+            <b>{PEP[k].label}</b>
+            <span className="dim small">"{PEP[k].says}"</span>
+            <span className="gain">{PEP[k].good}</span>
+            <span className="cost">{PEP[k].risk}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function rivalLines(s: CareerState, mine: string[], grid: string[]): string[] {
   const out: string[] = [];
   for (const r of s.rivalries) {

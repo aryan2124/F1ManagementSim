@@ -1,4 +1,4 @@
-import { setFocus } from "./focus";
+import { setFocus, pepTalk } from "./focus";
 import { runLab } from "./lab";
 import { clampDesign } from "./design";
 import { offerStaff, signIntern, promoteIntern } from "./hiring";
@@ -72,6 +72,8 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       const why = continueClock(s, true);
       return why ? fail(why) : good();
     }
+    case "pepTalk":
+      return good(pepTalk(s, a.tone));
     case "setFocus":
       return good(setFocus(s, a.kind));
     case "markRead": {

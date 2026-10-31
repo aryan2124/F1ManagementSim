@@ -49,3 +49,23 @@ export function focusWeekly(s: CareerState): void {
     }
   }
 }
+
+export type PepTone = "calm" | "fire" | "joke";
+/** What each tone does, shown before the player picks it. */
+export const PEP: Record<PepTone, { label: string; says: string; good: string; risk: string }> = {
+  calm: { label: "STAY CALM", says: "Nothing to prove today. Drive your race.", good: "Steadies an unhappy driver (+8% morale)", risk: "Barely moves a happy one (+2%)" },
+  fire: { label: "FIRE THEM UP", says: "They are scared of you. Show them why.", good: "+8% morale", risk: "A driver already buoyant gets edgy: trust -3%" },
+  joke: { label: "LIGHTEN THE MOOD", says: "Tell the story about the pit crew and the goat.", good: "+5% morale for everyone, no downside", risk: "Smaller lift than the other two" },
+};
+
+export function pepTalk(s: CareerState, tone: PepTone): string {
+  const ws = s.weekend;
+  if (!ws || ws.pep) return "You already spoke to them this weekend.";
+  ws.pep = tone;
+  for (const d of Object.values(s.drivers).filter((x) => x.teamId === s.teamId && !x.retired)) {
+    if (tone === "calm") d.morale = clamp(d.morale + (d.morale < 0.5 ? 0.08 : 0.02));
+    else if (tone === "fire") { d.morale = clamp(d.morale + 0.08); if (d.morale > 0.75) d.trust = clamp(d.trust - 0.03); }
+    else d.morale = clamp(d.morale + 0.05);
+  }
+  return PEP[tone].says;
+}

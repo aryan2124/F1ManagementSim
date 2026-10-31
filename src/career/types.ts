@@ -538,6 +538,8 @@ export interface SessionResult {
 }
 
 export interface WeekendState {
+  /** The pre-race talk given this weekend, if any. */
+  pep?: "calm" | "fire" | "joke";
   round: number;
   circuitId: string;
   sprint: boolean;
@@ -947,6 +949,7 @@ export type Action =
   | { type: "holdPart"; id: number; hold: boolean }
   | { type: "upgradeFacility"; which: keyof Omit<Facilities, "building"> }
   | { type: "delegate"; area: keyof Delegation; level: Level }
+  | { type: "pepTalk"; tone: import("./focus").PepTone }
   | { type: "setFocus"; kind: import("./focus").FocusKind }
   | { type: "rndPlan"; focus?: RndPlan["focus"]; stance?: RndPlan["stance"] }
   | { type: "sign"; driverId: string; slot: 0 | 1; offer: Offer }
