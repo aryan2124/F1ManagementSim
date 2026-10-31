@@ -227,7 +227,7 @@ export function Briefing({
                     ? "Wet tyres are a gamble on a dry grid: they overheat and fall apart on a drying track. Using them frees you from the two compound rule."
                     : `${needsStop ? `This set will not last ${laps} laps.` : `This set could go the distance.`} You still must use two different dry compounds, so a stop is compulsory.`}
                 </p>
-                <StrategyBoard orders={orders[id] ?? NO_ORDERS} onChange={(o) => setOrders({ ...orders, [id]: o })} laps={laps} copyFrom={(() => { const other = weekend.humanIds.find((x) => x !== id); return other ? { label: byId.get(other)?.driver.code ?? "TEAM-MATE", orders: orders[other] ?? NO_ORDERS } : undefined; })()} />
+                <StrategyBoard life={wetTyre ? undefined : life[tyres[id] as "S" | "M" | "H"]} orders={orders[id] ?? NO_ORDERS} onChange={(o) => setOrders({ ...orders, [id]: o })} laps={laps} copyFrom={(() => { const other = weekend.humanIds.find((x) => x !== id); return other ? { label: byId.get(other)?.driver.code ?? "TEAM-MATE", orders: orders[other] ?? NO_ORDERS } : undefined; })()} />
               </div>
             );
           })}

@@ -14,6 +14,7 @@ import { RaceView } from "../render/RaceView";
 import { CompoundBadge } from "./Briefing";
 import { useUiTick } from "./hooks";
 import { hex, SECTOR_COLORS } from "./colors";
+import { isWetCompound } from "../sim/types";
 import { PromptBar, RadioFeed } from "./RadioPanel";
 import { SectorsView } from "./SectorTable";
 import { liveSectorColors } from "./sectorRows";
@@ -666,6 +667,15 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
           </div>
           <div className="tyre-row">
             <CompoundBadge c={car.tyre.compound} size={26} />
+            <div className="warnchips">
+              {wear > 0.85 && <span className="wc bad">TYRES GONE</span>}
+              {wear > 0.65 && wear <= 0.85 && <span className="wc warn">TYRES FADING</span>}
+              {car.soc < 0.15 && <span className="wc warn">BATTERY LOW</span>}
+              {car.fuel < 0.06 && <span className="wc bad">FUEL LOW</span>}
+              {car.damage.aero > 0.05 && <span className="wc bad">WING DAMAGE</span>}
+              {car.penalty > 0 && <span className="wc warn">PENALTY +{car.penalty}s</span>}
+              {car.push === 2 && wear > 0.5 && <span className="wc warn">PUSHING COSTS TYRES: -{Math.round((1.45 - 1) * 100)}% LIFE</span>}
+            </div>
             <Meter label="TYRE" value={1 - wear} color={wearColor} text={lapsPlus >= 1 ? `~${lapsLeft}L \u00b1${lapsPlus}` : `${lapsLeft}L`} />
           </div>
           <Meter label="FUEL" value={car.fuel} color={car.fuel < 0.04 ? "#e63946" : "#4cc9f0"} text={`${(car.fuel * FUEL_KG).toFixed(1)} kg`} />
@@ -753,7 +763,7 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
           )}
           <PitWindow sim={sim} car={car} />
           <button className="tiny plan-toggle" onClick={() => setPlanOpen(!planOpen)}>{planOpen ? "HIDE THE PLAN" : "THE PLAN"}{sim.radio?.standing.get(car.id) && describeOrders(sim.radio.standing.get(car.id)!).length > 0 ? ` (${describeOrders(sim.radio.standing.get(car.id)!).length})` : ""}</button>
-          {planOpen && <StrategyBoard compact orders={sim.radio?.standing.get(car.id) ?? NO_ORDERS} laps={sim.cfg.laps} onChange={(o) => sim.command({ type: "standing", carId: car.id, orders: o })} />}
+          {planOpen && <StrategyBoard compact life={isWetCompound(car.tyre.compound) ? undefined : sim.life[car.tyre.compound]} orders={sim.radio?.standing.get(car.id) ?? NO_ORDERS} laps={sim.cfg.laps} onChange={(o) => sim.command({ type: "standing", carId: car.id, orders: o })} />}
           <div className="ctl pit">
             <span>PIT</span>
             {inPit ? (

@@ -6,7 +6,7 @@ import { CompoundBadge } from "./Briefing";
  * The strategy board: the plan, set before the race and changeable during it. The pit wall carries it out on its own,
  * so you are only asked about what the plan did not cover.
  */
-export function StrategyBoard({ orders, onChange, laps, compact, copyFrom }: { orders: StandingOrders; onChange: (o: StandingOrders) => void; laps: number; compact?: boolean; copyFrom?: { label: string; orders: StandingOrders } }) {
+export function StrategyBoard({ orders, onChange, laps, compact, copyFrom, life }: { orders: StandingOrders; onChange: (o: StandingOrders) => void; laps: number; compact?: boolean; life?: number; copyFrom?: { label: string; orders: StandingOrders } }) {
   const set = (p: Partial<StandingOrders>) => onChange({ ...orders, ...p, delegated: false });
   const step = (cur: number | null, d: number, lo: number, hi: number, start: number) => Math.min(hi, Math.max(lo, (cur ?? start) + d));
   return (
@@ -28,6 +28,9 @@ export function StrategyBoard({ orders, onChange, laps, compact, copyFrom }: { o
           <button className={orders.stance === "balanced" ? "on" : ""} onClick={() => set({ stance: "balanced" })} title="The standard pace.">BALANCED</button>
           <button className={orders.stance === "attack" ? "on" : ""} onClick={() => set({ stance: "attack" })} title="Quicker from the lights, but tyres and fuel go faster and mistakes get likelier. You will need an earlier stop.">ATTACK</button>
         </div>
+        {life !== undefined && isFinite(life) && (
+          <small className="stance-est">This tyre lasts about {Math.round(life / 0.7)} laps looking after it, {Math.round(life)} balanced, {Math.round(life / 1.45)} attacking.</small>
+        )}
       </div>
       <div className="sb-row">
         <span>PLANNED STOP</span>
