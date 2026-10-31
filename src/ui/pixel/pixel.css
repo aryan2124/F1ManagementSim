@@ -126,7 +126,7 @@
   display: block;
 }
 .pixel-car-labels { position: relative; height: 16px; line-height: 1; }
-.pixel-car-labels span { position: absolute; top: 0; transform: translateX(-50%); font-family: var(--pix, monospace); font-size: 8px; color: var(--ink, #f4e9d0); white-space: nowrap; }
+.pixel-car-labels span { position: absolute; top: 0; transform: translateX(-50%); font-family: var(--pix, monospace); font-size: 11px; color: var(--ink, #f4e9d0); white-space: nowrap; }
 .pixel-car-labels span.hot { color: #ffe27a; }
 
 /* season launch reveal */

@@ -52,7 +52,7 @@ export function useClickSounds(opts: { hover?: boolean } = {}): void {
 }
 
 const row = { display: "flex", alignItems: "center", gap: 8 } as const;
-const label = { fontFamily: "var(--pix)", fontSize: 8, minWidth: 44 } as const;
+const label = { fontFamily: "var(--pix)", fontSize: 11, minWidth: 60 } as const;
 const slider = { flex: 1, minWidth: 80, accentColor: "var(--hot, #ff8a3d)" } as const;
 
 /** Mute toggle plus separate volume sliders for sound effects and music. */

@@ -102,3 +102,4 @@ html,body,#root{height:100%;overflow:hidden}
 .c-garage .pr-right .c-cols{grid-template-columns:minmax(0,1fr);margin-top:0}
 .c-garage .panel h3,.c-garage .panel h4{white-space:normal}
 .c-garage .bbn-frame{display:none}.c-garage.screen{grid-template-rows:minmax(0,1fr)}
+.app .btn.primary:disabled,.app .btn.go:disabled{background:#4a3f6e;color:#e4def7}
