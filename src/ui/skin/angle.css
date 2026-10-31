@@ -339,3 +339,6 @@ body.fx-wash { animation: tier-wash 0.7s ease-out; }
 .c-today .hh-threat{font-size:19px;color:#ffd166}
 .c-today .hero-head .dim,.c-today .hero-head .small{font-size:17px}
 .app .c-tabs button{flex:0 0 auto;width:auto;white-space:nowrap;overflow:visible;padding:10px 14px}
+.promptbar .popts.big{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+.promptbar .popt button,.promptbar .popt button b,.promptbar .popt button span{white-space:normal;overflow-wrap:anywhere;word-break:normal;min-width:0}
+.promptbar .popt{min-width:0}
