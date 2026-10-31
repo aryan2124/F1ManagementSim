@@ -1,3 +1,4 @@
+import { usePersist } from "../skin/persist";
 import { useState } from "react";
 import { circuitMeta } from "../../game/circuits";
 import { fmtDay } from "../../career/util";
@@ -20,7 +21,7 @@ const TAG_LABEL: Record<string, string> = { ai: "rivals" };
 export function World({ s, d }: Props) {
   const [sub, setSub] = useState<Sub>("season");
   const [imp, setImp] = useState<1 | 2 | 3>(2);
-  const [tag, setTag] = useState("all");
+  const [tag, setTag] = usePersist<string>("world", "all");
   const drivers = Object.entries(s.standings.drivers).sort((a, b) => b[1] - a[1]);
   const teams = Object.entries(s.standings.teams).sort((a, b) => b[1] - a[1]);
   const news = s.news.filter((n) => (n.importance ?? 1) >= imp && (tag === "all" || n.tag === tag)).slice(0, 60);

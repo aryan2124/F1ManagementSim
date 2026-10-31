@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { usePersist } from "../skin/persist";
 import { ARC_LABEL, arcTitle, liveArcs, postAge, postsAbout, socialOf, type Post } from "../../career/social";
 import { PLink } from "./Profile";
 import type { CareerState } from "../../career/types";
@@ -8,7 +8,7 @@ const PERSONA: Record<Post["persona"], string> = { fan: "FAN", rival: "RIVAL FAN
 
 /** The paddock's social feed: what people are saying, and the storylines it is built from. */
 export function Social({ s }: { s: CareerState }) {
-  const [filter, setFilter] = useState<string>("all");
+  const [filter, setFilter] = usePersist<string>("social", "all");
   const arcs = liveArcs(s);
   const all = postsAbout(s, filter).slice(0, 80);
   const byId = new Map(socialOf(s).posts.map((p) => [p.id, p]));

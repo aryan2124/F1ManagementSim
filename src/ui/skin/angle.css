@@ -200,3 +200,7 @@ body.fx-wash { animation: tier-wash 0.7s ease-out; }
 .wc{font-size:10px;padding:2px 6px;border:1px solid;animation:dcard-in .2s}
 .wc.bad{color:#ff6b75;border-color:#e63946;background:rgba(230,57,70,.15)}.wc.warn{color:#f9c74f;border-color:#f9c74f;background:rgba(249,199,79,.12)}
 .deleg{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 8px}
+
+.floatnum{position:absolute;left:50%;top:38%;transform:translateX(-50%);font-size:44px;font-weight:bold;z-index:40;pointer-events:none;text-shadow:0 3px 0 #000;animation:floatup 1.8s ease-out forwards}
+.floatnum.good{color:#57cc99}.floatnum.bad{color:#ff6b75}
+@keyframes floatup{0%{opacity:0;transform:translate(-50%,16px) scale(.8)}15%{opacity:1;transform:translate(-50%,0) scale(1.15)}30%{transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,-54px)}}

@@ -132,7 +132,7 @@ export function RaceScreen({ session, meta, onFinish, skip, donuts, kind }: { se
     const id = window.setInterval(() => {
       const ph = session.sim.phase;
       if (ph === phaseRef.current) return;
-      if (phaseRef.current === "grid" && ph === "racing") feel("good", "big");
+      if (phaseRef.current === "grid" && ph === "racing") { sfx.play("lightsOut"); feel("good", "big"); }
       if (ph === "finished") feel("good", "medium");
       phaseRef.current = ph;
     }, 100);
@@ -388,6 +388,27 @@ function FinishCeremony({ session }: { session: RaceSession }) {
   );
 }
 
+/** A8: the verdict on a call floats up as a number. */
+function FloatVerdict({ session }: { session: RaceSession }) {
+  const [f, setF] = useState<{ t: string; good: boolean; k: number } | null>(null);
+  const seen = useRef(0);
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const calls = (session.sim.radio?.calls ?? []).filter((c) => c.verdict === "good" || c.verdict === "bad");
+      if (calls.length <= seen.current) return;
+      seen.current = calls.length;
+      const last = calls[calls.length - 1];
+      const good = last.verdict === "good";
+      const t = last.secs !== undefined && Math.abs(last.secs) >= 0.1 ? `${last.secs > 0 ? "+" : "-"}${Math.abs(last.secs).toFixed(1)} s` : good ? "GOOD CALL" : "BAD CALL";
+      const k = Date.now();
+      setF({ t, good, k });
+      window.setTimeout(() => setF((x) => (x && x.k === k ? null : x)), 1800);
+    }, 250);
+    return () => window.clearInterval(id);
+  }, [session]);
+  return f ? <div key={f.k} className={`floatnum ${f.good ? "good" : "bad"}`}>{f.t}</div> : null;
+}
+
 function MomentBanners({ session }: { session: RaceSession }) {
   const [list, setList] = useState<Moment[]>([]);
   const seq = useRef(0);
@@ -464,6 +485,11 @@ function RaceOverlay({ session, onFinish, donuts }: { session: RaceSession; onFi
   const celebrating = finished && session.donutIds.length > 0 && (session.celebrateFrom === 0 || session.celebrating);
   const since = sim.tick - (sim.lightsAt - LIGHTS_TICKS);
   const lightsOn = sim.phase === "grid" && session.started ? Math.max(0, Math.min(5, Math.floor(since / (LIGHTS_TICKS / 5)) + 1)) : 0;
+  const lastLamp = useRef(0);
+  useEffect(() => {
+    if (lightsOn > lastLamp.current) sfx.play("climb", lightsOn);
+    lastLamp.current = lightsOn;
+  }, [lightsOn]);
   const showLights = session.started && (sim.phase === "grid" || (sim.phase === "racing" && sim.tick < sim.lightsAt + 25));
   const a = sim.car(session.humanIds[0]);
   const b = sim.car(session.humanIds[1] ?? session.humanIds[0]);
@@ -494,6 +520,7 @@ function RaceOverlay({ session, onFinish, donuts }: { session: RaceSession; onFi
       <RaceControl sim={sim} humans={session.humanIds} />
       <MomentBanners session={session} />
       <PitStopTimer session={session} />
+      <FloatVerdict session={session} />
       <Commentary session={session} />
       {celebrating && (
         <div className="dircap donut-cap">

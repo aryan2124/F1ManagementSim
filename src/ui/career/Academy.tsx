@@ -1,3 +1,4 @@
+import { usePersist } from "../skin/persist";
 import { PLink } from "./Profile";
 import { useState } from "react";
 import { ATTRS, ATTR_LABEL, FOCUS_LABEL, JUNIOR_CAL, SERIES, SERIES_COST, SERIES_LABEL, eventIn, f1Eligible, fitOf, levelOf, nextEvent, reportOf, visible, type Focus, type Prospect, type Series } from "../../career/academy";
@@ -156,7 +157,7 @@ export function Academy({ s, d }: Props) {
     else setMsg(r.message);
   };
   const [sel, setSel] = useState<string | null>(null);
-  const [filter, setFilter] = useState<Series | "all">("all");
+  const [filter, setFilter] = usePersist<Series | "all">("academy", "all");
   const [msg, setMsg] = useState("");
   const a = s.academy;
   const list = visible(s).filter((p) => filter === "all" || p.series === filter);
