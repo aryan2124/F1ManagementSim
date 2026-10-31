@@ -2417,3 +2417,16 @@ button.link { background: none; border: 0; padding: 0; color: var(--c-gold, #ffd
 @keyframes call-wash { 0% { box-shadow: inset 0 0 0 0 transparent; } 30% { box-shadow: inset 0 0 90px 6px var(--wash); } 100% { box-shadow: inset 0 0 0 0 transparent; } }
 .screen.race.call-good { --wash: rgba(79, 208, 138, 0.35); animation: call-wash 0.9s ease-out; }
 .screen.race.call-bad { --wash: rgba(255, 85, 96, 0.3); animation: call-wash 0.9s ease-out; }
+
+/* ---------- race moments: banners for what happens to your cars ---------- */
+.moments { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 6; pointer-events: none; }
+.moment { display: flex; align-items: baseline; gap: 10px; padding: 8px 18px 9px; background: rgba(13, 20, 32, 0.9); border: 2px solid var(--line); border-left-width: 8px; box-shadow: 0 3px 0 var(--lip), 0 10px 24px rgba(0, 0, 0, 0.45); clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); animation: moment-in 2.8s var(--ease-pop) both; white-space: nowrap; }
+.moment i { font-style: normal; font-size: 1.25em; }
+.moment b { font-size: 1.15em; letter-spacing: 0.06em; }
+.moment span { color: var(--dim); font-size: 0.85em; }
+.moment.good { border-color: var(--c-good); } .moment.good i { color: var(--c-good); }
+.moment.bad { border-color: var(--c-bad); } .moment.bad i { color: var(--c-bad); }
+.moment.info { border-color: var(--c-info); } .moment.info i { color: var(--c-info); }
+@keyframes moment-in { 0% { opacity: 0; transform: translateY(-18px) scale(0.85); } 10% { opacity: 1; transform: translateY(2px) scale(1.06); } 16% { transform: none; } 82% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px); } }
+@keyframes shake { 0%, 100% { transform: translate(0, 0); } 15% { transform: translate(-5px, 3px); } 30% { transform: translate(6px, -4px); } 45% { transform: translate(-4px, -3px); } 60% { transform: translate(4px, 4px); } 80% { transform: translate(-2px, 1px); } }
+.viewbox.shake { animation: shake 0.48s linear; }

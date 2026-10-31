@@ -43,6 +43,17 @@ export function RaceScreen({ session, meta, onFinish, skip, donuts, kind }: { se
   useEffect(() => { scrollTop(); }, []);
   useUiTick(120);
   const sim = session.sim;
+  // contact or a crash involving your cars shakes the picture
+  const [shake, setShake] = useState(false);
+  useEffect(() => {
+    const mine = new Set(session.humanIds);
+    return session.onEvent((e) => {
+      if ((e.kind === "crash" || e.kind === "contact") && ((e.carId && mine.has(e.carId)) || (e.otherId && mine.has(e.otherId)))) {
+        setShake(true);
+        window.setTimeout(() => setShake(false), 480);
+      }
+    });
+  }, [session]);
   // a good call feels good: a short chime and a green flash on the radio, so right decisions are felt as well as read
   const judged = useRef(0);
   const [flash, setFlash] = useState<"good" | "bad" | null>(null);
@@ -195,7 +206,7 @@ export function RaceScreen({ session, meta, onFinish, skip, donuts, kind }: { se
       <div className="race-grid">
         <TimingTower session={session} />
         <div className="center">
-          <div className="viewbox">
+          <div className={`viewbox${shake ? " shake" : ""}`}>
             <RaceView session={session} meta={meta}>
               <RaceOverlay session={session} onFinish={onFinish} donuts={donuts} />
             </RaceView>
@@ -264,6 +275,68 @@ function RaceControl({ sim, humans }: { sim: RaceSession["sim"]; humans: string[
   );
 }
 
+
+type Moment = { id: number; icon: string; head: string; sub?: string; tone: "good" | "bad" | "info"; until: number };
+
+/** Big, short-lived banners for what happens to YOUR cars: passes, being passed, stops, crashes, fastest laps. The race is felt, not read in a log. */
+function MomentBanners({ session }: { session: RaceSession }) {
+  const [list, setList] = useState<Moment[]>([]);
+  const seq = useRef(0);
+  const sim = session.sim;
+  useEffect(() => {
+    const mine = new Set(session.humanIds);
+    const code = (id?: string) => (id ? sim.car(id)?.entry.driver.code ?? "" : "");
+    const add = (m: Omit<Moment, "id" | "until">) => {
+      const id = ++seq.current;
+      setList((l) => [...l.slice(-2), { ...m, id, until: Date.now() + 2800 }]);
+      window.setTimeout(() => setList((l) => l.filter((x) => x.id !== id)), 2900);
+    };
+    return session.onEvent((e) => {
+      const a = e.carId && mine.has(e.carId);
+      const b = e.otherId && mine.has(e.otherId);
+      if (!a && !b && e.kind !== "sc_deployed" && e.kind !== "vsc") return;
+      switch (e.kind) {
+        case "overtake":
+          if (a) add({ icon: "▲", head: `${code(e.carId)} PASSES ${code(e.otherId)}`, sub: `now P${sim.car(e.carId!).position}`, tone: "good" });
+          else if (b) add({ icon: "▼", head: `${code(e.carId)} PASSES ${code(e.otherId)}`, sub: `you drop to P${sim.car(e.otherId!).position}`, tone: "bad" });
+          break;
+        case "pit_in":
+          if (a) add({ icon: "⛽", head: `${code(e.carId)} BOXES`, tone: "info" });
+          break;
+        case "pit_out":
+          if (a) add({ icon: "➤", head: `${code(e.carId)} OUT OF THE PITS`, sub: `rejoins P${sim.car(e.carId!).position}`, tone: "info" });
+          break;
+        case "fastest_lap":
+          if (a) add({ icon: "★", head: `FASTEST LAP: ${code(e.carId)}`, tone: "good" });
+          break;
+        case "crash":
+        case "contact":
+        case "failure":
+          add({ icon: "✖", head: e.kind === "failure" ? `${code(e.carId || e.otherId)} HAS A FAILURE` : `${code(e.carId)} IN TROUBLE`, sub: e.text, tone: "bad" });
+          break;
+        case "sc_deployed":
+          add({ icon: "!", head: "SAFETY CAR", sub: "bunch up: a cheap stop is on", tone: "info" });
+          break;
+        case "vsc":
+          add({ icon: "!", head: "VIRTUAL SAFETY CAR", tone: "info" });
+          break;
+      }
+    });
+  }, [session, sim]);
+  if (!list.length) return null;
+  return (
+    <div className="moments" aria-live="polite">
+      {list.map((m) => (
+        <div key={m.id} className={`moment ${m.tone}`}>
+          <i>{m.icon}</i>
+          <b>{m.head}</b>
+          {m.sub && <span>{m.sub}</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function RaceOverlay({ session, onFinish, donuts }: { session: RaceSession; onFinish: () => void; donuts?: (session: RaceSession) => string[] }) {
   const sim = session.sim;
   const [, bump] = useState(0);
@@ -310,6 +383,7 @@ function RaceOverlay({ session, onFinish, donuts }: { session: RaceSession; onFi
         </div>
       )}
       <RaceControl sim={sim} humans={session.humanIds} />
+      <MomentBanners session={session} />
       {celebrating && (
         <div className="dircap donut-cap">
           <i>VICTORY LAP</i> {session.donutIds.map((id) => session.sim.car(id).entry.driver.name).join(" and ")} {session.donutIds.length > 1 ? "put on a show" : "puts on a show"}
