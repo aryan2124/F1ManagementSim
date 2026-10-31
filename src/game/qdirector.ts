@@ -3,7 +3,7 @@ import { DT } from "../sim/engine";
 
 /**
  * The qualifying director. Like the real world feed it follows cars on flying laps, in this order of interest:
- * a car that is quick against pole, a car on the elimination bubble late in the segment, the player's cars,
+ * a car that is quick against pole, a car in the drop zone (about to be knocked out) late in the segment, the player's cars,
  * two cars close together, a purple sector, then trouble (spin, crash, red flag). Out laps and in laps are skipped
  * unless it is the player's car. A shot is held a few seconds, it never leaves a car in the last sector, and a finished
  * lap stays on screen for the result. It never shows replays.
@@ -52,7 +52,7 @@ export class QualiDirector {
         if (isFinite(d) && d < 0.15) { s += d <= 0 ? 24 : 14; why = d <= 0 ? `UP ON POLE: ${code}` : `CLOSE TO POLE: ${code}`; }
       }
       // on the bubble with the clock running down
-      if (cut && c.position >= cut - 2 && c.position <= cut + 3 && sim.clock < 150) { s += 18; why = `ON THE BUBBLE: ${code}`; }
+      if (cut && c.position >= cut - 2 && c.position <= cut + 3 && sim.clock < 150) { s += 18; why = `IN THE DROP ZONE: ${code}`; }
       if (c.entry.human) s += 8;
       if (c.sectors.color.some((k, i) => k === 3 && i < c.sectorIdx)) { s += 6; why = `PURPLE SECTOR: ${code}`; }
       // two flying cars close together

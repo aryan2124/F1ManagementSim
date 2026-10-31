@@ -16,9 +16,10 @@
 /* race screen: both drivers side by side on wide windows, whole screen centred */
 .plan-toggle{display:block;margin:8px 0 6px}
 .ctl.pit{margin-top:8px;clear:both}
-@media (min-width:1760px){
+@media (min-width:1500px){
   .screen.race{max-width:1900px;margin:0 auto}
-  .race-grid.has-two{grid-template-columns:240px minmax(0,1fr) 700px}
+  .race-grid.has-two{grid-template-columns:280px minmax(0,1fr) minmax(600px,680px)}
+  .race-grid.has-two > .tower{min-width:0}
   .cars.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
 }
 .wx-conf2{margin-top:6px;min-width:180px}
@@ -48,4 +49,4 @@
 .app .c-tabs{flex-wrap:nowrap}
 @media (max-width:1700px){.app .c-tabs{gap:3px}.app .c-tabs button{font-size:13px;padding:10px 8px}}
 @media (max-width:1300px){.app .c-tabs button{font-size:12px;padding:10px 6px}}
-.racebar .gpname{flex:1 1 150px;min-width:0;font-size:14px;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.racebar .gpname{flex:1 1 230px;min-width:0;font-size:14px;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}

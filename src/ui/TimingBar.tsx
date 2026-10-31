@@ -79,7 +79,7 @@ export function TimingBar({ session }: { session: QualiSession }) {
   const cutCar = cutPos ? sim.order[cutPos - 1] : undefined;
   const bubble = !!cutCar && car.position >= cutPos - 2 && car.id !== cutCar.id && isFinite(cutCar.best[seg]);
   const ref = bubble && cutCar ? cutCar : leader && leader.id !== car.id ? leader : undefined;
-  const refName = ref ? (bubble ? `P${cutPos} CUT LINE (${ref.entry.driver.code})` : `POLE (${ref.entry.driver.code})`) : "";
+  const refName = ref ? (bubble ? `${ref.entry.driver.code} (P${cutPos}), THE LAST CAR THROUGH` : `POLE (${ref.entry.driver.code})`) : "";
   const cmpCell = (i: number, mine: number, done: boolean) => {
     const r = ref?.sectors.best[i] ?? Infinity;
     if (!ref || !done || !isFinite(r) || !(mine > 0)) return <div key={i} className="cmp-cell"><small>S{i + 1}</small><b>--.---</b></div>;
@@ -90,13 +90,13 @@ export function TimingBar({ session }: { session: QualiSession }) {
     if (!ref) return null;
     const refLap = ref.best[seg];
     const dl = total !== undefined && isFinite(refLap) ? total - refLap : null;
-    const verdict = bubble && dl !== null ? (dl < 0 ? "IN" : "OUT") : "";
+    const verdict = bubble && dl !== null ? (dl < 0 ? "THROUGH" : "KNOCKED OUT") : "";
     return (
       <div className="tb-cmp">
         <span className="cmp-head">VS {refName}</span>
         {[0, 1, 2].map((i) => cmpCell(i, secs[i], i < doneN))}
         {dl !== null && <div className={`cmp-cell lap ${dl <= 0 ? "ahead" : "behind"}`}><small>LAP</small><b>{gapStr(dl)}</b></div>}
-        {verdict && <span className={`cmp-verdict ${verdict}`}>{verdict}</span>}
+        {verdict && <span className={`cmp-verdict ${verdict === "THROUGH" ? "IN" : "OUT"}`}>{verdict}</span>}
       </div>
     );
   };
@@ -162,7 +162,7 @@ export function TimingBar({ session }: { session: QualiSession }) {
       </div>
       <div className="tb-clock">
         <b>{fmtLap(clock)}</b>
-        <span className={gap === null ? "" : gap <= 0 ? "ahead" : "behind"}>{gap === null ? (!leader || leader.id === car.id || car.sectorIdx >= 1 ? "Setting the benchmark" : "Gap after S1") : `${gapStr(gap)} to the fastest`}</span>
+        <span className={gap === null ? "" : gap <= 0 ? "ahead" : "behind"}>{gap === null ? (!leader || leader.id === car.id || car.sectorIdx >= 1 ? "No time to beat yet" : "Gap after S1") : `${gapStr(gap)} to the fastest`}</span>
       </div>
     </div>
   </>);

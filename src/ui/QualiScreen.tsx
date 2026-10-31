@@ -143,7 +143,7 @@ function QualiScreenInner({ session, meta, onDone, skip, kind }: { session: Qual
       </header>
       <SkipPrompt session={session} net={skip} />
 
-      <div className="race-grid">
+      <div className={`race-grid${session.humanIds.length > 1 ? " has-two" : ""}`}>
         <QualiBoard session={session} />
         <div className="center">
           <div className="viewbox">
@@ -183,7 +183,7 @@ function QualiScreenInner({ session, meta, onDone, skip, kind }: { session: Qual
           )}
           {tab === "radar" && <RadarPanel session={session} teamId={teamId} />}
         </div>
-        <div className="cars">
+        <div className={`cars${session.humanIds.length > 1 ? " two" : ""}`}>
           {session.humanIds.map((id) => (
             <QualiCard key={id} session={session} car={sim.car(id)} />
           ))}
@@ -300,6 +300,12 @@ function QualiBoard({ session }: { session: QualiSession }) {
         <button className={!exact ? "on" : ""} onClick={() => setExact(false)}>GAP TO LEADER</button>
         <button className={exact ? "on" : ""} onClick={() => setExact(true)}>EXACT TIMES</button>
       </div>
+      <button className={`tiny wide dir ${session.directing ? "on" : ""}`} title="The director cuts between the action like the TV feed: flying laps, drivers about to drop out, close fights and trouble. Click any driver to pin the camera." onClick={() => { session.directing = !session.directing; }}>
+        {session.directing ? "DIRECTOR CAM: ON" : "DIRECTOR CAM: OFF"}
+      </button>
+      <button className="tiny wide" onClick={() => (session.followId = sim.order[0].id)}>
+        CAM: LEADER
+      </button>
     </section>
   );
 }
@@ -418,9 +424,6 @@ function QualiCard({ session, car }: { session: QualiSession; car: QCar }) {
           {car.note && <p className="hint">{car.note}</p>}
           <button className="tiny wide" onClick={() => (session.followId = car.id)}>
             CAM: {e.driver.code}
-          </button>
-          <button className={`tiny wide dir ${session.directing ? "on" : ""}`} title="The director follows flying laps, the bubble and head to heads like the TV feed. Click any driver to pin the camera." onClick={() => { session.directing = !session.directing; }}>
-            {session.directing ? "DIRECTOR CAM: ON" : "DIRECTOR CAM: OFF"}
           </button>
         </>
       )}
