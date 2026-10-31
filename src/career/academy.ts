@@ -19,7 +19,7 @@ import { budgetBlock, driversOf } from "./finance";
 
 export type Series = "kart" | "f4" | "f3" | "f2";
 export const SERIES: Series[] = ["kart", "f4", "f3", "f2"];
-export const SERIES_LABEL: Record<Series, string> = { kart: "Karting", f4: "Formula 4", f3: "Formula 3", f2: "Formula 2" };
+export const SERIES_LABEL: Record<Series, string> = { kart: "Karting", f4: "Series 4", f3: "Series 3", f2: "Series 2" };
 export const SERIES_COST: Record<Series, number> = { kart: 0.3, f4: 0.7, f3: 1.6, f2: 3.2 };
 const SERIES_SEATS: Record<Series, number> = { kart: 28, f4: 40, f3: 30, f2: 22 };
 const SERIES_BAND: Record<Series, [number, number]> = { kart: [0, 0.3], f4: [0.2, 0.5], f3: [0.38, 0.68], f2: [0.52, 0.92] };
@@ -237,11 +237,11 @@ export function initAcademy(s: CareerState) {
     a.prospects[p.id] = p;
     a.tables[p.series] = { year: s.year, round: 0 };
   }
-  // the F1 pool is the best of F2 and F3 who could step up
+  // the top-flight pool is the best of F2 and F3 who could step up
   s.pool = Object.values(a.prospects)
     .filter((p) => p.series === "f2" || p.series === "f3")
     .map((p) => toJunior(s, p));
-  // each team starts with a scout; the player's covers Formula 2
+  // each team starts with a scout; the player's covers Series 2
   for (const id of Object.keys(s.teams)) {
     const st = Object.values(s.staff).find((x) => x.teamId === id && x.role === "scout");
     if (st && id === s.teamId) a.scouts[st.id] = "f2";
@@ -708,14 +708,14 @@ export function academyYearEnd(s: CareerState): string[] {
     p.wins = 0;
     p.fatigue = clamp(p.fatigue - 0.3, 0, 1);
   }
-  // step up into the F1 pool
+  // step up into the top-flight pool
   for (const p of Object.values(a.prospects)) {
     if (p.status === "gone" || p.status === "f1pool" || p.status === "f1") continue;
     if (f1Eligible(s, p) && levelOf(p) >= 0.5) {
       const was = p.status;
       p.status = was === "academy" || was === "rival" ? was : "f1pool";
       if (!s.pool.some((j) => j.id === p.id)) s.pool.push(toJunior(s, p));
-      if (was === "academy" && p.owner === me) notes.push(`${p.name} now has the licence points to race in F1. Promote him in the Academy screen.`);
+      if (was === "academy" && p.owner === me) notes.push(`${p.name} now has the licence points to race in the top flight. Promote him in the Academy screen.`);
     }
   }
   s.pool = s.pool.filter((j) => {
@@ -1014,7 +1014,7 @@ export function setRookie(s: CareerState, id: string | null): string | null {
   return null;
 }
 
-/** Turns a prospect into an F1 driver for the player's team. Needs the super licence. */
+/** Turns a prospect into a top-flight driver for the player's team. Needs the super licence. */
 export function promoteToSeat(s: CareerState, id: string, slot: 0 | 1, salary: number, years: number): string {
   const a = s.academy;
   const p = a.prospects[id];
@@ -1028,7 +1028,7 @@ export function promoteToSeat(s: CareerState, id: string, slot: 0 | 1, salary: n
   p.status = "f1";
   a.graduates.push(p.id);
   s.pool = s.pool.filter((j) => j.id !== p.id);
-  p.log.unshift(`${s.year}: promoted to an F1 seat.`);
+  p.log.unshift(`${s.year}: promoted to a top-flight seat.`);
   news(s, `${p.name} makes the step from your academy to a race seat.`, { importance: 3, cause: "Academy graduate", tag: "academy" });
   return notes.join(" ");
 }
@@ -1047,7 +1047,7 @@ export function prospectToDriver(s: CareerState, p: Prospect): DriverState {
   };
 }
 
-/** An AI team's pool junior who becomes an F1 driver keeps his prospect record in step. */
+/** An AI team's pool junior who becomes a top-flight driver keeps his prospect record in step. */
 export function markGone(s: CareerState, id: string) {
   const p = s.academy.prospects[id];
   if (p) p.status = "f1";

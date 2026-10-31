@@ -358,7 +358,7 @@ export function TeamProfile({ s, d, id }: { s: CareerState; d: Dispatch; id: str
 }
 
 /** A staff member's page: CV, what he is known for, and what you know about his skill. */
-const SERIES_NAME: Record<string, string> = { f4: "Formula 4", f3: "Formula 3", f2: "Formula 2" };
+const SERIES_NAME: Record<string, string> = { f4: "Series 4", f3: "Series 3", f2: "Series 2" };
 
 /** A junior driver: what the scouts have seen so far, shown as ranges that tighten with every look. */
 export function ProspectProfile({ s, id }: { s: CareerState; id: string }) {

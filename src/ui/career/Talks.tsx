@@ -100,7 +100,7 @@ export function TalkPanel({ s, d, id, onClose }: Props & { id: number; onClose: 
       )}
       {!closed && t.status === "agreed" && t.kind === "junior" && t.junior && (
         <div className="c-deal">
-          <p><b>Terms agreed:</b> {fmtMoney(t.junior.retainer)} a year for {t.junior.years} years, buyout {fmtMoney(t.junior.buyout, 0)}{t.junior.firstRefusal ? ", first refusal on his F1 contract" : ""}.</p>
+          <p><b>Terms agreed:</b> {fmtMoney(t.junior.retainer)} a year for {t.junior.years} years, buyout {fmtMoney(t.junior.buyout, 0)}{t.junior.firstRefusal ? ", first refusal on his GP contract" : ""}.</p>
           <div className="row-btns"><button className="btn primary big" onClick={() => act({ type: "talkSign", id: t.id })}>SIGN HIM</button></div>
         </div>
       )}
@@ -132,7 +132,7 @@ export function TalkPanel({ s, d, id, onClose }: Props & { id: number; onClose: 
           <div className="c-row"><span>Retainer {fmtMoney(ret, 2)}</span><input type="range" min={0.2} max={3} step={0.05} value={ret} onChange={(e) => setRet(round2(Number(e.target.value)))} /></div>
           <div className="c-row"><span>Years</span><div className="seg">{[1, 2, 3].map((y) => <button key={y} className={years === y ? "on" : ""} onClick={() => setYears(y)}>{y}</button>)}</div></div>
           <div className="c-row"><span>Buyout {fmtMoney(buyout, 0)}</span><input type="range" min={1} max={10} step={1} value={buyout} onChange={(e) => setBuyout(Number(e.target.value))} /></div>
-          <div className="c-row"><span>First refusal</span><label className="small"><input type="checkbox" checked={fr} onChange={(e) => setFr(e.target.checked)} /> HE MUST OFFER YOU HIS F1 DEAL FIRST</label></div>
+          <div className="c-row"><span>First refusal</span><label className="small"><input type="checkbox" checked={fr} onChange={(e) => setFr(e.target.checked)} /> HE MUST OFFER YOU HIS GP DEAL FIRST</label></div>
           <div className="row-btns"><button className="btn primary" onClick={() => act({ type: "talkJuniorOffer", id: t.id, years, retainer: ret, buyout, firstRefusal: fr })}>MAKE THE OFFER</button></div>
         </div>
       )}

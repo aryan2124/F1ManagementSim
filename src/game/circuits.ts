@@ -40,16 +40,16 @@ export interface CircuitMeta {
   /** Rough real-world pole time in seconds, used only to calibrate the physics (tests). */
   poleRef?: number;
   theme: ThemeId;
-  /** Draw a lake in the infield (Albert Park). */
+  /** Draw a lake in the infield (the Melbourne park). */
   lake?: boolean;
   /** Draw the sea along one compass side of the circuit. */
   sea?: "W" | "E" | "N" | "S";
-  /** 2026 calendar position (1 based) when it is on the calendar. */
+  /** season calendar position (1 based) when it is on the calendar. */
   round?: number;
   sprint?: boolean;
-  /** Date label, 2026. */
+  /** Date label. */
   date?: string;
-  /** True for classic and historic circuits that are not on the 2026 calendar. */
+  /** True for classic and historic circuits that are not on the season calendar. */
   classic?: boolean;
 }
 
@@ -65,51 +65,51 @@ const C = (m: Partial<CircuitMeta> & Pick<CircuitMeta, "id" | "geoId" | "short" 
 });
 
 /**
- * Every circuit the game ships with. The 2026 calendar entries carry their round number.
+ * Every circuit the game ships with. The season calendar entries carry their round number.
  * Layouts are real GPS centrelines (see scripts/import-circuits.mjs).
  */
 export const CIRCUITS: CircuitMeta[] = [
-  C({ id: "albert-park", geoId: "au-1953", short: "Albert Park", gp: "Australian Grand Prix", country: "Australia", theme: "park", lake: true, round: 1, date: "8 Mar", gripScale: 1.385, poleRef: 75.1, tyreSeverity: 0.95 }),
+  C({ id: "albert-park", geoId: "au-1953", short: "Melbourne", gp: "Australian Grand Prix", country: "Australia", theme: "park", lake: true, round: 1, date: "8 Mar", gripScale: 1.385, poleRef: 75.1, tyreSeverity: 0.95 }),
   C({ id: "shanghai", geoId: "cn-2004", short: "Shanghai", gp: "Chinese Grand Prix", country: "China", theme: "plain", round: 2, sprint: true, date: "15 Mar", gripScale: 0.989, poleRef: 90.6, tyreSeverity: 1.05 }),
   C({ id: "suzuka", geoId: "jp-1962", short: "Suzuka", gp: "Japanese Grand Prix", country: "Japan", theme: "pine", round: 3, date: "29 Mar", gripScale: 1.089, poleRef: 87.0, tyreSeverity: 1.15 }),
   C({ id: "miami", geoId: "us-2022", short: "Miami", gp: "Miami Grand Prix", country: "United States", theme: "tropical", round: 4, sprint: true, date: "3 May", gripScale: 0.973, poleRef: 86.2 }),
   C({ id: "montreal", geoId: "ca-1978", short: "Montreal", gp: "Canadian Grand Prix", country: "Canada", theme: "park", round: 5, sprint: true, date: "24 May", gripScale: 1.025, poleRef: 70.9, tyreSeverity: 0.9 }),
   C({ id: "monaco", geoId: "mc-1929", short: "Monaco", gp: "Monaco Grand Prix", country: "Monaco", theme: "city", round: 6, date: "7 Jun", gripScale: 0.951, poleRef: 69.9, width: 10, vmax: 84, tyreSeverity: 0.6 }),
-  C({ id: "barcelona", geoId: "es-1991", short: "Barcelona", gp: "Barcelona-Catalunya Grand Prix", country: "Spain", theme: "dry", round: 7, date: "14 Jun", gripScale: 1.035, poleRef: 71.5, tyreSeverity: 1.15 }),
-  C({ id: "red-bull-ring", geoId: "at-1969", short: "Red Bull Ring", gp: "Austrian Grand Prix", country: "Austria", theme: "alpine", round: 8, date: "28 Jun", gripScale: 1.093, poleRef: 63.9, tyreSeverity: 1.0 }),
+  C({ id: "barcelona", geoId: "es-1991", short: "Barcelona", gp: "Barcelona Grand Prix", country: "Spain", theme: "dry", round: 7, date: "14 Jun", gripScale: 1.035, poleRef: 71.5, tyreSeverity: 1.15 }),
+  C({ id: "red-bull-ring", geoId: "at-1969", short: "Spielberg", gp: "Austrian Grand Prix", country: "Austria", theme: "alpine", round: 8, date: "28 Jun", gripScale: 1.093, poleRef: 63.9, tyreSeverity: 1.0 }),
   C({ id: "silverstone", geoId: "gb-1948", short: "Silverstone", gp: "British Grand Prix", country: "United Kingdom", theme: "plain", round: 9, sprint: true, date: "5 Jul", gripScale: 1.145, poleRef: 85.8, tyreSeverity: 1.1 }),
-  C({ id: "spa", geoId: "be-1925", short: "Spa-Francorchamps", gp: "Belgian Grand Prix", country: "Belgium", theme: "pine", round: 10, date: "19 Jul", gripScale: 1.057, poleRef: 100.5, tyreSeverity: 0.95 }),
-  C({ id: "hungaroring", geoId: "hu-1986", short: "Hungaroring", gp: "Hungarian Grand Prix", country: "Hungary", theme: "dry", round: 11, date: "26 Jul", gripScale: 1.069, poleRef: 75.2, tyreSeverity: 0.95 }),
+  C({ id: "spa", geoId: "be-1925", short: "Francorchamps", gp: "Belgian Grand Prix", country: "Belgium", theme: "pine", round: 10, date: "19 Jul", gripScale: 1.057, poleRef: 100.5, tyreSeverity: 0.95 }),
+  C({ id: "hungaroring", geoId: "hu-1986", short: "Mogyoród", gp: "Hungarian Grand Prix", country: "Hungary", theme: "dry", round: 11, date: "26 Jul", gripScale: 1.069, poleRef: 75.2, tyreSeverity: 0.95 }),
   C({ id: "zandvoort", geoId: "nl-1948", short: "Zandvoort", gp: "Dutch Grand Prix", country: "Netherlands", theme: "dunes", round: 12, sprint: true, date: "23 Aug", gripScale: 1.188, poleRef: 68.7, tyreSeverity: 1.0, width: 12 }),
   C({ id: "monza", geoId: "it-1922", short: "Monza", gp: "Italian Grand Prix", country: "Italy", theme: "park", round: 13, date: "6 Sep", gripScale: 1.081, poleRef: 78.8, vmax: 96, tyreSeverity: 0.8 }),
-  C({ id: "madring", geoId: "es-2026", short: "Madring", gp: "Spanish Grand Prix", country: "Spain", theme: "dry", round: 14, date: "13 Sep", width: 12 }),
+  C({ id: "madring", geoId: "es-2026", short: "Madrid", gp: "Madrid Grand Prix", country: "Spain", theme: "dry", round: 14, date: "13 Sep", width: 12 }),
   C({ id: "baku", geoId: "az-2016", short: "Baku", gp: "Azerbaijan Grand Prix", country: "Azerbaijan", theme: "city", round: 15, date: "26 Sep", gripScale: 0.812, poleRef: 101.1, width: 11, tyreSeverity: 0.85 }),
-  C({ id: "sepang", geoId: "my-1999", short: "Sepang", gp: "Bahrain Grand Prix", country: "Malaysia", theme: "tropical", round: 16, date: "4 Oct", gripScale: 0.984, poleRef: 93, tyreSeverity: 1.2 }),
-  C({ id: "marina-bay", geoId: "sg-2008", short: "Marina Bay", gp: "Singapore Grand Prix", country: "Singapore", theme: "cityNight", round: 17, sprint: true, date: "11 Oct", gripScale: 1.043, poleRef: 89.2, width: 11, tyreSeverity: 0.9 }),
-  C({ id: "cota", geoId: "us-2012", short: "Austin", gp: "United States Grand Prix", country: "United States", theme: "plain", round: 18, date: "25 Oct", gripScale: 1.181, poleRef: 92.6, tyreSeverity: 1.05 }),
+  C({ id: "sepang", geoId: "my-1999", short: "Sepang", gp: "Malaysian Grand Prix", country: "Malaysia", theme: "tropical", round: 16, date: "4 Oct", gripScale: 0.984, poleRef: 93, tyreSeverity: 1.2 }),
+  C({ id: "marina-bay", geoId: "sg-2008", short: "Singapore", gp: "Singapore Grand Prix", country: "Singapore", theme: "cityNight", round: 17, sprint: true, date: "11 Oct", gripScale: 1.043, poleRef: 89.2, width: 11, tyreSeverity: 0.9 }),
+  C({ id: "cota", geoId: "us-2012", short: "Austin", gp: "Austin Grand Prix", country: "United States", theme: "plain", round: 18, date: "25 Oct", gripScale: 1.181, poleRef: 92.6, tyreSeverity: 1.05 }),
   C({ id: "mexico", geoId: "mx-1962", short: "Mexico City", gp: "Mexico City Grand Prix", country: "Mexico", theme: "plain", round: 19, date: "1 Nov", gripScale: 1.007, poleRef: 75.6, tyreSeverity: 0.85 }),
-  C({ id: "interlagos", geoId: "br-1940", short: "Interlagos", gp: "Sao Paulo Grand Prix", country: "Brazil", theme: "tropical", round: 20, date: "8 Nov", gripScale: 1.051, poleRef: 69.5, tyreSeverity: 1.0 }),
+  C({ id: "interlagos", geoId: "br-1940", short: "São Paulo", gp: "Sao Paulo Grand Prix", country: "Brazil", theme: "tropical", round: 20, date: "8 Nov", gripScale: 1.051, poleRef: 69.5, tyreSeverity: 1.0 }),
   C({ id: "las-vegas", geoId: "us-2023", short: "Las Vegas", gp: "Las Vegas Grand Prix", country: "United States", theme: "cityNight", round: 21, date: "21 Nov", gripScale: 0.882, poleRef: 92.3, width: 14, tyreSeverity: 0.8 }),
   C({ id: "lusail", geoId: "qa-2004", short: "Lusail", gp: "Qatar Grand Prix", country: "Qatar", theme: "desertNight", round: 22, date: "29 Nov", gripScale: 1.106, poleRef: 80.9, tyreSeverity: 1.3 }),
-  C({ id: "yas-marina", geoId: "ae-2009", short: "Yas Marina", gp: "Abu Dhabi Grand Prix", country: "United Arab Emirates", theme: "desertNight", round: 23, date: "6 Dec", gripScale: 1.140, poleRef: 82.2, tyreSeverity: 0.85 }),
+  C({ id: "yas-marina", geoId: "ae-2009", short: "Abu Dhabi", gp: "Abu Dhabi Grand Prix", country: "United Arab Emirates", theme: "desertNight", round: 23, date: "6 Dec", gripScale: 1.140, poleRef: 82.2, tyreSeverity: 0.85 }),
 
-  // Not on the 2026 calendar but part of the world (the Bahrain and Saudi rounds moved or were cancelled).
+  // Not on the season calendar but part of the world (the Bahrain and Saudi rounds moved or were cancelled).
   C({ id: "bahrain", geoId: "bh-2002", short: "Sakhir", gp: "Bahrain Grand Prix", country: "Bahrain", theme: "desertNight", gripScale: 0.951, poleRef: 89.8, tyreSeverity: 1.25, classic: true }),
   C({ id: "jeddah", geoId: "sa-2021", short: "Jeddah", gp: "Saudi Arabian Grand Prix", country: "Saudi Arabia", theme: "cityNight", sea: "W", gripScale: 1.255, poleRef: 87.3, width: 12, tyreSeverity: 0.8, classic: true }),
-  C({ id: "imola", geoId: "it-1953", short: "Imola", gp: "Emilia Romagna Grand Prix", country: "Italy", theme: "park", gripScale: 1.188, poleRef: 74.7, classic: true }),
-  C({ id: "paul-ricard", geoId: "fr-1969", short: "Paul Ricard", gp: "French Grand Prix", country: "France", theme: "dry", classic: true }),
-  C({ id: "magny-cours", geoId: "fr-1960", short: "Magny-Cours", gp: "French Grand Prix", country: "France", theme: "plain", classic: true }),
-  C({ id: "hockenheim", geoId: "de-1932", short: "Hockenheim", gp: "German Grand Prix", country: "Germany", theme: "pine", classic: true }),
-  C({ id: "nurburgring", geoId: "de-1927", short: "Nurburgring", gp: "European Grand Prix", country: "Germany", theme: "pine", classic: true }),
-  C({ id: "istanbul", geoId: "tr-2005", short: "Istanbul Park", gp: "Turkish Grand Prix", country: "Turkey", theme: "dry", classic: true }),
+  C({ id: "imola", geoId: "it-1953", short: "Imola", gp: "Imola Grand Prix", country: "Italy", theme: "park", gripScale: 1.188, poleRef: 74.7, classic: true }),
+  C({ id: "paul-ricard", geoId: "fr-1969", short: "Le Castellet", gp: "Le Castellet Grand Prix", country: "France", theme: "dry", classic: true }),
+  C({ id: "magny-cours", geoId: "fr-1960", short: "Nevers", gp: "Nevers Grand Prix", country: "France", theme: "plain", classic: true }),
+  C({ id: "hockenheim", geoId: "de-1932", short: "Hockenheim", gp: "Hockenheim Grand Prix", country: "Germany", theme: "pine", classic: true }),
+  C({ id: "nurburgring", geoId: "de-1927", short: "Nürburg", gp: "Nürburg Grand Prix", country: "Germany", theme: "pine", classic: true }),
+  C({ id: "istanbul", geoId: "tr-2005", short: "Istanbul", gp: "Turkish Grand Prix", country: "Turkey", theme: "dry", classic: true }),
   C({ id: "sochi", geoId: "ru-2014", short: "Sochi", gp: "Russian Grand Prix", country: "Russia", theme: "plain", classic: true }),
-  C({ id: "portimao", geoId: "pt-2008", short: "Portimao", gp: "Portuguese Grand Prix", country: "Portugal", theme: "dry", classic: true }),
+  C({ id: "portimao", geoId: "pt-2008", short: "Portimão", gp: "Portimão Grand Prix", country: "Portugal", theme: "dry", classic: true }),
   C({ id: "mugello", geoId: "it-1914", short: "Mugello", gp: "Tuscan Grand Prix", country: "Italy", theme: "park", classic: true }),
-  C({ id: "estoril", geoId: "pt-1972", short: "Estoril", gp: "Portuguese Grand Prix", country: "Portugal", theme: "dry", classic: true }),
-  C({ id: "jacarepagua", geoId: "br-1977", short: "Jacarepagua", gp: "Brazilian Grand Prix", country: "Brazil", theme: "tropical", classic: true }),
+  C({ id: "estoril", geoId: "pt-1972", short: "Estoril", gp: "Estoril Grand Prix", country: "Portugal", theme: "dry", classic: true }),
+  C({ id: "jacarepagua", geoId: "br-1977", short: "Rio de Janeiro", gp: "Brazilian Grand Prix", country: "Brazil", theme: "tropical", classic: true }),
   C({ id: "buenos-aires", geoId: "ar-1952", short: "Buenos Aires", gp: "Argentine Grand Prix", country: "Argentina", theme: "plain", classic: true }),
-  C({ id: "kyalami", geoId: "za-1961", short: "Kyalami", gp: "South African Grand Prix", country: "South Africa", theme: "dry", classic: true }),
-  C({ id: "watkins-glen", geoId: "us-1956", short: "Watkins Glen", gp: "United States Grand Prix", country: "United States", theme: "pine", classic: true }),
+  C({ id: "kyalami", geoId: "za-1961", short: "Johannesburg", gp: "South African Grand Prix", country: "South Africa", theme: "dry", classic: true }),
+  C({ id: "watkins-glen", geoId: "us-1956", short: "Watkins Glen", gp: "Watkins Glen Grand Prix", country: "United States", theme: "pine", classic: true }),
 ];
 
 export const CALENDAR_2026: CircuitMeta[] = CIRCUITS.filter((c) => c.round).sort((a, b) => (a.round ?? 0) - (b.round ?? 0));

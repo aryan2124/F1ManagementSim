@@ -4,7 +4,7 @@
 
 (That is the live site. Whatever is on the `main` branch of the GitHub repo is what ends up there, a minute or two after each push. See section 3.)
 
-A click-to-advance, multiplayer-ready F1 management game with pixel-art race weekends.
+A click-to-advance, multiplayer-ready Grand Prix management game with pixel-art race weekends.
 Real 2026 teams and drivers, real circuit layouts, a playable qualifying session and the real sporting rules.
 Personal and private project: the real names and track shapes are used without licences, so do not publish or sell it.
 
@@ -33,7 +33,7 @@ Stack: Vite, React 19, TypeScript, PixiJS 8, Vitest, Cloudflare Workers + Durabl
 ## 2. Check that everything works
 
 ```
-npm test           # sim determinism, no car overlap, F1 rules, qualifying, pole time calibration, real names, league logic, UI flow
+npm test           # sim determinism, no car overlap, season rules, qualifying, pole time calibration, league logic, UI flow
 npm run typecheck  # app and worker types
 npm run build      # production bundle into dist/
 ```
@@ -109,7 +109,7 @@ The 2026 calendar has 23 rounds (Bahrain and Saudi Arabia are not on it, so Sakh
 
 **Rules implemented.** Race: two different dry compounds or disqualification, time penalties (jump start, track limits every third warning, causing a collision), safety car and virtual safety car with pit stops allowed, 80 km/h pit lane, 90% classification, 2 hour limit, points 25-18-15-12-10-8-6-4-2-1. Qualifying: Q1 18 min / Q2 15 / Q3 12, slowest six out after Q1 and Q2, a lap counts only if it starts before the chequered flag, deleted laps for track limits, red flags after crashes, 107% rule, impeding grid penalties, limited tyre sets.
 
-**Drivers.** F1 uses the real 2026 line-ups. F2, F3, Formula Regional, GB3, F1 Academy, F4 and the reserve bench use real entry lists first. Made-up names appear only once the real list for a tier runs out, and they are marked FICTIONAL. Junior ratings are the game's own estimates, not official data. Team and driver ratings are also the game's own estimates.
+**Drivers.** The whole world is fictional: 11 invented teams, 22 invented drivers with fixed Race IQ, and invented junior ladders and reserve benches generated from a seed. Ratings are the game's own design.
 
 **Tuning.** Constants live at the top of `src/sim/track.ts` (physics) and `src/sim/engine.ts` (tyre life shares, overtaking, following). After any change run `npm test`.
 

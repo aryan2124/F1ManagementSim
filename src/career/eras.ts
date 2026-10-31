@@ -487,7 +487,7 @@ export function eraSummer(s: CareerState) {
     pushCard(s, "era", `New regulations for ${era.startYear}: the framework`, `The rulemakers have published a ${THEME_LABEL[era.theme].toLowerCase()} framework. Headline change: ${MODULE_BY_ID[head!.id].name} (${MODULE_BY_ID[head!.id].intent.toLowerCase()}). Other modules are still secret. Open the Rules tab to read the brief, start Concept Lab studies and set how much of your factory looks ahead.`, [{ id: "ok", label: "Open it later" }], { urgency: 2, deadline: s.day + 10 });
   } else if (stage === 2) {
     applyAILobbyNote(s);
-    news(s, `DRAFT RULES: full text for ${names.join(", ")}. The F1 Commission votes at the end of the break: each module needs ${VOTE_NEEDED} of ${Object.keys(s.teams).length} votes.`, { importance: 3, cause: "Draft regulations published" });
+    news(s, `DRAFT RULES: full text for ${names.join(", ")}. The Grand Prix Commission votes at the end of the break: each module needs ${VOTE_NEEDED} of ${Object.keys(s.teams).length} votes.`, { importance: 3, cause: "Draft regulations published" });
     pushCard(s, "era", `Draft rules are out`, `Rule text for every module is published, with strengths shown as ranges. The Commission will vote at the end of this break. Each module needs ${VOTE_NEEDED} of ${Object.keys(s.teams).length} team votes to pass in full; one that fails only passes as a token version. You hold one vote. You have ${e.influence} influence to persuade teams, and you can trade your vote for theirs. Open the Rules tab.`, [{ id: "ok", label: "Read the brief" }], { urgency: 2, deadline: s.day + 12 });
   } else if (stage === 3) {
     holdVote(s, era);

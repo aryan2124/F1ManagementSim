@@ -160,7 +160,7 @@ describe("music stays constant (items 7, 8)", () => {
     const settings: WeekendSettings = { teamId: "mer", circuitId: "silverstone", distance: "quick", seed: 31 };
     const w = createWeekend(settings);
     const grid = simulateQualifying(w);
-    const session = new RaceSession(raceConfigFrom(w, grid, { "f1-rus": "S", "f1-ant": "M" }), w.humanIds);
+    const session = new RaceSession(raceConfigFrom(w, grid, { "dr-wex": "S", "dr-bel": "M" }), w.humanIds);
     const seen = new Set<string>();
     for (let i = 0; i < 40; i++) {
       session.sim.run(300);

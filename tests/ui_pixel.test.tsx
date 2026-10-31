@@ -65,18 +65,18 @@ describe("module icons", () => {
 describe("portraits", () => {
   const moods: Mood[] = ["happy", "ok", "tense", "angry", "gone"];
   it("renders each mood and the moods differ", () => {
-    const outs = moods.map((m) => render(<DriverPortrait code="VER" teamColor="#e63946" seed={5} mood={m} />));
+    const outs = moods.map((m) => render(<DriverPortrait code="BRO" teamColor="#e63946" seed={5} mood={m} />));
     for (const o of outs) expect(o).toContain("<svg");
     expect(new Set(outs).size).toBe(moods.length);
   });
   it("is deterministic per seed and varies across seeds", () => {
-    const a = render(<DriverPortrait code="HAM" teamColor="#2ec4b6" seed={1} />);
-    expect(render(<DriverPortrait code="HAM" teamColor="#2ec4b6" seed={1} />)).toBe(a);
-    const many = new Set(Array.from({ length: 12 }, (_, i) => render(<DriverPortrait code="HAM" teamColor="#2ec4b6" seed={i} />)));
+    const a = render(<DriverPortrait code="HAR" teamColor="#2ec4b6" seed={1} />);
+    expect(render(<DriverPortrait code="HAR" teamColor="#2ec4b6" seed={1} />)).toBe(a);
+    const many = new Set(Array.from({ length: 12 }, (_, i) => render(<DriverPortrait code="HAR" teamColor="#2ec4b6" seed={i} />)));
     expect(many.size).toBeGreaterThan(6);
   });
   it("uses the team colour for the helmet", () => {
-    expect(render(<DriverPortrait code="LEC" teamColor="#123456" seed={2} />).toLowerCase()).toContain("#123456");
+    expect(render(<DriverPortrait code="COR" teamColor="#123456" seed={2} />).toLowerCase()).toContain("#123456");
   });
   it("renders staff in every role", () => {
     for (const role of ["boss", "engineer", "strategist", "designer", "finance", "scout", "coach", "media", "unknown role"])

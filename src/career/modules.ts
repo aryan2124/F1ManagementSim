@@ -2,7 +2,7 @@ import type { Area } from "./types";
 
 /**
  * The regulation module library: 50 rule changes the era engine can pick from.
- * Every number here is the game's own design. Nothing is real F1 data except where the rule text says so.
+ * Every number here is the game's own design. Nothing is real-world racing data except where the rule text says so.
  *
  * "live" says what a module really does in this build:
  *   sim    changes how the simulated race is run (tyres, safety car, pit time, points by laps led)
@@ -179,7 +179,7 @@ export const MODULES: ModuleDef[] = [
   M({
     id: "batterySwap", name: "Battery swap", category: "Power", kind: "setting", live: "sim",
     rule: "The energy store may be swapped at a stop.",
-    change: "New pit decision: swap or not, with a time cost. Not done in real F1.",
+    change: "New pit decision: swap or not, with a time cost. Not done in real-world racing.",
     headline: ["spectacle", "power"], support: ["spectacle"], intent: "Strategy through energy",
     unknowns: ["Swap time cost", "Value of a full battery"], scale: "Time cost of a swap",
     flags: () => ({ batterySwap: true }),
@@ -383,7 +383,7 @@ export const MODULES: ModuleDef[] = [
   }),
   M({
     id: "weatherCard", name: "Weather card", category: "Race format", kind: "setting", live: "career",
-    rule: "The FIA publishes a dry, mixed or wet card on Thursday with a chance range, and the race follows it loosely.",
+    rule: "The governing body publishes a dry, mixed or wet card on Thursday with a chance range, and the race follows it loosely.",
     change: "New early decision: commit setup and tyres before the forecast is certain.",
     headline: ["spectacle", "safety"], support: ["spectacle", "safety"], intent: "Set expectations early",
     unknowns: ["How reliable the card is", "Setup cost of guessing wrong"], scale: "How reliable the card is",
@@ -513,7 +513,7 @@ export const MODULES: ModuleDef[] = [
     id: "rookieRule", name: "Rookie race rule", category: "People", kind: "setting", live: "career",
     rule: "Every team must field a rookie in two races per season.",
     change: "New decision: which two races, and an academy payoff for prospects who are ready.",
-    headline: ["spectacle", "equaliser"], support: ["equaliser", "spectacle"], intent: "More young drivers in F1",
+    headline: ["spectacle", "equaliser"], support: ["equaliser", "spectacle"], intent: "More young drivers in the top flight",
     unknowns: ["Cost of a weak rookie", "Value of early experience"], scale: "Races per season",
     flags: () => ({ rookieRule: true }),
   }),

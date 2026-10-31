@@ -1,67 +1,62 @@
 /**
  * The people on the pit wall.
  *
- * Race engineers and team principals are the real 2026 names, checked against Motor Sport Magazine's
- * and Formula1.com's 2026 line-up lists. They change during a season, so treat them as a snapshot
- * (Hamilton's engineer at Ferrari was listed as temporary).
- *
- * Chief strategists are NOT real: I could not verify who holds those jobs in 2026, so they are invented
- * names and flagged as such. How each wall behaves (see `BRAINS`) is the game's own caricature of public
- * reputation, not insider knowledge.
+ * Race engineers, team principals and chief strategists are all invented. How each wall behaves
+ * (see `BRAINS`) is the game's own design.
  */
 
-/** Race engineer by driver code. */
+/** Race engineer by driver code. All names are invented. */
 export const ENGINEERS: Record<string, string> = {
-  NOR: "Will Joseph",
-  PIA: "Tom Stallard",
-  RUS: "Marcus Dudley",
-  ANT: "Peter Bonnington",
-  VER: "Gianpiero Lambiase",
-  HAD: "Richard Wood",
-  LEC: "Bryan Bozzi",
-  HAM: "Carlo Santi",
-  ALB: "James Urwin",
-  SAI: "Gaetan Jago",
-  LAW: "Alexandre Iliopoulos",
-  LIN: "Pierre Hamelin",
-  ALO: "Andrew Vizard",
-  STR: "Gary Gannon",
-  BEA: "Ronan O'Hare",
-  OCO: "Laura Muller",
-  HUL: "Steven Petrik",
-  BOR: "Jose Manuel Lopez",
-  GAS: "Josh Peckett",
-  COL: "Stuart Barlow",
-  BOT: "John Howard",
-  PER: "Carlo Pasetti",
+  CAR: "Walter Joss",
+  QUI: "Tobias Stannard",
+  WEX: "Martin Dowling",
+  BEL: "Peter Bonham",
+  BRO: "Gianni Lambertini",
+  FOU: "Richard Wolfe",
+  COR: "Bruno Bazzi",
+  HAR: "Carlo Santini",
+  SOR: "Jamie Urquhart",
+  ALA: "Gaston Jarry",
+  RAT: "Alexis Ilario",
+  WHI: "Pierre Hamlin",
+  GAR: "Andrew Vickery",
+  BRI: "Gareth Gannet",
+  ASH: "Ronan O'Hara",
+  VAL: "Lara Mueller",
+  ALD: "Steffen Petric",
+  TAV: "Jose Manuel Lorca",
+  DEL: "Joss Pickett",
+  PAL: "Stuart Barnes",
+  LAH: "John Hewitt",
+  CAD: "Carlo Pasquale",
 };
 
-/** What the radio calls the engineer ("GP", "Bono"). */
+/** What the radio calls the engineer. */
 export const NICKNAMES: Record<string, string> = {
-  ANT: "Bono",
-  VER: "GP",
-  LEC: "Bryan",
-  HAM: "Carlo",
-  NOR: "Will",
-  PIA: "Tom",
-  RUS: "Marcus",
+  BEL: "Bonny",
+  BRO: "Lambo",
+  COR: "Bruno",
+  HAR: "Carlo",
+  CAR: "Walt",
+  QUI: "Toby",
+  WEX: "Marty",
 };
 
 export const PRINCIPALS: Record<string, string> = {
-  mcl: "Andrea Stella",
-  mer: "Toto Wolff",
-  rbr: "Laurent Mekies",
-  fer: "Fred Vasseur",
-  wil: "James Vowles",
-  rbs: "Alan Permane",
-  ast: "Adrian Newey",
-  hss: "Ayao Komatsu",
-  aud: "Mattia Binotto",
-  alp: "Steve Nielsen",
-  cad: "Marcin Budkowski",
+  mcl: "Andrea Sorrentino",
+  mer: "Tobias Wendell",
+  rbr: "Laurent Mercier",
+  fer: "Federico Vassallo",
+  wil: "James Vaughan",
+  rbs: "Alan Perrin",
+  ast: "Adrian Neville",
+  hss: "Akira Komori",
+  aud: "Matteo Bianchi",
+  alp: "Steven Nolan",
+  cad: "Marek Budny",
 };
 
-/** Invented. Not the real strategists. */
+/** Chief strategists. Invented. */
 export const STRATEGISTS: Record<string, string> = {
   mcl: "Dana Whitcombe",
   mer: "Ian Rosworth",

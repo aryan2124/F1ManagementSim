@@ -40,7 +40,7 @@ import { driversOf } from "../src/career/finance";
 describe("send-off", () => {
   it("only the last race has donuts: the new champion and the retiring", () => {
     const s = newCareer("ast", 3);
-    expect(donutDrivers(s, {}, ["f1-alo"])).toEqual([]);
+    expect(donutDrivers(s, {}, ["dr-gar"])).toEqual([]);
     s.round = s.calendar.length - 1;
     const [a, b] = driversOf(s, "ast");
     s.standings.drivers[a!.id] = 10;

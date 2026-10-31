@@ -3,23 +3,20 @@ import type { DriverSpec } from "../sim/types";
 import { DRIVERS, TEAMS } from "./data";
 
 /**
- * Every real person the game knows about, ladder by ladder, plus a generator that invents
- * drivers ONLY after the real names for a tier have run out.
- *
- * Source: 2026 entry lists (F2, F3, FRECA, GB3, F1 Academy, Italian F4, British F4) and the F1 reserve bench.
- * Ratings for juniors are the game's own estimates (deterministic per name), not official data.
+ * Every person the game knows about, ladder by ladder. All names are invented and generated
+ * deterministically, so a world looks the same on every run.
  */
 
 export type Tier = "F1" | "F2" | "F3" | "FRECA" | "GB3" | "F1A" | "F4" | "RES";
 
 export const TIER_LABEL: Record<Tier, string> = {
-  F1: "FORMULA 1",
-  F2: "FORMULA 2",
-  F3: "FORMULA 3",
-  FRECA: "FORMULA REGIONAL EUROPE",
-  GB3: "GB3",
-  F1A: "F1 ACADEMY",
-  F4: "FORMULA 4 (ITALIA / BRITISH)",
+  F1: "GRAND PRIX",
+  F2: "SERIES 2",
+  F3: "SERIES 3",
+  FRECA: "CONTINENTAL SERIES",
+  GB3: "ISLAND SERIES",
+  F1A: "ACADEMY SERIES",
+  F4: "SERIES 4",
   RES: "RESERVES + FREE AGENTS",
 };
 
@@ -50,150 +47,51 @@ export interface Person {
 type Row = [name: string, nat: string];
 type Series = Record<string, Row[]>;
 
-const F2: Series = {
-  "Invicta Racing": [["Rafael Câmara", "BRA"], ["Joshua Dürksen", "PAR"]],
-  Hitech: [["Ritomo Miyata", "JPN"], ["Colton Herta", "USA"]],
-  "Campos Racing": [["Noel León", "MEX"], ["Nikola Tsolov", "BUL"]],
-  "DAMS Lucas Oil": [["Dino Beganovic", "SWE"], ["Roman Bilinski", "POL"]],
-  "MP Motorsport": [["Gabriele Minì", "ITA"], ["Oliver Goethe", "GER"]],
-  "Prema Racing": [["Sebastián Montoya", "COL"], ["Mari Boya", "ESP"]],
-  "Rodin Motorsport": [["Martinius Stenshorne", "NOR"], ["Alex Dunne", "IRL"]],
-  "ART Grand Prix": [["Kush Maini", "IND"], ["Tasanapol Inthraphuvasak", "THA"]],
-  "AIX Racing": [["Emerson Fittipaldi Jr.", "BRA"], ["Cian Shields", "GBR"]],
-  "Van Amersfoort Racing": [["Nico Varrone", "ARG"], ["Rafael Villagómez", "MEX"]],
-  Trident: [["Laurens van Hoepen", "NED"], ["John Bennett", "GBR"]],
+/** Invented junior teams per ladder. Nothing here is a real team or a real person. */
+const LADDER_TEAMS: Record<string, string[]> = {
+  F2: ["Beacon Motorsport", "Harrier Racing", "Quill Sport", "Northgate GP", "Sable Racing", "Tidewater Motorsport", "Kestrel Racing", "Ironbridge Sport", "Lantern Racing", "Foxglove Motorsport", "Redwood GP"],
+  F3: ["Beacon Motorsport", "Harrier Racing", "Quill Sport", "Northgate GP", "Sable Racing", "Tidewater Motorsport", "Kestrel Racing", "Ironbridge Sport", "Lantern Racing", "Foxglove Motorsport"],
+  FRECA: ["Harbour Racing", "Pinecrest Motorsport", "Alder GP", "Coppice Racing", "Saltmarsh Sport", "Birchwood Motorsport", "Fernhill Racing", "Stonebridge GP", "Marlin Sport", "Heron Racing"],
+  GB3: ["Hollow Oak Racing", "Dunmore Motorsport", "Tarn Sport", "Wrenfield Racing", "Cairn Motorsport", "Vale GP", "Linden Racing", "Moorgate Sport"],
+  F1A: ["Spark Academy", "Ember Academy", "Aurora Academy", "Mistral Academy", "Zephyr Academy"],
+  F4: ["Juniper Racing", "Teal Motorsport", "Wicker Sport", "Copperfield Racing", "Mallow Motorsport", "Gorse Racing", "Thistle Sport", "Oakhurst Racing", "Brindle Motorsport", "Quarry GP", "Fenwick Sport", "Lark Racing"],
 };
+const LADDER_PER_TEAM: Record<string, number> = { F2: 2, F3: 3, FRECA: 3, GB3: 3, F1A: 4, F4: 5 };
 
-const F3: Series = {
-  "Campos Racing": [["Théophile Naël", "FRA"], ["Ugo Ugochukwu", "USA"], ["Patrick Heuzenroeder", "AUS"], ["Ernesto Rivera", "MEX"]],
-  Trident: [["Noah Strømsted", "DEN"], ["Freddie Slater", "GBR"], ["Matteo De Palo", "ITA"]],
-  "MP Motorsport": [["Mattia Colnaghi", "ARG"], ["Tuukka Taponen", "FIN"], ["Alessandro Giusti", "FRA"]],
-  "ART Grand Prix": [["Taito Kato", "JPN"], ["Maciej Gładysz", "POL"], ["Kanato Le", "JPN"]],
-  "Van Amersfoort Racing": [["Hiyu Yamakoshi", "JPN"], ["Enzo Deligny", "FRA"], ["Bruno del Pino", "ESP"]],
-  "Rodin Motorsport": [["Pedro Clerot", "BRA"], ["Brando Badoer", "ITA"], ["Christian Ho", "SGP"], ["Niccolò Maccagnani", "ITA"]],
-  "Prema Racing": [["Louis Sharp", "NZL"], ["Alex Powell", "USA"], ["James Wharton", "AUS"], ["José Garfias", "MEX"]],
-  Hitech: [["Michael Shin", "KOR"], ["Fionn McLaughlin", "IRL"], ["Jin Nakamura", "JPN"]],
-  "AIX Racing": [["Brad Benavides", "USA"], ["Ricardo Escotto", "MEX"], ["Salim Hanna", "COL"], ["Yevan David", "SRI"], ["Fernando Barrichello", "BRA"]],
-  "DAMS Lucas Oil": [["Nicola Lacorte", "ITA"], ["Nandhavud Bhirombhakdi", "THA"], ["Gerrard Xie", "CHN"]],
-};
+/** Build the invented ladders. Deterministic: same names every run. */
+function buildSeries(): Record<string, Series> {
+  const out: Record<string, Series> = {};
+  const nats = Object.keys(FIRST);
+  for (const key of Object.keys(LADDER_TEAMS)) {
+    const rng = new Rng(hashSeed(`ladder:${key}`));
+    const series: Series = {};
+    for (const team of LADDER_TEAMS[key]) {
+      const rows: Row[] = [];
+      for (let k = 0; k < LADDER_PER_TEAM[key]; k++) {
+        const nat = rng.pick(nats);
+        rows.push([`${rng.pick(FIRST[nat])} ${rng.pick(LAST[nat])}`, nat]);
+      }
+      series[team] = rows;
+    }
+    out[key] = series;
+  }
+  return out;
+}
 
-const FRECA: Series = {
-  "Rodin Motorsport": [["Alex Ninovic", "AUS"], ["Reza Seewooruthun", "GBR"], ["Gabriel Gomez", "BRA"]],
-  "G4 Racing": [["Saqer Al-Maosherji", "KUW"], ["Rahim Alibhai", "USA"], ["Marcus Sæter", "NOR"]],
-  RPM: [["Miguel Costa", "BRA"], ["Jan Przyrowski", "POL"], ["Giovanni Maschio", "ITA"], ["Lewis Wherrell", "GBR"]],
-  "CL Motorsport": [["Enea Frey", "SUI"], ["Thomas Strauven", "BEL"], ["Noah Lisle", "AUS"], ["René Lammers", "NED"], ["Jules Roussel", "FRA"], ["Kyuho Lee", "KOR"], ["Ary Bansal", "IND"], ["Reno Francot", "NED"]],
-  "Van Amersfoort Racing": [["Andrea Dupé", "FRA"], ["Francisco Macedo", "POR"], ["Oleksandr Bondarev", "UKR"], ["Dion Gowda", "IND"]],
-  "R-ace GP": [["Yuki Sano", "JPN"], ["Rashid Al Dhaheri", "UAE"], ["Emanuele Olivieri", "ITA"]],
-  "MP Motorsport": [["Alexander Abkhazava", "KAZ"], ["Zhenrui Chi", "CHN"], ["Sebastian Wheldon", "USA"]],
-  "ART Grand Prix": [["Kabir Anurag", "SGP"], ["Matteo Giaccardi", "MON"], ["Alexandre Munoz", "FRA"]],
-  Trident: [["Maximilian Popov", "GRN"], ["Andrija Kostić", "SRB"], ["Kai Daryanani", "IND"]],
-  "Prema Racing": [["Kean Nakamura-Berta", "JPN"], ["Tomass Štolcermanis", "LAT"], ["Salim Hanna", "COL"]],
-};
+/** Invented drivers without a race seat: test and reserve drivers. */
+function buildReserves(): Row[] {
+  const rng = new Rng(hashSeed("reserves"));
+  const nats = Object.keys(FIRST);
+  const rows: Row[] = [];
+  for (let k = 0; k < 18; k++) {
+    const nat = rng.pick(nats);
+    rows.push([`${rng.pick(FIRST[nat])} ${rng.pick(LAST[nat])}`, nat]);
+  }
+  return rows;
+}
 
-const GB3: Series = {
-  "Rodin Motorsport": [["Maxim Rehm", "GER"], ["Martin Molnár", "HUN"], ["Abbi Pulling", "GBR"]],
-  Hitech: [["Jin Nakamura", "JPN"], ["Jacob Micallef", "MLT"], ["Yuhao Fu", "CHN"], ["Deagen Fairclough", "GBR"]],
-  "Xcel Motorsport": [["Lucas Fluxá", "ESP"], ["Rowan Campbell-Pilling", "GBR"], ["Ricardo Baptista", "BRA"]],
-  Hillspeed: [["Dante Vinci", "AUS"], ["Peter Bouzinelos", "AUS"], ["Aurelia Nobels", "BRA"]],
-  "Elite Motorsport": [["Kirill Kutskov", "KAZ"], ["Edu Robinson", "ESP"], ["Flynn Jackes", "PHI"], ["Kyuho Lee", "KOR"]],
-  "VRD Racing": [["Nikita Bedrin", "ITA"], ["Patricio González", "MEX"], ["Rodrigo González", "MEX"]],
-  "Fortec Motorsports": [["Alexandros Kattoulas", "JPN"], ["Jack Taylor", "AUS"]],
-  "Arden Motorsport": [["Lewis Gilbert", "GBR"], ["Leon Wilson", "GBR"]],
-  "Nitrous Competitions ADM": [["Jason Pribyl", "USA"]],
-};
-
-const F1A: Series = {
-  "MP Motorsport": [["Nina Gademan", "NED"], ["Alba Hurup Larsen", "DEN"], ["Esmee Kosterman", "NED"]],
-  "Campos Racing": [["Megan Bruce", "GBR"], ["Rafaela Ferreira", "BRA"], ["Alisha Palmowski", "GBR"]],
-  "Rodin Motorsport": [["Emma Felbermayr", "AUT"], ["Ella Lloyd", "GBR"], ["Ella Stevens", "GBR"]],
-  "Prema Racing": [["Mathilda Paatz", "GER"], ["Payton Westcott", "USA"], ["Natalia Granada", "ESP"]],
-  "ART Grand Prix": [["Lisa Billard", "FRA"], ["Kaylee Countryman", "USA"], ["Jade Jacquet", "FRA"]],
-  Hitech: [["Ava Dobson", "USA"], ["Rachel Robertson", "GBR"], ["Shi Wei", "CHN"], ["Autumn Fisher", "CAN"], ["Chiara Bättig", "SUI"], ["Zoe Florescu", "ROU"], ["Alexia Danielsson", "SWE"]],
-};
-
-const F4: Series = {
-  "Prema Racing": [["Christian Costoya", "ESP"], ["Roman Kamyab", "GBR"], ["Alp Aksoy", "TUR"], ["Georgiy Zasov", "SUI"], ["Kingsley Zheng", "CHN"], ["Lyuboslav Ruykov", "BUL"], ["David Cosma Cristofor", "ROU"], ["Oleksandr Bondarev", "UKR"], ["Niccolò Maccagnani", "ITA"]],
-  "Van Amersfoort Racing": [["Aleksander Ruta", "POL"], ["Pedro Lima", "BRA"], ["Thomas Bearman", "GBR"]],
-  "PHM Racing": [["Oscar Repetto", "MON"], ["Iacopo Martinese", "ITA"], ["Roland Kuklane", "EST"], ["Alexander Chartier", "CAN"]],
-  "US Racing": [["Luka Sammalisto", "FIN"], ["Noah Killion", "AUS"], ["Oleksandr Savinkov", "UKR"], ["Ludovico Busso", "ITA"], ["Arjen Kräling", "GER"]],
-  "Alpha 54 Racing": [["Thiago Palotini", "ARG"], ["Federico Díaz", "ARG"], ["Ignacio Díaz", "ARG"], ["Joaquin Rubino", "ARG"], ["Bautista Acosta", "ARG"], ["Joaquin Pagola", "ARG"]],
-  "Trident Motorsport": [["Bernardo Bernoldi", "BRA"], ["Florentin Hattemer", "SUI"], ["Augustus Toniolo", "BRA"], ["Dominik Šimek", "CZE"], ["Lucas Pasquinetti", "UAE"]],
-  "Jenzer Motorsport": [["Teo Borenstein", "CZE"], ["Levi Arn", "SUI"], ["Elia Weiss", "GER"], ["Artem Severiukhin", "KGZ"], ["Nicolás Cortés", "MEX"], ["Bader Al Sulaiti", "QAT"]],
-  "R-ace GP": [["Andy Consani", "FRA"], ["Jensen Burnett", "CAN"], ["James Anagnostiadis", "AUS"], ["Tamás Gender", "HUN"], ["Kenzo Craigie", "GBR"], ["Emily Cotty", "GBR"]],
-  "Cram Motorsport": [["Simon Rechenmacher", "GER"], ["Andre Rodriguez", "USA"], ["Dean Pedersen", "USA"]],
-  "Real Racing": [["Knud Nielsen", "DEN"]],
-  "AKM Motorsport": [["Evan Michelini", "CRC"], ["Rocco Coronel", "NED"], ["George Proudford-Nalder", "AUS"], ["Vittorio Orsini", "ITA"], ["Fabricio Fogaça", "BRA"]],
-  "Maffi Racing": [["Rosanne den Drijver", "NED"], ["David Walther", "DEN"], ["Andreas Lo Bue", "SUI"], ["Igor Polak", "POL"]],
-  Others: [["Ginevra Panzeri", "ITA"], ["Benett Gáspár", "HUN"]],
-  "JHR Developments": [["Timo Jüngling", "GBR"], ["Haarni Sadiq", "PAK"], ["Cameron Nelson", "GBR"]],
-  "Hitech (British F4)": [["Adam Al Azhari", "UAE"], ["Scott Kin Lindblom", "SWE"], ["Theo Palmer", "UAE"]],
-  "Argenti Motorsport": [["Leon Hedfors", "SWE"], ["Justin Di Lucia", "CAN"], ["Sun Anzhe", "CHN"], ["Ethan Jeff-Hall", "GBR"], ["Qarrar Firhand", "INA"], ["Vegard Klemetsen", "NOR"]],
-  "Virtuosi Racing": [["Joseph Smith", "GBR"], ["Jarrett Clark", "GBR"], ["Fred Green", "GBR"]],
-  "Fortec (British F4)": [["Kit Belofsky", "GBR"], ["Cash Felber", "USA"], ["Ethan Carney", "USA"], ["Roman Felber", "USA"]],
-  "Chris Dittmann Racing": [["Henry Mercier", "USA"], ["Tommy Harfield", "GBR"], ["Piotr Orzechowski", "POL"], ["Daniella Sutton", "GBR"]],
-  "Rodin (British F4)": [["Alfie Slater", "GBR"], ["Alex O'Grady", "IRL"], ["Ethan Lennon", "RSA"], ["Dries Van Langendonck", "BEL"]],
-  "Xcel (British F4)": [["Cole Hewetson", "RSA"], ["Mate Kobakhidze", "GEO"], ["Jaber Al Sabah", "KUW"], ["Jackson Wolny", "USA"]],
-};
-
-/** Real drivers without a race seat in 2026: test and reserve drivers, and recent F1 drivers. */
-const RES: Row[] = [
-  ["Yuki Tsunoda", "JPN"],
-  ["Zhou Guanyu", "CHN"],
-  ["Kevin Magnussen", "DEN"],
-  ["Antonio Giovinazzi", "ITA"],
-  ["Frederik Vesti", "DEN"],
-  ["Ryo Hirakawa", "JPN"],
-  ["Jak Crawford", "USA"],
-  ["Paul Aron", "EST"],
-  ["Pato O'Ward", "MEX"],
-  ["Mick Schumacher", "GER"],
-  ["Nyck de Vries", "NED"],
-  ["Logan Sargeant", "USA"],
-  ["Stoffel Vandoorne", "BEL"],
-  ["Théo Pourchaire", "FRA"],
-  ["Felipe Drugovich", "BRA"],
-  ["Callum Ilott", "GBR"],
-  ["Robert Shwartzman", "ISR"],
-  ["Juri Vips", "EST"],
-];
-
-const BORN: Record<string, number> = {
-  "Yuki Tsunoda": 2000, "Zhou Guanyu": 1999, "Kevin Magnussen": 1992, "Antonio Giovinazzi": 1993, "Frederik Vesti": 2002, "Ryo Hirakawa": 1994,
-  "Jak Crawford": 2005, "Paul Aron": 2004, "Pato O'Ward": 1999, "Mick Schumacher": 1999, "Nyck de Vries": 1995, "Logan Sargeant": 2000,
-  "Stoffel Vandoorne": 1992, "Théo Pourchaire": 2003, "Felipe Drugovich": 2000, "Callum Ilott": 1998, "Robert Shwartzman": 1999, "Juri Vips": 2000,
-};
-
-/** Hand-picked ratings for well-known prospects (everyone else gets a tier-based, name-seeded estimate). */
-const PROSPECTS: Record<string, { pace: number; potential: number }> = {
-  "Rafael Câmara": { pace: 0.986, potential: 0.97 },
-  "Nikola Tsolov": { pace: 0.986, potential: 0.97 },
-  "Dino Beganovic": { pace: 0.985, potential: 0.93 },
-  "Martinius Stenshorne": { pace: 0.983, potential: 0.92 },
-  "Alex Dunne": { pace: 0.983, potential: 0.93 },
-  "Kush Maini": { pace: 0.982, potential: 0.85 },
-  "Oliver Goethe": { pace: 0.981, potential: 0.86 },
-  "Gabriele Minì": { pace: 0.98, potential: 0.88 },
-  "Sebastián Montoya": { pace: 0.98, potential: 0.88 },
-  "Mari Boya": { pace: 0.98, potential: 0.88 },
-  "Ritomo Miyata": { pace: 0.981, potential: 0.85 },
-  "Colton Herta": { pace: 0.983, potential: 0.8 },
-  "Freddie Slater": { pace: 0.975, potential: 0.92 },
-  "Ugo Ugochukwu": { pace: 0.974, potential: 0.92 },
-  "Théophile Naël": { pace: 0.974, potential: 0.9 },
-  "Tuukka Taponen": { pace: 0.975, potential: 0.9 },
-  "Noah Strømsted": { pace: 0.974, potential: 0.9 },
-  "Mattia Colnaghi": { pace: 0.972, potential: 0.88 },
-  "Maciej Gładysz": { pace: 0.972, potential: 0.88 },
-  "Brando Badoer": { pace: 0.972, potential: 0.88 },
-  "Yuki Tsunoda": { pace: 0.988, potential: 0.8 },
-  "Pato O'Ward": { pace: 0.988, potential: 0.8 },
-  "Paul Aron": { pace: 0.984, potential: 0.85 },
-  "Jak Crawford": { pace: 0.983, potential: 0.87 },
-  "Zhou Guanyu": { pace: 0.984, potential: 0.7 },
-  "Kevin Magnussen": { pace: 0.986, potential: 0.6 },
-  "Antonio Giovinazzi": { pace: 0.984, potential: 0.6 },
-  "Mick Schumacher": { pace: 0.985, potential: 0.7 },
-};
+const BORN: Record<string, number> = {};
+const PROSPECTS: Record<string, { pace: number; potential: number }> = {};
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -265,19 +163,20 @@ export function realPeople(): { byTier: Record<Tier, Person[]>; names: Set<strin
     }
   };
   // reserves first (they are the highest-level people outside the 22 seats)
-  for (const [name, nat] of RES) {
+  for (const [name, nat] of buildReserves()) {
     if (names.has(name)) continue;
     names.add(name);
     const code = makeCode(name, codes);
     codes.add(code);
     byTier.RES.push({ id: `res-${slug(name)}`, name, code, nat, born: BORN[name], tier: "RES", ...rate(name, "RES"), fictional: false });
   }
-  add("F2", F2);
-  add("F3", F3);
-  add("FRECA", FRECA);
-  add("GB3", GB3);
-  add("F1A", F1A);
-  add("F4", F4);
+  const ladders = buildSeries();
+  add("F2", ladders.F2);
+  add("F3", ladders.F3);
+  add("FRECA", ladders.FRECA);
+  add("GB3", ladders.GB3);
+  add("F1A", ladders.F1A);
+  add("F4", ladders.F4);
   CACHE = { byTier, names, codes };
   return CACHE;
 }

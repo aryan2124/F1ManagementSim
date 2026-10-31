@@ -24,17 +24,17 @@ import { AREAS, type Area, type CareerState, type DriverState, type Guidance, ty
  * [salary in $m, last season of the deal].
  */
 export const START_CONTRACTS: Record<string, [number, number]> = {
-  "f1-rus": [26, 2027], "f1-ant": [5, 2030],
-  "f1-lec": [38, 2029], "f1-ham": [40, 2026],
-  "f1-nor": [35, 2028], "f1-pia": [25, 2028],
-  "f1-ver": [55, 2028], "f1-had": [3, 2027],
-  "f1-alb": [10, 2027], "f1-sai": [15, 2027],
-  "f1-gas": [10, 2028], "f1-col": [2.5, 2026],
-  "f1-oco": [8, 2026], "f1-bea": [3, 2027],
-  "f1-law": [4, 2026], "f1-lin": [1.5, 2027],
-  "f1-hul": [7, 2026], "f1-bor": [2, 2027],
-  "f1-alo": [20, 2026], "f1-str": [8, 2026],
-  "f1-per": [8, 2026], "f1-bot": [5, 2026],
+  "dr-wex": [26, 2027], "dr-bel": [5, 2030],
+  "dr-cor": [38, 2029], "dr-har": [40, 2026],
+  "dr-car": [35, 2028], "dr-qui": [25, 2028],
+  "dr-bro": [55, 2028], "dr-fou": [3, 2027],
+  "dr-sor": [10, 2027], "dr-ala": [15, 2027],
+  "dr-del": [10, 2028], "dr-pal": [2.5, 2026],
+  "dr-val": [8, 2026], "dr-ash": [3, 2027],
+  "dr-rat": [4, 2026], "dr-whi": [1.5, 2027],
+  "dr-ald": [7, 2026], "dr-tav": [2, 2027],
+  "dr-gar": [20, 2026], "dr-bri": [8, 2026],
+  "dr-cad": [8, 2026], "dr-lah": [5, 2026],
 };
 
 const FIRST = ["James", "Peter", "Marco", "Andrea", "Luca", "Tom", "Ben", "Hugo", "Pierre", "Jonas", "Felix", "Stefan", "Carlos", "Diego", "Rafael", "Kenji", "Taro", "Arun", "Ravi", "Sam", "Dan", "Ollie", "Mateo", "Nico", "Paul", "Adrian", "Ian", "Rob", "Gary", "Tim"];

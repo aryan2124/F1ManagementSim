@@ -10,8 +10,8 @@ describe("race IQ", () => {
     const hi = Math.max(...iqs.map((x) => x.iq));
     console.log(iqs.sort((a, b) => b.iq - a.iq).map((x) => `${x.code} ${Math.round(x.iq * 100)}`).join(", "));
     expect(hi - lo).toBeGreaterThan(0.35);
-    const alo = all.find((d) => d.code === "ALO")!;
-    const lin = all.find((d) => d.code === "LIN")!;
+    const alo = all.find((d) => d.code === "GAR")!;
+    const lin = all.find((d) => d.code === "WHI")!;
     expect(raceIQ(alo)).toBeGreaterThan(raceIQ(lin));
     // experience grows with the years
     expect(raceIQ(lin, 2036)).toBeGreaterThan(raceIQ(lin, 2026));

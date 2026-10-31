@@ -113,7 +113,7 @@ const FAN_BITS = ["apex", "box", "undercut", "lift", "sector", "kerb", "slipstre
 
 function fanHandle(rng: Rng, teamId: string | null | undefined, rival = false): { handle: string; who: string } {
   const t = team(teamId);
-  const stem = (t?.short ?? "F1").toLowerCase();
+  const stem = (t?.short ?? "GP").toLowerCase();
   const h = `${pick(rng, FAN_BITS)}_${rival ? pick(rng, ["hater", "watch", "eyes"]) : "for"}_${stem}${rng.chance(0.5) ? Math.floor(rng.range(2, 99)) : ""}`;
   return { handle: "@" + h, who: h.replace(/_/g, " ") };
 }

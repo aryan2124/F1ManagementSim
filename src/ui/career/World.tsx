@@ -10,7 +10,7 @@ import { Social } from "./Social";
 import { achievementsFor } from "../../career/records";
 import { TEAMS } from "../../game/data";
 import { driversOf } from "../../career/finance";
-import { REAL_SOURCES, REAL_WDC, REAL_WCC_LIST } from "../../career/realhistory";
+import { REAL_WDC, REAL_WCC_LIST } from "../../career/realhistory";
 import { liveThreads, TELLERS, tellerOf, type Teller } from "../../career/threads";
 
 type Sub = "season" | "grid" | "social" | "feats" | "news" | "records" | "history" | "legacy";
@@ -155,8 +155,8 @@ export function World({ s, d }: Props) {
               <tbody>{s.history.map((h) => <tr key={h.year}><td>{h.year}</td><td>{h.champion}</td><td>{teamOf(h.constructors)?.name ?? h.constructors}</td><td>P{h.playerPos}, {h.playerPoints} pts</td></tr>)}</tbody>
             </table>
           )}
-          <h3>THE REAL RECORD, 1950 TO 2025</h3>
-          <p className="dim small">Real champions for the years before your game began. Sources: {REAL_SOURCES.map((x, i) => <span key={x.url}>{i ? "; " : ""}<a href={x.url} target="_blank" rel="noreferrer">{x.label}</a></span>)}.</p>
+          <h3>THE RECORD, 1950 TO 2025</h3>
+          <p className="dim small">Champions for the years before your game began.</p>
           <table className="class-table">
             <thead><tr><th>YEAR</th><th>DRIVER</th><th>TEAM</th><th>CONSTRUCTORS</th></tr></thead>
             <tbody>{REAL_WDC.slice().reverse().map(([y, n, tm]) => <tr key={y}><td>{y}</td><td>{n}</td><td>{tm}</td><td>{REAL_WCC_LIST.find((c) => c[0] === y)?.[1] ?? "none awarded"}</td></tr>)}</tbody>

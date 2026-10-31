@@ -107,7 +107,7 @@ describe("CarSprite", () => {
 describe("CarReveal", () => {
   it("calls onDone after the skip key, once", () => {
     const onDone = vi.fn();
-    const { el } = mount(<CarReveal teamColor={0xe8002d} accent={0xfff200} teamName="Ferrari" year={2027} onDone={onDone} />);
+    const { el } = mount(<CarReveal teamColor={0xe8002d} accent={0xfff200} teamName="Cardinal Corse" year={2027} onDone={onDone} />);
     expect(el.querySelector(".pixel-continue")).toBeNull();
     act(() => void window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
     expect(el.querySelector(".pixel-continue")).toBeTruthy();
@@ -119,7 +119,7 @@ describe("CarReveal", () => {
   it("skips on click and finishes on CONTINUE immediately", () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((() => fakeCtx()) as never);
     const onDone = vi.fn();
-    const { el } = mount(<CarReveal teamColor={0x27f4d2} accent={0x1a1a1a} teamName="Mercedes" year={2028} onDone={onDone} />);
+    const { el } = mount(<CarReveal teamColor={0x27f4d2} accent={0x1a1a1a} teamName="Lagoon Dynamics" year={2028} onDone={onDone} />);
     act(() => void vi.advanceTimersByTime(1500));
     click(el.querySelector(".pixel-reveal")!);
     const btn = el.querySelector(".pixel-continue") as HTMLButtonElement;
@@ -132,7 +132,7 @@ describe("CarReveal", () => {
 
   it("runs to the end by itself and then continues", () => {
     const onDone = vi.fn();
-    mount(<CarReveal teamColor={0xff8000} accent={0x2f9bff} teamName="McLaren" year={2027} onDone={onDone} />);
+    mount(<CarReveal teamColor={0xff8000} accent={0x2f9bff} teamName="Amberline Racing" year={2027} onDone={onDone} />);
     act(() => void vi.advanceTimersByTime(3000));
     expect(onDone).not.toHaveBeenCalled();
     act(() => void vi.advanceTimersByTime(1200)); // animation ends, the hold starts
@@ -143,7 +143,7 @@ describe("CarReveal", () => {
 
   it("jumps straight to the end with reduced motion", () => {
     vi.stubGlobal("matchMedia", (q: string) => ({ matches: q.includes("reduce"), media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, onchange: null, dispatchEvent: () => false }));
-    const { el } = mount(<CarReveal teamColor={0xe8002d} accent={0xfff200} teamName="Ferrari" year={2027} onDone={() => {}} />);
+    const { el } = mount(<CarReveal teamColor={0xe8002d} accent={0xfff200} teamName="Cardinal Corse" year={2027} onDone={() => {}} />);
     expect(el.querySelector(".pixel-continue")).toBeTruthy();
     vi.unstubAllGlobals();
   });

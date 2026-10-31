@@ -66,11 +66,10 @@ describe("real history", () => {
   it("is complete and agrees with the game's own constructor titles", () => {
     expect(REAL_WDC.length).toBe(76);
     expect(REAL_WCC_LIST.length).toBe(68);
-    expect(realTitleCount("Lewis Hamilton")).toBe(7);
-    expect(realTitleCount("Michael Schumacher")).toBe(7);
-    const mcl = REAL_WCC_LIST.filter((x) => x[1] === "McLaren").map((x) => x[0]);
+    expect(realTitleCount("Lionel Hargrave")).toBe(7);
+    const mcl = REAL_WCC_LIST.filter((x) => x[1] === "Amberline Racing").map((x) => x[0]);
     expect(mcl).toEqual(REAL_WCC.mcl);
-    const fer = REAL_WCC_LIST.filter((x) => x[1] === "Ferrari").map((x) => x[0]);
+    const fer = REAL_WCC_LIST.filter((x) => x[1] === "Cardinal Corse").map((x) => x[0]);
     expect(fer).toEqual(REAL_WCC.fer);
   });
 });

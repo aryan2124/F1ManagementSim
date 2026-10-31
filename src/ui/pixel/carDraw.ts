@@ -1,5 +1,5 @@
 /**
- * Shared pixel-art F1 car drawing (side view, nose to the right).
+ * Shared pixel-art GP car drawing (side view, nose to the right).
  * Car space is 64 x 27 pixels, origin at the top-left of the car. A 5 pixel strip above (negative y) holds gauges.
  */
 export type Area = "aero" | "chassis" | "power" | "cooling" | "tyres";

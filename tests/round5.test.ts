@@ -13,8 +13,8 @@ import { buildEngineLoop, layerWeights, rpmFor } from "../src/audio/engineSynth"
 describe("career records", () => {
   it("starts from the real totals and exposes them", () => {
     const s = newCareer("fer", 3, 1, "quick");
-    const ham = s.drivers["f1-ham"];
-    expect(ham.rec?.p1).toBe(REAL["f1-ham"][0]);
+    const ham = s.drivers["dr-har"];
+    expect(ham.rec?.p1).toBe(REAL["dr-har"][0]);
     expect(ham.rec?.wdc.length).toBe(7);
     expect(s.teams.fer.wcc?.length).toBe(16);
     expect(s.teams.mcl.wcc?.length).toBe(10);
@@ -33,18 +33,18 @@ describe("career records", () => {
 });
 
 describe("roles", () => {
-  it("a champion is not an equal of a pay driver, and the old hand takes the lead at Aston Martin", () => {
+  it("a champion is not an equal of a pay driver, and the old hand takes the lead at Verdant Racing", () => {
     const s = newCareer("ast", 5, 1, "quick");
-    const alo = s.drivers["f1-alo"];
-    const str = s.drivers["f1-str"];
+    const alo = s.drivers["dr-gar"];
+    const str = s.drivers["dr-bri"];
     expect(expectedRole(alo, str)).toBe("number1");
     expect(alo.role).toBe("number1");
   });
   it("demoting a proud driver makes him unhappy", () => {
     const s = newCareer("ast", 5, 1, "quick");
-    const alo = s.drivers["f1-alo"];
+    const alo = s.drivers["dr-gar"];
     const g = alo.grievance;
-    apply(s, { type: "setRole", driverId: "f1-alo", role: "number2" });
+    apply(s, { type: "setRole", driverId: "dr-gar", role: "number2" });
     expect(alo.grievance).toBeGreaterThan(g);
     expect(alo.causes.role).toBeGreaterThan(0);
   });
@@ -53,8 +53,8 @@ describe("roles", () => {
 describe("conversations", () => {
   it("opens with what he cares about and ends in a reaction", () => {
     const s = newCareer("ast", 5, 1, "quick");
-    apply(s, { type: "setRole", driverId: "f1-alo", role: "number2" });
-    const id = openConvo(s, s.drivers["f1-alo"]);
+    apply(s, { type: "setRole", driverId: "dr-gar", role: "number2" });
+    const id = openConvo(s, s.drivers["dr-gar"]);
     expect(id).not.toBeNull();
     const cv = s.convos!.find((c) => c.id === id)!;
     expect(cv.lines.length).toBeGreaterThan(0);

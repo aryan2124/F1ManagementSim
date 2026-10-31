@@ -48,7 +48,7 @@ const byText = (root: HTMLElement, sel: string, text: string) =>
 const refresh = () => act(() => void vi.advanceTimersByTime(400)); // lets the UI poll the sim like the real timer
 
 const SETTINGS: WeekendSettings = { teamId: "mer", circuitId: "silverstone", distance: "quick", seed: 31 };
-const T = { "f1-rus": "S", "f1-ant": "M" } as const;
+const T = { "dr-wex": "S", "dr-bel": "M" } as const;
 
 function raceSession(settings = SETTINGS) {
   const w = createWeekend(settings);
@@ -123,9 +123,9 @@ describe("UI flow", () => {
     const { el } = mount(<RaceScreen session={session} meta={w.meta} onFinish={() => (finished = true)} />);
 
     click(byText(el, ".carcard:first-child .ctl button", "PUSH"));
-    expect(session.sim.car("f1-rus").push).toBe(2);
+    expect(session.sim.car("dr-wex").push).toBe(2);
     click(byText(el, ".carcard:first-child .ctl button", "ATTACK"));
-    expect(session.sim.car("f1-rus").mode).toBe("attack");
+    expect(session.sim.car("dr-wex").mode).toBe("attack");
     expect(el.textContent).toContain("MUST USE A 2ND COMPOUND");
 
     for (let i = 0; i < 6000 && !session.finished; i++) session.advance(0.25);
@@ -164,7 +164,7 @@ describe("UI flow", () => {
     const { el } = mount(<RaceScreen session={session} meta={w.meta} onFinish={() => {}} />);
     for (let i = 0; i < 40; i++) session.advance(0.25);
     refresh();
-    const car = session.sim.car("f1-rus");
+    const car = session.sim.car("dr-wex");
     if (car.status === "racing") {
       click(el.querySelector(".carcard:first-child .pit button[title=\"Box for Hard\"]") as Element);
       expect(car.pitRequest).not.toBeNull();

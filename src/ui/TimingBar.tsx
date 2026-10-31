@@ -6,7 +6,7 @@ import { CompoundBadge } from "./Briefing";
 import { SECTOR_COLORS, hex } from "./colors";
 
 /**
- * A broadcast-style timing bar for the car the camera is on. Conventions used here follow the usual F1 television graphics:
+ * A broadcast-style timing bar for the car the camera is on. Conventions used here follow the usual television graphics:
  * a running lap clock, three sector boxes that fill in as each sector is completed (purple is the best of everyone, green a personal best,
  * yellow slower than the driver's own best), a gap to the benchmark at each sector, and the final lap time with the position it earns.
  * Out laps and in laps are shown quietly, with no clock.

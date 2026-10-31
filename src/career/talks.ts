@@ -170,7 +170,7 @@ export function submitJuniorOffer(s: CareerState, t: Talk, terms: { years: numbe
   t.pending = undefined;
   const mgr = t.manager ? s.managers[t.manager] : null;
   t.replyOn = s.day + (mgr ? 2 : 1) + (rngFor(s, `reply:${t.id}:${t.round}`).chance(0.4) ? 1 : 0);
-  t.lines.push(line(s, "you", `You offer an academy deal: ${fmtMoney(terms.retainer)} a year for ${terms.years} year${terms.years > 1 ? "s" : ""}, buyout ${fmtMoney(terms.buyout, 0)}${terms.firstRefusal ? ", first refusal on his F1 contract" : ""}.`));
+  t.lines.push(line(s, "you", `You offer an academy deal: ${fmtMoney(terms.retainer)} a year for ${terms.years} year${terms.years > 1 ? "s" : ""}, buyout ${fmtMoney(terms.buyout, 0)}${terms.firstRefusal ? ", first refusal on his GP contract" : ""}.`));
   return { ok: true, message: "Offer made. His camp will think about it." };
 }
 
@@ -276,7 +276,7 @@ function respond(s: CareerState, t: Talk, d: DriverState | undefined, mgr: Manag
       return;
     }
     if (!t.junior) {
-      t.priority = p.attrs.ambition > 0.65 ? "A quick route to F1" : p.attrs.loyalty > 0.6 ? "Being looked after" : "Money for the family";
+      t.priority = p.attrs.ambition > 0.65 ? "A quick route to the top flight" : p.attrs.loyalty > 0.6 ? "Being looked after" : "Money for the family";
       say(`His camp cares most about: ${t.priority.toLowerCase()}.`);
       return;
     }

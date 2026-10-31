@@ -90,7 +90,7 @@ function Detail({ s, d, p, say, openTalks }: Props & { p: Prospect; say: (m: str
               <label>Years <input type="number" min={1} max={5} value={years} onChange={(e) => setYears(Number(e.target.value))} /></label>
               <label>Retainer $m a year <input type="number" min={0} step={0.1} value={retainer} onChange={(e) => setRetainer(Number(e.target.value))} /></label>
               <label>Buyout $m <input type="number" min={0} step={0.5} value={buyout} onChange={(e) => setBuyout(Number(e.target.value))} /></label>
-              <label><input type="checkbox" checked={first} onChange={(e) => setFirst(e.target.checked)} /> First refusal <Tip text="If he reaches Formula 1, we get the first chance to sign him before any other team." /></label>
+              <label><input type="checkbox" checked={first} onChange={(e) => setFirst(e.target.checked)} /> First refusal <Tip text="If he reaches the Grand Prix top flight, we get the first chance to sign him before any other team." /></label>
               <p className="dim small">Running him costs about {fmtMoney(SERIES_COST[p.series] + retainer)} a year from the academy budget.</p>
               <button onClick={() => run(d({ type: "signProspect", id: p.id, years, retainer, buyout, firstRefusal: first }))}>SIGN TO ACADEMY</button>
             </div>
@@ -99,7 +99,7 @@ function Detail({ s, d, p, say, openTalks }: Props & { p: Prospect; say: (m: str
       )}
       {mine && (
         <>
-          <p className="small">Level <b>{Math.round(levelOf(p) * 100)}</b>. Super licence points (last three years): <b>{p.licence.slice(-3).reduce((a, b) => a + b, 0)}</b> of 40. {f1Eligible(s, p) ? "He can race in Formula 1." : ""}</p>
+          <p className="small">Level <b>{Math.round(levelOf(p) * 100)}</b>. Super licence points (last three years): <b>{p.licence.slice(-3).reduce((a, b) => a + b, 0)}</b> of 40. {f1Eligible(s, p) ? "He can race in the Grand Prix top flight." : ""}</p>
           <p className="dim small">Deal to {p.deal?.endYear}, retainer {fmtMoney(p.deal?.retainer ?? 0)}, buyout {fmtMoney(p.deal?.buyout ?? 0)}{p.deal?.firstRefusal ? ", first refusal" : ""}.</p>
           <h4>Training focus (up to two)</h4>
           <div className="c-acts">
@@ -181,7 +181,7 @@ export function Academy({ s, d }: Props) {
     <div>
       <section className="panel">
         <h3>ACADEMY</h3>
-        <p className="small">Pay young drivers in the junior series to get first refusal on them when they reach Formula 1. Budget used this year: <b>{fmtMoney(spent)}</b> of <b>{fmtMoney(budget)}</b>. This is paid from cash and does not use cost cap room.</p>
+        <p className="small">Pay young drivers in the junior series to get first refusal on them when they reach the Grand Prix top flight. Budget used this year: <b>{fmtMoney(spent)}</b> of <b>{fmtMoney(budget)}</b>. This is paid from cash and does not use cost cap room.</p>
         <nav className="sub">
           {([["scout", "SCOUTING"], ["mine", `MY ACADEMY (${mine.length})`], ["ladder", "SEASONS"], ["scouts", "SCOUTS"]] as const).map(([k, l]) => (
             <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>
