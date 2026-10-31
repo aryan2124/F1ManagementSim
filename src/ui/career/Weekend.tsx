@@ -470,10 +470,8 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
   if (view === "play" || view === "brief") {
     return (
       <>
-      {ws.parc && <ParcStrip s={s} d={d} />}
-      <PartsPanel s={s} d={d} />
-      {kind === "race" && <PepTalk s={s} d={d} />}
       <Briefing
+        extras={<>{ws.parc && <ParcStrip s={s} d={d} />}<PartsPanel s={s} d={d} />{kind === "race" && <PepTalk s={s} d={d} />}</>}
         weekend={wk!}
         title={sessionTitle(wk!.meta.gp, ws.stage === "sprint" ? "sprint" : "race")}
         quali={briefRows(rows.current, plan!.raceCfg?.grid ?? prevOrder, plan!.drops, prevOrder)}

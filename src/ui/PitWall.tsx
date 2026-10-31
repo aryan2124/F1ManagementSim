@@ -58,7 +58,8 @@ function Timeline({ laps, life, lifeOf, start, orders, onStop, color, rain }: { 
       <div className="tl-bar" ref={ref} onPointerDown={(e) => { if (!(e.target as HTMLElement).classList.contains("tl-knob")) place(e.clientX); }}>
         <div className="tl-seg" style={{ left: 0, width: pct(stop), background: hex(COMPOUNDS[start].color) }}><b>{COMPOUNDS[start].name.toUpperCase()}</b><small>{stop} laps</small></div>
         <div className="tl-seg" style={{ left: pct(stop), width: pct(laps - stop), background: hex(COMPOUNDS[second].color) }}><b>{COMPOUNDS[second].name.toUpperCase()}</b><small>{stint2} laps</small></div>
-        {!wet && lasts < laps && <div className="tl-dead" style={{ left: pct(lasts) }} title="Tyres are gone from here"><span>TYRES GONE</span></div>}
+        {!wet && stop > lasts && <div className="tl-dead" style={{ left: pct(lasts), width: pct(stop - lasts) }} title="Tyres are gone from here"><span>TYRES GONE</span></div>}
+        {!wet && stint2 > life2 && <div className="tl-dead" style={{ left: pct(stop + life2), width: pct(stint2 - life2) }} title="Tyres are gone from here"><span>TYRES GONE</span></div>}
         <div className="tl-knob" style={{ left: pct(stop), borderColor: color }} onPointerDown={down}><span>BOX LAP {stop}</span></div>
       </div>
       <div className="tl-rain" title="Chance of rain on your radar, along the race">

@@ -29,6 +29,14 @@ describe("determinism and saves", () => {
   }, 60000);
 });
 
+const answerPlans = (s: ReturnType<typeof newCareer>) => {
+  for (let k = 0; k < 6; k++) {
+    const c = s.cards.find((x) => x.kind === "weekPlan" || x.kind === "campaign");
+    if (!c) break;
+    apply(s, { type: "card", id: c.id, option: c.options[0].id });
+  }
+};
+
 describe("rules", () => {
   it("freezes the factory in the summer break", () => {
     const s = newCareer("mcl", 7, 1, "quick");
@@ -76,6 +84,7 @@ describe("rules", () => {
         if (s.weekend.sprint) break;
         apply(s, { type: "simWeekend" });
       }
+      answerPlans(s);
       apply(s, { type: "continue" });
     }
     const ws = s.weekend!;

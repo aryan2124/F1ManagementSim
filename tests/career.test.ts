@@ -13,6 +13,14 @@ describe("career start", () => {
   });
 });
 
+const answerPlans = (s: ReturnType<typeof newCareer>) => {
+  for (let k = 0; k < 6; k++) {
+    const c = s.cards.find((x) => x.kind === "weekPlan" || x.kind === "campaign");
+    if (!c) break;
+    apply(s, { type: "card", id: c.id, option: c.options[0].id });
+  }
+};
+
 describe("clock", () => {
   it("is pure through the reducer", () => {
     const a = newCareer("mcl", 3);
@@ -23,7 +31,7 @@ describe("clock", () => {
   });
   it("stops at the first race weekend", () => {
     const s = newCareer("mcl", 4);
-    for (let i = 0; i < 40; i++) apply(s, { type: "continue" });
+    for (let i = 0; i < 40; i++) { answerPlans(s); apply(s, { type: "continue" }); }
     expect(s.weekend).not.toBeNull();
   });
 });

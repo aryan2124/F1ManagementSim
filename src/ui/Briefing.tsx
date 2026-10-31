@@ -33,7 +33,10 @@ export function Briefing({
   pitLane,
   extraRules,
   title,
+  extras,
 }: {
+  /** Career: extra panels for the grid page (parc ferme, parts, the pep talk). */
+  extras?: React.ReactNode;
   weekend: Weekend;
   /** The session's own heading, for example a sprint instead of the Grand Prix. */
   title?: string;
@@ -185,6 +188,7 @@ export function Briefing({
           <button className="btn primary big" onClick={() => setView("wall")}>TO THE PIT WALL</button>
         </section>
       </div>
+      {extras}
     </div>
   );
 }

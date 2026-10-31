@@ -76,6 +76,8 @@ describe("UI flow", () => {
     click(byText(el, "button", "SKIP TO THE GRID"));
     expect(el.textContent).toContain("STARTING GRID");
     expect(el.querySelectorAll(".grid-table tr")).toHaveLength(22);
+    click(byText(el, "button", "TO THE PIT WALL"));
+    expect(el.textContent).toContain("THE PIT WALL");
     click(byText(el, "button", "GO TO THE GRID"));
     expect(el.textContent).toContain("TIMING");
     expect(el.querySelectorAll(".tower li")).toHaveLength(22);
