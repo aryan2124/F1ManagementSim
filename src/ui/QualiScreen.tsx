@@ -2,7 +2,7 @@ import { DriverPortrait } from "./pixel/portraits";
 import { QualiKindCtx, sessionTitle, useQPrefix, useQualiName } from "./sessionTitle";
 import { SkipPrompt, type NetSkip } from "./SkipPrompt";
 import { useMusic } from "../audio/useMusic";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PLink } from "./career/Profile";
 import type { QualiSession } from "../game/qsession";
 import type { SpeedSetting } from "../game/live";
@@ -19,6 +19,7 @@ import { SectorsView } from "./SectorTable";
 import { RadarPanel, WeatherChip } from "./WeatherPanel";
 import { useUiTick } from "./hooks";
 import { TimingBar } from "./TimingBar";
+import { QualiDirector } from "../game/qdirector";
 import { liveSectorColors } from "./sectorRows";
 import { RaceAudio } from "../audio/raceAudio";
 import { scrollTop } from "./hooks";
@@ -76,6 +77,19 @@ function QualiScreenInner({ session, meta, onDone, skip, kind }: { session: Qual
   const [tab, setTab] = useState<QTab>("radio");
   const [secMode, setSecMode] = useState<"last" | "best">("last");
   const teamId = sim.car(session.humanIds[0]).entry.team.id;
+
+  // the qualifying director follows the flying laps until the player clicks a car to pin the camera
+  const director = useRef(new QualiDirector());
+  useEffect(() => {
+    session.directing = true;
+    const dir = director.current;
+    const id = window.setInterval(() => {
+      if (!session.directing || session.speed === 0 || sim.phase !== "running") return;
+      session.cutTo(dir.pick(sim, session.humanIds, performance.now(), session.followId));
+      session.cameraNote = dir.caption;
+    }, 250);
+    return () => window.clearInterval(id);
+  }, [session, sim]);
 
   // opening the dashboard from a solo session holds the clock, and closing it puts the speed back
   useEffect(() => {
@@ -137,6 +151,11 @@ function QualiScreenInner({ session, meta, onDone, skip, kind }: { session: Qual
               <QualiOverlay session={session} onDone={onDone} />
             </RaceView>
             <Minimap session={session} />
+            {sim.phase === "running" && (
+              <div className="dircap">
+                {session.directing ? <><i>DIRECTOR</i> {session.cameraNote}</> : <><i>PINNED</i> {sim.car(session.followId).entry.driver.code}<button className="tiny" style={{ pointerEvents: "auto", marginLeft: 10 }} onClick={() => { session.directing = true; }}>BACK TO DIRECTOR</button></>}
+              </div>
+            )}
             {sim.phase !== "ready" && sim.phase !== "break" && sim.phase !== "done" && <TimingBar session={session} />}
           </div>
           <div className="btabs">
@@ -399,6 +418,9 @@ function QualiCard({ session, car }: { session: QualiSession; car: QCar }) {
           {car.note && <p className="hint">{car.note}</p>}
           <button className="tiny wide" onClick={() => (session.followId = car.id)}>
             CAM: {e.driver.code}
+          </button>
+          <button className={`tiny wide dir ${session.directing ? "on" : ""}`} title="The director follows flying laps, the bubble and head to heads like the TV feed. Click any driver to pin the camera." onClick={() => { session.directing = !session.directing; }}>
+            {session.directing ? "DIRECTOR CAM: ON" : "DIRECTOR CAM: OFF"}
           </button>
         </>
       )}

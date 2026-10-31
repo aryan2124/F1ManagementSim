@@ -20,9 +20,9 @@ function play(s0: ReturnType<typeof newCareer>, steps: number) {
 }
 
 describe("campaigns and the weekly plan", () => {
-  it("the clock refuses to run until the weekly plan is answered, and a campaign is offered, runs and is judged", () => {
+  it("the clock refuses to run until the plan is answered, and a campaign is offered, runs and is judged", () => {
     const { s, titles } = play(newCareer("wil", 3), 120);
-    expect(titles.some((t) => t.startsWith("THIS WEEK"))).toBe(true);
+    expect(titles.some((t) => t.startsWith("YOUR PLAN"))).toBe(true);
     expect(titles.some((t) => t.startsWith("NEW CAMPAIGN"))).toBe(true);
     void s;
   });
@@ -60,5 +60,21 @@ describe("campaign judging", () => {
     campaignWeekly(s);
     expect(s.campaign!.progress).toBeGreaterThan(0);
     expect(s.teams[s.teamId].cash).toBeLessThan(cash);
+  });
+});
+
+describe("the plan is a standing order", () => {
+  it("after the first answer it repeats by itself and does not stop the clock every week", () => {
+    let s = newCareer("wil", 3);
+    let asked = 0;
+    for (let i = 0; i < 140 && s.round === 0; i++) {
+      const open = s.cards.find((c) => c.kind === "weekPlan");
+      if (open) { asked++; s = reduce(s, { type: "card", id: open.id, option: open.options[0].id }).state; continue; }
+      const other = s.cards.find((c) => !c.notice);
+      if (other) { s = reduce(s, { type: "card", id: other.id, option: other.defaultOption ?? other.options[0].id }).state; continue; }
+      s = reduce(s, { type: "continue" }).state;
+    }
+    expect(asked).toBeGreaterThanOrEqual(1);
+    expect(asked).toBeLessThanOrEqual(4);
   });
 });

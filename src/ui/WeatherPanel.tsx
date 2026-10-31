@@ -9,6 +9,18 @@ import { CompoundBadge } from "./Briefing";
 import { useUiTick } from "./hooks";
 
 /** The radar the player's own team looks at. */
+function SkyGlyph({ sky }: { sky: string }) {
+  // tiny pixel pictures, 12 by 12 cells
+  const R = (x: number, y: number, w: number, h: number, c: string) => <rect key={`${x}${y}${w}${h}${c}`} x={x} y={y} width={w} height={h} fill={c} />;
+  const cloud = (c: string) => [R(2, 4, 8, 3, c), R(3, 3, 3, 1, c), R(6, 2, 3, 2, c), R(1, 5, 1, 1, c), R(10, 5, 1, 1, c)];
+  const parts =
+    sky === "sun" ? [R(4, 4, 4, 4, "#ffd35a"), R(5, 1, 2, 2, "#ffd35a"), R(5, 9, 2, 2, "#ffd35a"), R(1, 5, 2, 2, "#ffd35a"), R(9, 5, 2, 2, "#ffd35a")]
+    : sky === "cloud" ? cloud("#c6cbe6")
+    : sky === "rain" ? [...cloud("#9fb4e0"), R(3, 8, 1, 2, "#7fb2ff"), R(6, 9, 1, 2, "#7fb2ff"), R(9, 8, 1, 2, "#7fb2ff")]
+    : [...cloud("#8a8fb0"), R(5, 7, 2, 1, "#ffd35a"), R(4, 8, 2, 1, "#ffd35a"), R(5, 9, 2, 1, "#ffd35a"), R(4, 10, 1, 1, "#ffd35a")];
+  return <svg viewBox="0 0 12 12" width="34" height="34" shapeRendering="crispEdges" aria-hidden="true">{parts}</svg>;
+}
+
 export function useTeamRadar(session: LiveSession<LiveSim>, teamId: string): TeamRadar | null {
   const sim = session.sim;
   return useMemo(() => {
@@ -203,12 +215,12 @@ export function RadarPanel({ session, teamId }: { session: LiveSession<LiveSim>;
         </div>
         <div className="wx-right">
           <div className={`headline wx-head ${eta.kind}`}>
-            <span className={`wx-ico ${sky}`}>{skyIcon}</span>
+            <span className={`wx-ico ${sky}`} title={skyIcon.toLowerCase()}><SkyGlyph sky={sky} /></span>
             <div>
               <b>{headline}</b>
-              <div className="wx-conf" title="How sure your team's radar is">
-                <i style={{ width: `${Math.round(eta.confidence * 100)}%` }} />
-                <em>CONFIDENCE {Math.round(eta.confidence * 100)}%</em>
+              <div className="wx-conf2" title="How sure your team's radar is">
+                <span className="wx-conf-label"><span>CONFIDENCE</span><b>{Math.round(eta.confidence * 100)}%</b></span>
+                <div className="wx-conf"><i style={{ width: `${Math.round(eta.confidence * 100)}%` }} /></div>
               </div>
             </div>
           </div>

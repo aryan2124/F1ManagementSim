@@ -293,7 +293,7 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
       const i = Number(e.key) - 1;
       if (!(i >= 0)) return;
       const top = decisions[0];
-      if (top && !inWeekend) { if (top.options[i]) d({ type: "card", id: top.id, option: top.options[i].id }); return; }
+      if (top && !inWeekend) { if (top.options.length === 1 && top.options[i]) d({ type: "card", id: top.id, option: top.options[i].id }); return; }
     };
     window.addEventListener("keydown", on);
     return () => window.removeEventListener("keydown", on);
@@ -308,6 +308,8 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
           {nowCards.map((c, i) => <CardView key={c.id} c={c} d={d} keys={i === 0} />)}
         </section>
       )}
+
+      <p className="c-nowline">{nowCards.length > 0 && !inWeekend ? `Do this now: ${nowCards[0].title}.` : next ? `${circuitMeta(next.circuitId).gp} is ${toNext === 0 ? "this weekend" : `${toNext} day${toNext === 1 ? "" : "s"} away`}. ${decisions.length ? `${decisions.length} decision${decisions.length === 1 ? "" : "s"} waiting for you below.` : "Nothing needs you right now. Press CONTINUE to move time on."}` : "The season is over."}</p>
 
       <section className="panel c-head hero-head">
         <div className="hh-date">
@@ -328,12 +330,10 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
             <p key={id} className="small warn">Grid penalty at the next race: {s.drivers[id]?.spec.name ?? id}, {l.reduce((a, x) => a + x.places, 0)} places ({l.map((x) => x.why).join("; ")}).</p>
           ))}
         </div>
-        <div className="tiles hh-tiles">
+        <div className="tiles hh-tiles hh-six">
           <div className="stat-tile" style={{ ["--tile" as string]: me.cash < 0 ? "var(--c-bad)" : "var(--c-gold)", ["--i" as string]: 0 }}><span>CASH <Tip text="Real money in the bank. Prize money, sponsors and fees come in; salaries and upkeep go out each month." /></span><b><Num v={me.cash}>{fmtMoney(me.cash)}</Num></b><u><DeptIcon kind="cash" size={22} /></u></div>
           <div className="stat-tile" style={{ ["--tile" as string]: me.board < 28 ? "var(--c-bad)" : "var(--c-good)", ["--i" as string]: 3 }}><span>BOARD <Tip text="How much the board trusts you, 0 to 100. Below about 15 you can be sacked, unless yours is the weakest car on the grid." /></span><b><Num v={Math.round(me.board)}>{Math.round(me.board)}</Num></b><Bar v={me.board} max={100} color={me.board < 28 ? "var(--c-bad)" : "var(--c-good)"} /><u><DeptIcon kind="board" size={22} /></u></div>
           <div className="stat-tile" style={{ ["--tile" as string]: "var(--c-go)", ["--i" as string]: 5 }}><span>STANDING</span><b><Num v={rank} good="down">P{rank}</Num></b><u><DeptIcon kind="car" size={22} /></u></div>
-        </div>
-        <div className="tiles hh-tiles c-drawer">
           <div className="stat-tile" style={{ ["--tile" as string]: capRoom(me) < 0 ? "var(--c-bad)" : "var(--c-cap)", ["--i" as string]: 1 }}><span>CAP ROOM <Tip text="How much more you can spend on new car parts this season under the cost cap. Each project uses some when you start it. It resets at the new financial year." /></span><b><Num v={capRoom(me)}>{fmtMoney(capRoom(me))}</Num></b><u><DeptIcon kind="cap" size={22} /></u></div>
           <div className="stat-tile" style={{ ["--tile" as string]: "var(--c-time)", ["--i" as string]: 2 }}><span>TUNNEL <Tip text={`Wind tunnel hours left. Projects that need the tunnel use some every day. The allowance refills on ${fmtDay(nextAllowanceReset(s))}.`} /></span><b><Num v={Math.round(me.tunnelLeft)}>{Math.round(me.tunnelLeft)}h</Num></b><u><DeptIcon kind="tunnel" size={22} /></u></div>
           <div className="stat-tile" style={{ ["--tile" as string]: s.brand.fans < 25 ? "var(--c-bad)" : "var(--c-tech)", ["--i" as string]: 4 }}><span>FANS <Tip text={`How much supporters love the team, 0 to 100. Results move it slowly. Changing the livery or name for a sponsor hurts it, most for historic teams. Fans pay through merchandise and make sponsors offer more. Below about 22 the board worries.`} /></span><b><Num v={Math.round(s.brand.fans)}>{Math.round(s.brand.fans)}</Num></b><Bar v={s.brand.fans} max={100} color="var(--c-tech)" /><u><DeptIcon kind="fans" size={22} /></u></div>
@@ -350,12 +350,22 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
       <div className="c-cols">
         <section className="panel">
           <h3>DECISIONS ({decisions.length})</h3>
-          <div className="deleg" title="Departments you hand over decide the small things themselves. Urgent ones still stop the clock for you.">
-            <span className="dim small">LET THE TEAM HANDLE:</span>
+          <div className="deleg">
+            <span className="dim small">WHO DECIDES THE SMALL STUFF?</span>
             {(Object.keys(DEPT_LABEL) as Dept[]).map((k) => (
-              <button key={k} className={`tiny ${s.delegate?.[k] ? "on" : ""}`} onClick={() => d({ type: "setDelegate", dept: k, on: !s.delegate?.[k] })}>{DEPT_LABEL[k]} {s.delegate?.[k] ? "ON" : "OFF"}</button>
+              <span key={k} className="deleg-dept"><b>{DEPT_LABEL[k]}</b>
+                <span className="seg">
+                  <button className={!s.delegate?.[k] ? "on" : ""} onClick={() => d({ type: "setDelegate", dept: k, on: false })}>YOU</button>
+                  <button className={s.delegate?.[k] ? "on" : ""} onClick={() => d({ type: "setDelegate", dept: k, on: true })}>TEAM</button>
+                </span>
+              </span>
             ))}
+            <span className="deleg-all">
+              <button className="tiny" onClick={() => (Object.keys(DEPT_LABEL) as Dept[]).forEach((k) => d({ type: "setDelegate", dept: k, on: true }))}>TEAM HANDLES ALL</button>
+              <button className="tiny" onClick={() => (Object.keys(DEPT_LABEL) as Dept[]).forEach((k) => d({ type: "setDelegate", dept: k, on: false }))}>I HANDLE ALL</button>
+            </span>
           </div>
+          <p className="dim small">TEAM means that department picks the default answer for routine cards, so the clock does not stop for them. Big and urgent decisions always come to you.</p>
           {decisions.length === 0 && <p className="dim">Nothing needs you. The factory is working.</p>}
           {decisions.filter((c) => !nowCards.includes(c)).map((c, i) => <CardView key={c.id} c={c} d={d} keys={!nowCards.length && i === 0} />)}
           {s.recap.length > 0 && (

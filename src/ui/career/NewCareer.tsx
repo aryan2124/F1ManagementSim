@@ -56,7 +56,7 @@ export function NewCareer({ onStart, onBack, onTutorial }: { onStart: (s: Career
         <section className="panel nc-continue">
           <div>
             <h3>CONTINUE</h3>
-            <p className="dim">{TEAMS.find((t) => t.id === saved.teamId)?.name}, {fmtDay(saved.day)} {saved.year}, round {saved.round + 1}.</p>
+            <p className="dim">{TEAMS.find((t) => t.id === saved.teamId)?.name}, {fmtDay(saved.day)}, round {saved.round + 1}.</p>
           </div>
           <button className="btn primary" onClick={() => onStart(saved)}>CONTINUE CAREER</button>
         </section>

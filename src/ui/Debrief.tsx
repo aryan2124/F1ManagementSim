@@ -56,17 +56,25 @@ function EngineerReplay({ db, n }: { db: ReturnType<typeof buildDebrief>; n: num
   const laps = Math.max(2, db.field.laps);
   const [lap, setLap] = useState(0);
   const [play, setPlay] = useState(false);
+  const moments = useMemo(() => [...db.moments].sort((a, b) => a.lap - b.lap), [db.moments]);
+  // play runs the laps until the next marked moment, stops there, and waits for the next press
   useEffect(() => {
     if (!play) return;
-    const id = setInterval(() => setLap((l) => (l >= laps ? (setPlay(false), l) : l + 1)), Math.max(60, Math.min(220, 14000 / laps)));
+    const id = setInterval(() => setLap((l) => {
+      const nl = l + 1;
+      if (nl >= laps) { setPlay(false); return laps; }
+      if (moments.some((m) => m.lap === nl)) { setPlay(false); return nl; }
+      return nl;
+    }), Math.max(60, Math.min(220, 14000 / laps)));
     return () => clearInterval(id);
-  }, [play, laps]);
-  const moments = useMemo(() => [...db.moments].sort((a, b) => a.lap - b.lap), [db.moments]);
+  }, [play, laps, moments]);
+  const nextMoment = moments.find((m) => m.lap > lap);
+  const idx = moments.filter((m) => m.lap <= lap).length;
   const cur = [...moments].reverse().find((m) => m.lap <= lap);
   const fresh = cur && lap - cur.lap < 6;
   const react: DevReact | undefined = fresh ? (cur.tone === "good" ? "grin" : cur.tone === "bad" ? "stung" : undefined) : undefined;
   const eng = { id: db.cars[0]?.id ?? "eng", name: "Your race engineer", role: "engineer", traits: [] } as unknown as Staff;
-  const say = lap === 0 ? "Right, let us go through it together. Press play and I will tell you where the race was won and lost." : lap >= laps ? `That is the flag. ${db.cars.map((c) => `${c.name.split(" ").slice(-1)[0]} ${c.finish ? "P" + c.finish : c.status} from P${c.grid}`).join(", ")}.` : fresh ? `Lap ${cur.lap}: ${cur.text}` : "Nothing much happening here. Both cars are doing their job.";
+  const say = lap === 0 ? "Right, let us go through it together. Press play and I will tell you where the race was won and lost." : lap >= laps ? `That is the flag. ${db.cars.map((c) => `${c.name.split(" ").slice(-1)[0]} ${c.finish ? "P" + c.finish : c.status} from P${c.grid}`).join(", ")}.` : cur && cur.lap === lap ? `Lap ${cur.lap}: ${cur.text}` : fresh ? `Lap ${cur.lap}: ${cur.text}` : "Nothing much happening here. Both cars are doing their job.";
   return (
     <section className="panel dr-replay">
       <h3>THE RACE ENGINEER'S REPLAY</h3>
@@ -74,7 +82,7 @@ function EngineerReplay({ db, n }: { db: ReturnType<typeof buildDebrief>; n: num
         <Person st={eng} say={say} react={react} size={72} />
         <div className="dr-col">
           <div className="dr-timeline" role="slider" aria-valuemin={0} aria-valuemax={laps} aria-valuenow={lap} aria-label="Race lap">
-            {moments.slice(0, 60).map((m, i) => <i key={i} className={`m-${m.tone}`} style={{ left: `${(m.lap / laps) * 100}%` }} title={`L${m.lap}: ${m.text}`} />)}
+            {moments.slice(0, 60).map((m, i) => <i key={i} className={`m-${m.tone}`} style={{ left: `${(m.lap / laps) * 100}%`, cursor: "pointer" }} title={`L${m.lap}: ${m.text}`} onClick={() => { setPlay(false); setLap(m.lap); }} />)}
             <b style={{ left: `${(lap / laps) * 100}%`, transition: play ? `left ${Math.max(60, Math.min(220, 14000 / laps))}ms linear` : "left 160ms ease-out" }} />
           </div>
           <div className="dr-tower">
@@ -85,8 +93,9 @@ function EngineerReplay({ db, n }: { db: ReturnType<typeof buildDebrief>; n: num
             <span className="dim small">Lap {lap} of {laps}</span>
           </div>
           <div className="dr-foot">
-            <button className="btn" onClick={() => { setLap(0); setPlay(true); }}>{lap ? "REPLAY" : "PLAY"}</button>
-            <button className="tiny" onClick={() => setPlay((p) => !p)}>{play ? "PAUSE" : "RESUME"}</button>
+            <button className="btn" onClick={() => { if (lap >= laps) setLap(0); setPlay(true); }} disabled={play}>{play ? "PLAYING..." : lap === 0 ? "PLAY" : lap >= laps ? "REPLAY" : nextMoment ? "NEXT POINT" : "TO THE FLAG"}</button>
+            <button className="tiny" onClick={() => { setPlay(false); setLap(0); }}>RESTART</button>
+            <span className="dim small">{moments.length ? `Point ${Math.min(idx, moments.length)} of ${moments.length}` : ""}</span>
             <button className="tiny" onClick={() => { setPlay(false); setLap(laps); }}>SKIP TO THE FLAG</button>
           </div>
         </div>

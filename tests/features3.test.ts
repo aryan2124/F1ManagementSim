@@ -82,7 +82,7 @@ describe("next year's car", () => {
     // the January swing is random, so the claim is about the average over a few seeds
     let rs = 0;
     let es = 0;
-    for (const seed of [21, 5, 8]) {
+    for (const seed of [21, 5, 8, 3, 13, 17, 29, 31, 41, 53]) {
       rs += carSum(winter((s) => { weak(s); setNextCar(s, "revolve", 0.8); }, seed));
       es += carSum(winter((s) => { weak(s); setNextCar(s, "evolve", 0.8); }, seed));
     }

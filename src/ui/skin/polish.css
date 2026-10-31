@@ -1,0 +1,50 @@
+/* polish pass: six equal tiles, no clipped numbers, tidy weather bar */
+.hh-six{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-self:stretch}
+.hh-six .stat-tile{display:flex;flex-direction:column;justify-content:space-between;gap:6px;min-height:92px;padding:12px 46px 12px 14px;min-width:0}
+.hh-six .stat-tile > span{display:flex;align-items:center;gap:6px;white-space:nowrap;margin-bottom:0;font-size:12px}
+.hh-six .stat-tile > b{font-size:26px;white-space:nowrap}
+.hh-six .stat-tile > u{right:10px;top:10px}
+.hh-six .stat-tile .bar{margin-top:0}
+@media (max-width:1000px){.hh-six{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.c-nowline{margin:0 0 10px;padding:10px 14px;font-size:20px;color:#ffd166;background:rgba(255,209,102,.08);border-left:4px solid #ffd166}
+.deleg{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:6px 0}
+.deleg-dept{display:inline-flex;align-items:center;gap:6px}
+.deleg-dept > b{font-family:var(--pix);font-size:12px;color:var(--ink)}
+.deleg-all{display:inline-flex;gap:8px;margin-left:auto}
+.c-opt.pick{outline:3px solid #ffd166;outline-offset:-3px;background:rgba(255,209,102,.14)}
+.c-confirm{display:flex;align-items:center;gap:12px;margin-top:10px}
+/* race screen: both drivers side by side on wide windows, whole screen centred */
+.plan-toggle{display:block;margin:8px 0 6px}
+.ctl.pit{margin-top:8px;clear:both}
+@media (min-width:1760px){
+  .screen.race{max-width:1900px;margin:0 auto}
+  .race-grid.has-two{grid-template-columns:240px minmax(0,1fr) 700px}
+  .cars.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+}
+.wx-conf2{margin-top:6px;min-width:180px}
+.wx-conf-label{display:flex;justify-content:space-between;gap:12px;font-family:var(--pix);font-size:11px;color:var(--dim);margin-bottom:4px}
+.wx-conf-label b{color:var(--ink)}
+.app .radar.wx2 .wx-conf2 .wx-conf{height:8px;position:relative}
+/* speech bubble: clean tail with room above it, no overlap with the name label */
+.app .dr-bubble{margin-top:12px}
+.app .dr-bubble::before{top:-14px;left:20px;border:7px solid transparent;border-bottom:7px solid #111;border-top:0;z-index:2}
+.app .dr-bubble::after{content:"";position:absolute;top:-9px;left:22px;border:5px solid transparent;border-bottom:5px solid #f4f0e0;border-top:0;z-index:3}
+/* qualifying timing bar: numbers are never clipped, comparison panel above it */
+.tbar > div{min-width:auto !important}
+.tbar .tb-secs{flex:none}
+.tbar .tb-sec{min-width:104px;flex:none;padding:3px 8px}
+.tbar .tb-sec b,.tb-clock b,.tb-final b{white-space:nowrap}
+.tbar .tb-clock,.tbar .tb-final{flex:none;min-width:150px}
+.viewbox:has(.tb-cmp) .minimap{bottom:128px}
+.tb-cmp{position:absolute;left:10px;bottom:84px;z-index:4;display:flex;align-items:center;gap:8px;padding:5px 10px;background:rgba(8,8,18,.88);box-shadow:0 0 0 2px var(--line);font-family:var(--pix);color:#fff;max-width:calc(100% - 20px);flex-wrap:wrap}
+.cmp-head{font-size:12px;color:var(--yellow);letter-spacing:1px;margin-right:6px;white-space:nowrap}
+.cmp-cell{display:flex;gap:6px;align-items:baseline;padding:2px 8px;background:rgba(255,255,255,.06);border-bottom:3px solid #555}
+.cmp-cell small{font-size:11px;color:var(--dim)}
+.cmp-cell b{font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.cmp-cell.ahead{border-bottom-color:#57cc99}.cmp-cell.ahead b{color:#57cc99}
+.cmp-cell.behind{border-bottom-color:#f9c74f}.cmp-cell.behind b{color:#f9c74f}
+.cmp-verdict{font-size:14px;padding:2px 10px;font-weight:bold}
+.cmp-verdict.IN{background:#57cc99;color:#0b1020}.cmp-verdict.OUT{background:#ff5560;color:#fff}
+.app .c-tabs{flex-wrap:nowrap}
+@media (max-width:1700px){.app .c-tabs{gap:3px}.app .c-tabs button{font-size:13px;padding:10px 8px}}
+@media (max-width:1300px){.app .c-tabs button{font-size:12px;padding:10px 6px}}

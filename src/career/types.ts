@@ -806,6 +806,8 @@ export interface CareerState {
   /** Departments the team handles on its own (their non-urgent decisions take the default). */
   delegate?: Partial<Record<"rnd" | "people" | "money" | "academy", boolean>>;
   focus?: { kind: import("./focus").FocusKind; since: number };
+  /** The last day the weekly plan stopped the clock to ask the player. */
+  planAskedDay?: number;
   /** Regulation eras. */
   era: EraState;
   /** The junior world and the player's academy. */

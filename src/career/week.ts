@@ -18,6 +18,17 @@ export function weekPlanCard(s: CareerState): void {
   if (!next) return;
   const me = s.teams[s.teamId];
   const camp = campaignLine(s);
+  // The plan is a standing order, not a weekly chore: it repeats by itself and only stops the clock
+  // for the first one, about once a month, or when something is going wrong.
+  const last = s.focus?.kind;
+  const mine0 = Object.values(s.drivers).filter((d) => d.teamId === s.teamId && !d.retired);
+  const trouble = me.cash < 3 || mine0.some((d) => d.morale < 0.35);
+  const due = !last || s.day - (s.planAskedDay ?? -999) >= 28 || trouble;
+  if (!due) {
+    resolveWeekPlan(s, last);
+    return;
+  }
+  s.planAskedDay = s.day;
   const options: CardOption[] = [
     { id: "car", label: "THE CAR", lines: [camp ? "+5 points on the campaign and 6 tunnel hours" : "+6 wind tunnel hours", "Cost: both drivers feel ignored (morale -1%)"] },
     { id: "drivers", label: "THE DRIVERS", lines: ["Morale +3%, a little more trust", "Cost: $0.2m, and no tunnel boost"] },
@@ -29,9 +40,9 @@ export function weekPlanCard(s: CareerState): void {
   const n = Math.max(0, next.day - s.day);
   const race = s.lastRace?.length ? `LAST RACE: ${s.lastRace.join(" | ")}\n` : "";
   s.lastRace = undefined;
-  const last = race + (s.lastWeek?.length ? `LAST WEEK: ${s.lastWeek.join(" ")}\n` : "");
-  const body = `${last}Next up: ${gp}, in ${n} day${n === 1 ? "" : "s"}.${camp ? ` ${camp.text}, at ${camp.pct}%.` : ""} Cash ${me.cash.toFixed(1)}m. Where does this week's effort go?`;
-  pushCard(s, "weekPlan", "THIS WEEK: WHERE DOES THE EFFORT GO?", body, options, { urgency: 2, data: { step: "week" } });
+  const lastLine = race + (s.lastWeek?.length ? `LAST WEEK: ${s.lastWeek.join(" ")}\n` : "");
+  const body = `${lastLine}Next up: ${gp}, in ${n} day${n === 1 ? "" : "s"}.${camp ? ` ${camp.text}, at ${camp.pct}%.` : ""} Cash ${me.cash.toFixed(1)}m. Where does the effort go? This plan then repeats every week by itself until you change it, and you see its result in the news. ${trouble ? "Something is going wrong, so you are asked early." : ""}`;
+  pushCard(s, "weekPlan", "YOUR PLAN: WHERE DOES THE EFFORT GO?", body, options, { urgency: 2, data: { step: "week" } });
 }
 
 export function resolveWeekPlan(s: CareerState, option: string): void {

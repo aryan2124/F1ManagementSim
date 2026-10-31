@@ -209,7 +209,7 @@ export function RaceScreen({ session, meta, onFinish, skip, donuts, kind }: { se
         </div>
       )}
 
-      <div className="race-grid">
+      <div className={`race-grid${session.humanIds.length > 1 ? " has-two" : ""}`}>
         <TimingTower session={session} />
         <div className="center">
           <div className={`viewbox${shake ? " shake" : ""}`}>
@@ -244,7 +244,7 @@ export function RaceScreen({ session, meta, onFinish, skip, donuts, kind }: { se
           )}
           {tab === "radar" && <RadarPanel session={session} teamId={teamId} />}
         </div>
-        <div className="cars">
+        <div className={`cars${session.humanIds.length > 1 ? " two" : ""}`}>
           {session.humanIds.map((id) => (
             <CarCard key={id} session={session} car={sim.car(id)} />
           ))}

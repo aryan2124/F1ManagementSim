@@ -73,6 +73,34 @@ export function TimingBar({ session }: { session: QualiSession }) {
     if (car.sectorIdx > 0 && isFinite(cumBench)) gap = cum - cumBench;
   }
 
+  // the comparison panel: against pole, or against the car on the cut line when this driver is on the bubble.
+  // Times only appear after each sector line is crossed, never as a live guess at the lap.
+  const cutPos = sim.segment < 3 ? sim.keepers[seg] : 0;
+  const cutCar = cutPos ? sim.order[cutPos - 1] : undefined;
+  const bubble = !!cutCar && car.position >= cutPos - 2 && car.id !== cutCar.id;
+  const ref = bubble && cutCar ? cutCar : leader && leader.id !== car.id ? leader : undefined;
+  const refName = ref ? (bubble ? `P${cutPos} CUT LINE (${ref.entry.driver.code})` : `POLE (${ref.entry.driver.code})`) : "";
+  const cmpCell = (i: number, mine: number, done: boolean) => {
+    const r = ref?.sectors.best[i] ?? Infinity;
+    if (!ref || !done || !isFinite(r) || !(mine > 0)) return <div key={i} className="cmp-cell"><small>S{i + 1}</small><b>--.---</b></div>;
+    const dd = mine - r;
+    return <div key={i} className={`cmp-cell ${dd <= 0 ? "ahead" : "behind"}`}><small>S{i + 1}</small><b>{gapStr(dd)}</b></div>;
+  };
+  const cmp = (secs: number[], doneN: number, total?: number) => {
+    if (!ref) return null;
+    const refLap = ref.best[seg];
+    const dl = total !== undefined && isFinite(refLap) ? total - refLap : null;
+    const verdict = bubble && dl !== null ? (dl < 0 ? "IN" : "OUT") : "";
+    return (
+      <div className="tb-cmp">
+        <span className="cmp-head">VS {refName}</span>
+        {[0, 1, 2].map((i) => cmpCell(i, secs[i], i < doneN))}
+        {dl !== null && <div className={`cmp-cell lap ${dl <= 0 ? "ahead" : "behind"}`}><small>LAP</small><b>{gapStr(dl)}</b></div>}
+        {verdict && <span className={`cmp-verdict ${verdict}`}>{verdict}</span>}
+      </div>
+    );
+  };
+
   const head = (
     <div className="tb-id" style={{ ["--team" as string]: team }}>
       <i className="tb-pos">{car.position}</i>
@@ -83,7 +111,8 @@ export function TimingBar({ session }: { session: QualiSession }) {
   );
 
   if (h) {
-    return (
+    return (<>
+      {cmp(h.secs, 3, h.valid ? h.time : undefined)}
       <div className="tbar hold">
         {head}
         <div className="tb-secs">
@@ -99,7 +128,7 @@ export function TimingBar({ session }: { session: QualiSession }) {
           <span>{h.valid ? `P${h.pos}${h.pos > 1 ? " " + gapStr(h.gap) : " FASTEST"}` : "Track limits or a mistake"}</span>
         </div>
       </div>
-    );
+    </>);
   }
 
   if (car.phase === "out" || car.phase === "in" || car.phase === "queue" || car.phase === "entering" || car.phase === "garage" || car.phase === "crashed") {
@@ -115,7 +144,8 @@ export function TimingBar({ session }: { session: QualiSession }) {
     );
   }
 
-  return (
+  return (<>
+    {cmp(car.sectors.last, car.sectorIdx)}
     <div className="tbar">
       {head}
       <div className="tb-secs">
@@ -135,5 +165,5 @@ export function TimingBar({ session }: { session: QualiSession }) {
         <span className={gap === null ? "" : gap <= 0 ? "ahead" : "behind"}>{gap === null ? (!leader || leader.id === car.id || car.sectorIdx >= 1 ? "Setting the benchmark" : "Gap after S1") : `${gapStr(gap)} to the fastest`}</span>
       </div>
     </div>
-  );
+  </>);
 }

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Action, Card, CareerState, DriverState, Staff } from "../../career/types";
 import type { Result } from "../../career/reducer";
 import { TEAMS } from "../../game/data";
@@ -76,6 +76,24 @@ export function Bar({ v, max = 1, color }: { v: number; max?: number; color?: st
 
 /** One decision or notice card. Options show plain-words facts and warnings, and notices are dismissed with an X. */
 export function CardView({ c, d, compact, keys }: { c: Card; d: Dispatch; compact?: boolean; keys?: boolean }) {
+  const confirmFirst = c.options.length > 1;
+  const [picked, setPicked] = useState<string | null>(null);
+  const pickedRef = useRef<string | null>(null);
+  pickedRef.current = picked;
+  // number keys pick, Enter confirms; nothing is chosen by one stray click
+  useEffect(() => {
+    if (!keys || !confirmFirst) return;
+    const on = (e: KeyboardEvent) => {
+      const tg = e.target as HTMLElement | null;
+      if (tg && /^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const i = Number(e.key) - 1;
+      if (i >= 0 && c.options[i]) setPicked(c.options[i].id);
+      else if (e.key === "Enter" && pickedRef.current) { e.preventDefault(); d({ type: "card", id: c.id, option: pickedRef.current }); }
+    };
+    window.addEventListener("keydown", on);
+    return () => window.removeEventListener("keydown", on);
+  }, [keys, confirmFirst, c.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const def = c.options.find((o) => o.id === c.defaultOption)?.label;
   if (c.notice) {
     return (
@@ -91,6 +109,7 @@ export function CardView({ c, d, compact, keys }: { c: Card; d: Dispatch; compac
     );
   }
   const rich = c.options.some((o) => o.lines && o.lines.length);
+  const chosen = c.options.find((o) => o.id === picked);
   return (
     <div className={`c-card u${c.urgency}`}>
       <h4>{c.title}</h4>
@@ -102,7 +121,7 @@ export function CardView({ c, d, compact, keys }: { c: Card; d: Dispatch; compac
       )}
       <div className={rich ? "c-opts rich" : "c-opts"}>
         {c.options.map((o, oi) => (
-          <button key={o.id} className={`c-opt ${o.id === c.defaultOption ? "def" : ""}`} onClick={() => d({ type: "card", id: c.id, option: o.id })}>
+          <button key={o.id} className={`c-opt ${o.id === c.defaultOption ? "def" : ""}${picked === o.id ? " pick" : ""}`} aria-pressed={confirmFirst ? picked === o.id : undefined} onClick={() => (confirmFirst ? setPicked(o.id) : d({ type: "card", id: c.id, option: o.id }))}>
             <b>{keys && oi < 9 ? <kbd className="optkey">{oi + 1}</kbd> : null}{o.label}</b>
             {o.detail && <span className="dim">{o.detail}</span>}
             {o.lines && (
@@ -116,6 +135,14 @@ export function CardView({ c, d, compact, keys }: { c: Card; d: Dispatch; compac
           </button>
         ))}
       </div>
+      {confirmFirst && (
+        <div className="c-confirm">
+          <button className="btn primary" disabled={!chosen} onClick={() => chosen && d({ type: "card", id: c.id, option: chosen.id })}>
+            {chosen ? `CONFIRM: ${chosen.label}` : "PICK AN OPTION"}
+          </button>
+          {chosen && <button className="tiny" onClick={() => setPicked(null)}>CLEAR</button>}
+        </div>
+      )}
     </div>
   );
 }
