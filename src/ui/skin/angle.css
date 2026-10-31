@@ -151,3 +151,20 @@ body.fx-wash { animation: tier-wash 0.7s ease-out; }
 .focus-card:active{transform:scale(.97)}
 .focus-card b{color:#f9c74f;font-size:13px}
 .focus-card.sel{background:#2a3558;outline:none;border-color:var(--team-accent,#f9c74f)}
+.optkey{display:inline-block;min-width:16px;margin-right:6px;padding:0 4px;background:#f9c74f;color:#1a1a2a;font-size:11px;text-align:center}
+
+.dcard{border-left:4px solid var(--team,#f9c74f);clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%);animation:dcard-in .22s var(--ease-out,ease-out)}
+.dcard.urgent{animation:dcard-in .22s,dcard-pulse .5s .22s infinite alternate}
+.dcard .popts button{transition:transform 90ms}.dcard .popts button:active{transform:scale(.94)}
+@keyframes dcard-in{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes dcard-pulse{to{box-shadow:inset 0 0 0 2px #e63946}}
+
+.startlights{padding:18px 26px;gap:16px;top:36px;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+.startlights span{width:36px;height:36px;transition:background 80ms,box-shadow 80ms}
+.startlights span.on{box-shadow:0 0 26px #ff2a2a,inset 0 0 0 4px #ff9a9a66}
+.startlights b{font-size:14px}
+.startlights.out{animation:lights-out .6s ease-out}
+@keyframes lights-out{0%{transform:translateX(-50%) scale(1.15)}100%{transform:translateX(-50%) scale(1)}}
+.commentary{position:absolute;left:12px;bottom:54px;max-width:46%;background:rgba(10,12,20,.88);border-left:4px solid var(--team-accent,#f9c74f);padding:6px 10px;font-size:13px;z-index:20;animation:dcard-in .2s ease-out}
+.chq-burst{position:absolute;inset:0;pointer-events:none;background:repeating-conic-gradient(#fff 0 12.5%,#111 0 25%) 0 0/48px 48px;opacity:0;animation:chq 1.4s ease-out}
+@keyframes chq{0%{opacity:.7;transform:scale(1.4)}100%{opacity:0;transform:scale(1)}}

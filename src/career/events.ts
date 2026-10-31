@@ -593,7 +593,7 @@ function prospectFor(s: CareerState) {
 /** Once a week: at most one big event, and only ones the state has earned. */
 export function eventsWeekly(s: CareerState) {
   const st = s.story;
-  if (s.weekend || s.cards.filter((c) => !c.notice && !c.mail).length >= 5) return;
+  if (s.weekend || s.cards.some((c) => !c.notice && !c.mail && c.kind === "event")) return; // at most one open event at a time
   const rng = rngFor(s, `events:${s.day}`);
   const live = EVENTS.filter((e) => s.day - (st.last[e.id] ?? -999) >= e.cooldown && (!e.big || s.day - st.bigDay >= 7));
   const scored = live.map((e) => ({ e, w: e.weight(s) / (1 + 0.3 * (st.count[e.id] ?? 0)) })).filter((x) => x.w > 0);

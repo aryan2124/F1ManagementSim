@@ -2,6 +2,7 @@ import { SetPicker } from "./SetPicker";
 import { advisePit, bestSet } from "../sim/tyreSets";
 import { SkipPrompt, type NetSkip } from "./SkipPrompt";
 import { useEffect, useRef, useState } from "react";
+import { feel } from "./skin/fx";
 import { PLink } from "./career/Profile";
 import type { RaceSession } from "../game/session";
 import type { LiveSession, LiveSim, SpeedSetting } from "../game/live";
@@ -123,10 +124,27 @@ export function RaceScreen({ session, meta, onFinish, skip, donuts, kind }: { se
     };
   }, [session]);
 
+  // A12/A16: lights out and the chequered flag hit the whole screen
+  const phaseRef = useRef(session.sim.phase);
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const ph = session.sim.phase;
+      if (ph === phaseRef.current) return;
+      if (phaseRef.current === "grid" && ph === "racing") feel("good", "big");
+      if (ph === "finished") feel("good", "medium");
+      phaseRef.current = ph;
+    }, 100);
+    return () => window.clearInterval(id);
+  }, [session]);
+
   // a driver asking a question slows the race so there is time to answer
   useEffect(() => {
     return session.onEvent((e) => {
       if (e.kind === "prompt" && session.speed > 2) session.speed = 2;
+      // A15: drama slows the clock so it can be seen
+      const mine = (id?: string) => !!id && session.humanIds.includes(id);
+      const drama = e.kind === "sc_deployed" || e.kind === "vsc" || e.kind === "crash" || ((e.kind === "contact" || e.kind === "failure") && (mine(e.carId) || mine(e.otherId)));
+      if (drama && session.speed > 2) session.speed = 2;
     });
   }, [session]);
 
@@ -317,6 +335,31 @@ function PitStopTimer({ session }: { session: RaceSession }) {
   );
 }
 
+/** A14: one reactive line of commentary for the action that matters most. */
+function Commentary({ session }: { session: RaceSession }) {
+  const [line, setLine] = useState<{ t: string; k: number } | null>(null);
+  const sim = session.sim;
+  useEffect(() => {
+    let k = 0;
+    const code = (id?: string) => (id ? sim.car(id)?.entry.driver.code ?? "" : "");
+    return session.onEvent((e) => {
+      const pos = e.carId ? sim.car(e.carId)?.position ?? 99 : 99;
+      let t = "";
+      if (e.kind === "overtake" && pos <= 10) t = `${code(e.carId)} goes by ${code(e.otherId)} for P${pos}.`;
+      else if (e.kind === "contact") t = `Contact between ${code(e.carId)} and ${code(e.otherId)}.`;
+      else if (e.kind === "fastest_lap") t = `${code(e.carId)} sets the fastest lap.`;
+      else if (e.kind === "pit_in" && pos <= 6) t = `${code(e.carId)} dives into the pits.`;
+      else if (e.kind === "crash") t = `${code(e.carId)} is out. That is the end of the race.`;
+      else if (e.kind === "sc_deployed") t = "Safety car. Everyone bunches up.";
+      if (!t) return;
+      const id = ++k;
+      setLine({ t, k: id });
+      window.setTimeout(() => setLine((l) => (l && l.k === id ? null : l)), 4200);
+    });
+  }, [session, sim]);
+  return line ? <div key={line.k} className="commentary">{line.t}</div> : null;
+}
+
 function MomentBanners({ session }: { session: RaceSession }) {
   const [list, setList] = useState<Moment[]>([]);
   const seq = useRef(0);
@@ -423,6 +466,7 @@ function RaceOverlay({ session, onFinish, donuts }: { session: RaceSession; onFi
       <RaceControl sim={sim} humans={session.humanIds} />
       <MomentBanners session={session} />
       <PitStopTimer session={session} />
+      <Commentary session={session} />
       {celebrating && (
         <div className="dircap donut-cap">
           <i>VICTORY LAP</i> {session.donutIds.map((id) => session.sim.car(id).entry.driver.name).join(" and ")} {session.donutIds.length > 1 ? "put on a show" : "puts on a show"}
@@ -431,6 +475,7 @@ function RaceOverlay({ session, onFinish, donuts }: { session: RaceSession; onFi
       )}
       {finished && !celebrating && (
         <div className="finish-overlay">
+          <div className="chq-burst" aria-hidden />
           <h2>RACE COMPLETE</h2>
           <button className="btn primary big" onClick={onFinish}>
             VIEW CLASSIFICATION

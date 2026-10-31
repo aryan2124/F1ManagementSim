@@ -157,7 +157,9 @@ const PICK: { c: Compound; name: string }[] = [
   { c: "W", name: "WET" },
 ];
 
-function PromptRow({ session, p }: { session: RaceSession; p: Prompt }) {
+const OPT_KEYS = ["q", "w", "e", "r", "t"];
+
+function PromptRow({ session, p, first }: { session: RaceSession; p: Prompt; first?: boolean }) {
   const sim = session.sim;
   const [picking, setPicking] = useState(false);
   const [setId, setSetId] = useState("");
@@ -171,8 +173,20 @@ function PromptRow({ session, p }: { session: RaceSession; p: Prompt }) {
   const secs = Math.max(0, Math.ceil(((p.expires - sim.tick) * DT)));
   const urgent = secs <= 5;
   const send = (option: string) => sim.command({ type: "reply", promptId: p.id, option });
+  // Q W E R T answer the oldest question
+  useEffect(() => {
+    if (!first || picking) return;
+    const on = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || (e.target as HTMLElement)?.tagName === "INPUT") return;
+      const i = OPT_KEYS.indexOf(e.key.toLowerCase());
+      const o = i >= 0 ? p.options[i] : undefined;
+      if (o) { e.preventDefault(); send(o.id); }
+    };
+    window.addEventListener("keydown", on);
+    return () => window.removeEventListener("keydown", on);
+  }); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <div className="prompt" style={{ ["--team" as string]: hex(car.entry.team.color) }}>
+    <div className={`prompt dcard ${urgent ? "urgent" : ""}`} style={{ ["--team" as string]: hex(car.entry.team.color) }}>
       <div className="ptop">
         <i className="chip" />
         <b>{car.entry.driver.code}</b>
@@ -207,11 +221,11 @@ function PromptRow({ session, p }: { session: RaceSession; p: Prompt }) {
             <button onClick={() => setPicking(false)}>BACK</button>
           </>
         ) : (
-          p.options.map((o) =>
+          p.options.map((o, oi) =>
             o.id === "box" ? (
               <span key={o.id} className="boxopt">
                 <button title={o.note} onClick={() => send("box")}>
-                  {o.label}
+                  {first && <kbd className="optkey">{OPT_KEYS[oi]?.toUpperCase()}</kbd>}{o.label}
                 </button>
                 <button className="pchoose" title="Choose which tyre to fit" onClick={() => setPicking(true)}>
                   CHOOSE TYRE
@@ -219,7 +233,7 @@ function PromptRow({ session, p }: { session: RaceSession; p: Prompt }) {
               </span>
             ) : (
               <button key={o.id} title={o.note} onClick={() => send(o.id)}>
-                {o.label}
+                {first && oi < 5 && <kbd className="optkey">{OPT_KEYS[oi].toUpperCase()}</kbd>}{o.label}
               </button>
             ),
           )
@@ -244,8 +258,8 @@ export function PromptBar({ session }: { session: RaceSession }) {
   if (!open.length) return null;
   return (
     <div className="promptbar">
-      {open.map((p) => (
-        <PromptRow key={p.id} session={session} p={p} />
+      {open.map((p, i) => (
+        <PromptRow key={p.id} session={session} p={p} first={i === 0} />
       ))}
     </div>
   );

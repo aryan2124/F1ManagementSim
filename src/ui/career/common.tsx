@@ -75,7 +75,7 @@ export function Bar({ v, max = 1, color }: { v: number; max?: number; color?: st
 }
 
 /** One decision or notice card. Options show plain-words facts and warnings, and notices are dismissed with an X. */
-export function CardView({ c, d, compact }: { c: Card; d: Dispatch; compact?: boolean }) {
+export function CardView({ c, d, compact, keys }: { c: Card; d: Dispatch; compact?: boolean; keys?: boolean }) {
   const def = c.options.find((o) => o.id === c.defaultOption)?.label;
   if (c.notice) {
     return (
@@ -101,9 +101,9 @@ export function CardView({ c, d, compact }: { c: Card; d: Dispatch; compact?: bo
         </p>
       )}
       <div className={rich ? "c-opts rich" : "c-opts"}>
-        {c.options.map((o) => (
+        {c.options.map((o, oi) => (
           <button key={o.id} className={`c-opt ${o.id === c.defaultOption ? "def" : ""}`} onClick={() => d({ type: "card", id: c.id, option: o.id })}>
-            <b>{o.label}</b>
+            <b>{keys && oi < 9 ? <kbd className="optkey">{oi + 1}</kbd> : null}{o.label}</b>
             {o.detail && <span className="dim">{o.detail}</span>}
             {o.lines && (
               <ul>

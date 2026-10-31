@@ -83,6 +83,10 @@ export function resolveCard(s: CareerState, id: number, option: string, auto = f
   s.cards = s.cards.filter((x) => x.id !== id);
   const me = s.teams[s.teamId];
   const d = c.data ?? {};
+  if (c.kind === "event" && !c.notice) {
+    const label = c.options.find((o) => o.id === option)?.label;
+    if (label) recap(s, `${auto ? "No answer, so" : "You chose"}: ${label}.`);
+  }
   switch (c.kind) {
     case "rndDirection": {
       if (option.startsWith("brief:")) {

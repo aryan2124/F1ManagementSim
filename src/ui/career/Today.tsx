@@ -138,14 +138,14 @@ function threatLine(s: CareerState): string {
   return above ? `${teamLabel(s, above[0])} are ${above[1] - mine} points ahead.` : "";
 }
 
-function FocusRow({ s, d }: { s: Props["s"]; d: Props["d"] }) {
+function FocusRow({ s, d, busy }: { s: Props["s"]; d: Props["d"]; busy: boolean }) {
   const cur = s.focus?.kind;
   return (
     <section className="panel c-focus">
       <h3>THIS WEEK'S FOCUS</h3>
       <div className="focus-cards">
         {(Object.keys(FOCUS) as FocusKind[]).map((k, i) => (
-          <button key={k} className={`focus-card clickable ${cur === k ? "sel" : ""}`} onClick={() => d({ type: "setFocus", kind: k })} title={`Press ${i + 1}`}>
+          <button key={k} className={`focus-card clickable ${cur === k ? "sel" : ""}`} onClick={() => d({ type: "setFocus", kind: k })} title={busy ? "Answer the decision first" : `Press ${i + 1}`}>
             <b>{i + 1}. {FOCUS[k].label}</b>
             <span className="gain">{FOCUS[k].gain}</span>
             <span className="cost">{FOCUS[k].cost}</span>
@@ -197,11 +197,14 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
     const on = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === "INPUT" || e.ctrlKey || e.metaKey) return;
       const i = Number(e.key) - 1;
-      if (i >= 0 && i < 4 && !inWeekend && !clock.running) d({ type: "setFocus", kind: ks[i] });
+      if (!(i >= 0)) return;
+      const top = decisions[0];
+      if (top && !inWeekend) { if (top.options[i]) d({ type: "card", id: top.id, option: top.options[i].id }); return; }
+      if (i < 4 && !inWeekend && !clock.running) d({ type: "setFocus", kind: ks[i] });
     };
     window.addEventListener("keydown", on);
     return () => window.removeEventListener("keydown", on);
-  }, [inWeekend, clock.running]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [inWeekend, clock.running, decisions[0]?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const myIdx = topTeams.findIndex(([id]) => id === s.teamId);
   const shownTeams = fullTable ? topTeams : topTeams.slice(Math.max(0, Math.min(myIdx - 2, topTeams.length - 5)), Math.max(0, Math.min(myIdx - 2, topTeams.length - 5)) + 5);
   return (
@@ -238,7 +241,7 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
         </div>}
       </section>
 
-      {!inWeekend && !closedYearNow(s) && <FocusRow s={s} d={d} />}
+      {!inWeekend && !closedYearNow(s) && <FocusRow s={s} d={d} busy={decisions.length > 0} />}
 
       <FactoryBox s={s} go={go} />
       <DayStrip s={s} />
@@ -248,7 +251,7 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
         <section className="panel">
           <h3>DECISIONS ({decisions.length})</h3>
           {decisions.length === 0 && <p className="dim">Nothing needs you. The factory is working.</p>}
-          {decisions.map((c) => <CardView key={c.id} c={c} d={d} />)}
+          {decisions.map((c, i) => <CardView key={c.id} c={c} d={d} keys={i === 0} />)}
           {s.recap.length > 0 && (
             <div className="c-recap">
               <h4>SINCE LAST TIME</h4>
