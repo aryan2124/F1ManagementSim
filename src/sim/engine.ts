@@ -389,6 +389,22 @@ export class RaceSim {
       case "push":
         car.push = cmd.push;
         break;
+      case "pitRelease": {
+        if (car.status !== "pit_stop" || car.releaseTried) break;
+        car.releaseTried = true;
+        const rem = car.pitTimer * DT;
+        const code = car.entry.driver.code;
+        if (rem <= 0.55) {
+          car.pitTimer = 0;
+          car.stopSecs = Math.max(0.8, (car.stopSecs ?? 2) - rem);
+          this.emit("radio", car.id, undefined, `${code}: Perfect release. ${rem.toFixed(2)} seconds saved.`);
+        } else if (rem > 0.9) {
+          car.pitTimer += Math.ceil(1.0 / DT);
+          car.stopSecs = (car.stopSecs ?? 2) + 1.0;
+          this.emit("radio", car.id, undefined, `${code}: Released too early, a wheel was not tight. One second lost.`);
+        }
+        break;
+      }
       case "order":
         this.radio?.order(cmd.carId, cmd.order);
         break;
@@ -874,6 +890,7 @@ export class RaceSim {
         if (this.cfg.rules?.refuelling) extra += this.fuelToAdd(car) / 0.045;
         car.pitTimer = Math.ceil((crewT + extra) / DT);
         car.stopSecs = crewT + extra;
+        car.releaseTried = false;
       }
     } else if (car.status === "pit_stop") {
       car.v = 0;

@@ -21,6 +21,7 @@ import type { QualiSession } from "./game/qsession";
 import type { QualiRow } from "./sim/qualifying";
 import type { Compound } from "./sim/types";
 import { ConfirmHost } from "./ui/Confirm";
+import { ToastHost } from "./ui/Toast";
 import { scrollTop } from "./ui/hooks";
 import type { StandingOrders } from "./sim/standing";
 
@@ -96,6 +97,7 @@ export default function App() {
     <div className="app">
       <Swirl />
       <ConfirmHost />
+      <ToastHost />
       {screen === "home" && <Home onNew={() => setScreen("newcareer")} onLoad={(c) => { setCareer(c); setScreen("career"); }} onOnline={() => setScreen("netjoin")} onWeekend={() => setScreen("weekend")} onTutorial={() => startTutorial(null)} />}
       {screen === "weekend" && <Menu settings={settings} onChange={setSettings} onStart={enter} onBack={() => setScreen("home")} />}
       {screen === "netjoin" && <NetJoin code0={invited ?? undefined} onBack={() => setScreen("home")} onJoin={(code, name) => { setNetRoom({ code, name }); setScreen("net"); }} />}

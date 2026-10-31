@@ -1,0 +1,137 @@
+/* BOX BOX shape language: angled, striped, quick. Loaded after skin.css.
+ * Tokens first: one spacing scale, one motion scale, three feedback tiers. Everything below uses them. */
+:root {
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 36px;
+  --fs-s: 12px; --fs-m: 14px; --fs-l: 18px; --fs-xl: 26px;
+  --t-press: 100ms; --t-hover: 150ms; --t-fast: 180ms; --t-med: 280ms; --t-slow: 520ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --cut: 10px;
+  --team-accent: var(--c-go);
+  --r: 2px;
+  --r-s: 0px;
+}
+
+/* ---------- panels: square body, livery stripe, angled label plate ---------- */
+.app .panel,
+.app [class*="theme-"] .panel {
+  border-radius: 0;
+  box-shadow:
+    inset 0 0 0 2px var(--rim),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.25),
+    0 0 0 2px var(--outline),
+    0 5px 0 2px var(--lip);
+  padding: 30px 18px 16px 22px;
+  transition: transform var(--t-hover) var(--ease-out), box-shadow var(--t-hover) var(--ease-out), filter var(--t-hover);
+}
+/* the livery: a thick team-colour bar down the left edge and a hatched corner at the top right */
+.app .panel::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: linear-gradient(180deg, var(--accent, var(--team-accent)) 0 62%, rgba(255, 255, 255, 0.55) 62% 70%, var(--accent, var(--team-accent)) 70% 100%);
+  pointer-events: none;
+}
+.app .panel::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 72px;
+  height: 14px;
+  background: repeating-linear-gradient(115deg, transparent 0 6px, color-mix(in srgb, var(--accent, var(--team-accent)) 55%, transparent) 6px 9px);
+  pointer-events: none;
+  opacity: 0.8;
+}
+.app .panel > h3:first-child,
+.app .panel > h4:first-child,
+.app .panel > .panel-head {
+  top: 0;
+  left: 6px;
+  max-width: calc(100% - 90px);
+  border-radius: 0;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+  padding: 6px 24px 5px 12px;
+  box-shadow: none;
+}
+.app .panel.clickable,
+.app .panel.sel { cursor: pointer; }
+.app .panel.clickable:hover { transform: translateY(-3px); filter: brightness(1.08); }
+.app .panel.sel { box-shadow: inset 0 0 0 3px var(--team-accent), 0 0 0 2px var(--outline), 0 5px 0 2px var(--lip); }
+.app .panel.off { opacity: 0.5; filter: saturate(0.5); }
+
+/* ---------- buttons: one angled corner, thick base, fast press ---------- */
+.app .btn,
+.app .tiny,
+.app .c-tabs button,
+.app .seg button {
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)));
+  transition: transform var(--t-press) var(--ease-out), filter var(--t-hover), background var(--t-hover);
+}
+.app .tiny, .app .seg button { --cut: 6px; }
+.app .btn,
+.app .tiny {
+  box-shadow: inset 0 0 0 2px var(--rim), inset 0 -5px 0 rgba(0, 0, 0, 0.3);
+  margin-bottom: 0;
+}
+.app .btn:hover:not(:disabled),
+.app .tiny:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.15); box-shadow: inset 0 0 0 2px var(--team-accent), inset 0 -5px 0 rgba(0, 0, 0, 0.3); }
+.app .btn:active:not(:disabled),
+.app .tiny:active:not(:disabled),
+.app .btn.pressed { transform: scale(0.93) translateY(2px); filter: brightness(0.92); box-shadow: inset 0 0 0 2px var(--rim), inset 0 -2px 0 rgba(0, 0, 0, 0.3); }
+
+/* ---------- focus: always visible, never the browser default ---------- */
+:focus { outline: none; }
+:focus-visible { outline: 3px solid var(--team-accent); outline-offset: 2px; }
+
+/* ---------- carbon grain instead of scanlines ---------- */
+.crt-global {
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.018) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.1) 0 2px, transparent 2px 4px),
+    radial-gradient(ellipse at center, transparent 62%, rgba(0, 0, 0, 0.38) 100%);
+}
+body.no-crt .crt-global { background: none; }
+
+/* ---------- tab bodies slide in; a race weekend wipes in ---------- */
+@keyframes tab-in { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+.tab-slide { animation: tab-in var(--t-med) var(--ease-out) both; }
+@keyframes wipe { 0% { transform: translateX(-101%); } 45% { transform: translateX(0); } 55% { transform: translateX(0); } 100% { transform: translateX(101%); } }
+.wipe { position: fixed; inset: 0; z-index: 900; pointer-events: none; background: repeating-linear-gradient(115deg, var(--team-accent) 0 38px, #0d1420 38px 76px); animation: wipe 0.8s cubic-bezier(0.7, 0, 0.3, 1) both; }
+.wipe b { position: absolute; inset: 0; display: grid; place-items: center; font: 28px var(--pix, monospace); color: #fff; text-shadow: 3px 3px 0 #000; letter-spacing: 4px; }
+
+/* ---------- toasts ---------- */
+.toasts { position: fixed; right: 16px; bottom: 16px; z-index: 950; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; pointer-events: none; }
+.toast { min-width: 200px; max-width: 360px; padding: 10px 16px 10px 14px; background: rgba(13, 20, 32, 0.96); border-left: 6px solid var(--c-info); box-shadow: 0 0 0 2px var(--outline), 0 6px 18px rgba(0, 0, 0, 0.5); clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%); animation: toast-in var(--t-med) var(--ease-pop) both; }
+.toast.good { border-left-color: var(--c-good); }
+.toast.bad { border-left-color: var(--c-bad); }
+.toast.out { animation: toast-out var(--t-fast) ease-in both; }
+@keyframes toast-in { from { opacity: 0; transform: translateX(40px) scale(0.9); } to { opacity: 1; transform: none; } }
+@keyframes toast-out { to { opacity: 0; transform: translateX(40px); } }
+
+/* ---------- rolling numbers ---------- */
+.roll { display: inline-block; font-variant-numeric: tabular-nums; }
+.roll.up { color: var(--c-good); }
+.roll.down { color: var(--c-bad); }
+
+/* ---------- feedback tiers: small, medium, big ---------- */
+@keyframes tier-wash { 0% { box-shadow: inset 0 0 0 0 transparent; } 25% { box-shadow: inset 0 0 var(--wash-size, 70px) 4px var(--wash, rgba(255,255,255,.2)); } 100% { box-shadow: inset 0 0 0 0 transparent; } }
+body.fx-wash { animation: tier-wash 0.7s ease-out; }
+
+.tower li.gain{animation:tow-gain 1.4s ease-out}
+.tower li.lose{animation:tow-lose 1.4s ease-out}
+.tower li .arr{font-size:9px;width:10px;display:inline-block}
+.tower li.gain .arr{color:#57cc99}.tower li.lose .arr{color:#e63946}
+@keyframes tow-gain{0%{background:rgba(87,204,153,.55);transform:translateY(8px)}30%{transform:translateY(0)}100%{background:transparent}}
+@keyframes tow-lose{0%{background:rgba(230,57,70,.5);transform:translateY(-8px)}30%{transform:translateY(0)}100%{background:transparent}}
+
+.pitbox{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);z-index:30;background:rgba(10,12,20,.94);border:2px solid var(--team-accent,#f9c74f);padding:10px 14px;display:flex;flex-direction:column;gap:6px;align-items:center;min-width:260px}
+.pitbox .pbar{position:relative;width:100%;height:12px;background:#222;border:1px solid #555}
+.pitbox .pbar i{position:absolute;inset:0 auto 0 0;background:#f9c74f}
+.pitbox .pbar u{position:absolute;top:-2px;bottom:-2px;right:0;background:rgba(87,204,153,.45);border-left:2px solid #57cc99}
+.pitbox.go{border-color:#57cc99;animation:pit-pulse .25s infinite alternate}
+.pitbox.go .pbar i{background:#57cc99}
+@keyframes pit-pulse{to{box-shadow:0 0 18px #57cc99}}

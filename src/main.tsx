@@ -5,6 +5,7 @@ import "@fontsource/vt323/400.css";
 import "./styles.css";
 import "./ui/pixel/themes.css";
 import "./ui/skin/skin.css";
+import "./ui/skin/angle.css";
 import App from "./App";
 import { ArtPreview } from "./render/ArtPreview";
 import { DonutPreview, PodiumPreview } from "./render/PodiumPreview";

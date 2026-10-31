@@ -29,6 +29,7 @@ import { ProfileHost } from "./Profile";
 import { ConvoPanel, CeremonyOverlay } from "./Overlays";
 import { DevRoom } from "./DevRoom";
 import { teamColour, teamLabel } from "../../career/brand";
+import { toast } from "../Toast";
 import "../pixel/themes.css";
 import type { CareerRoom } from "./net";
 import { NetWeekend, ReadyDock } from "./NetParts";
@@ -113,6 +114,23 @@ export function CareerApp({ initial, onExit, net, tutorial }: { initial: CareerS
     if (inWeekend) setSwirl(weekendSwirl(s));
     else setSwirl(trouble ? "crisis" : tab === "today" ? "hq" : tab);
   }, [tab, inWeekend, trouble, s.weekend?.stage]); // eslint-disable-line react-hooks/exhaustive-deps
+  // the team colour is the accent of every screen; messages leave the page and arrive as toasts
+  useEffect(() => {
+    document.documentElement.style.setProperty("--team-accent", "#" + teamColour(s).toString(16).padStart(6, "0"));
+  }, [s.teamId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (msg) { toast(msg, /fail|cannot|can't|not enough|no /i.test(msg) ? "bad" : "info"); setMsg(""); }
+  }, [msg]); // eslint-disable-line react-hooks/exhaustive-deps
+  // a short wipe when a race weekend starts, so race day feels like a different place
+  const [wipe, setWipe] = useState(0);
+  const wasIn = useRef(false);
+  useEffect(() => {
+    if (inWeekend && !wasIn.current) {
+      setWipe((k) => k + 1);
+      window.setTimeout(() => setWipe(0), 900);
+    }
+    wasIn.current = inWeekend;
+  }, [inWeekend]);
   const first = useRef(true);
   // a message stays for a few seconds and then goes by itself; a click dismisses it at once
   useEffect(() => {
@@ -297,6 +315,7 @@ export function CareerApp({ initial, onExit, net, tutorial }: { initial: CareerS
     </div>}
     {(!weekendLive || peek) && <ConvoPanel s={s} d={d} />}
     {(!weekendLive || peek) && <DevRoom s={s} d={d} auto={tab === "today"} />}
+    {wipe > 0 && <div key={wipe} className="wipe" aria-hidden="true"><b>RACE WEEK</b></div>}
     <CeremonyOverlay s={s} d={d} />
     </ProfileHost>
     {coach}

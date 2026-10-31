@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { PLink } from "./career/Profile";
 import type { RaceSession } from "../game/session";
 import type { LiveSession, LiveSim, SpeedSetting } from "../game/live";
-import { COMPOUNDS, fmtLap, FUEL_KG, LIGHTS_TICKS } from "../sim/engine";
+import { COMPOUNDS, DT, fmtLap, FUEL_KG, LIGHTS_TICKS } from "../sim/engine";
 import type { CircuitMeta } from "../game/circuits";
 import type { CarState, Compound, EnergyMode, PushLevel, TeamOrder } from "../sim/types";
 import { RaceView } from "../render/RaceView";
@@ -279,6 +279,44 @@ function RaceControl({ sim, humans }: { sim: RaceSession["sim"]; humans: string[
 type Moment = { id: number; icon: string; head: string; sub?: string; tone: "good" | "bad" | "info"; until: number };
 
 /** Big, short-lived banners for what happens to YOUR cars: passes, being passed, stops, crashes, fastest laps. The race is felt, not read in a log. */
+/** A5: while one of your cars is in the box, a bar fills and the green window is the last half second. Press RELEASE (or Space/Enter) inside it. */
+function PitStopTimer({ session }: { session: RaceSession }) {
+  const sim = session.sim;
+  const [, bump] = useState(0);
+  const was = useRef<number | null>(null);
+  const car = sim.cars.find((c) => c.entry.human && c.status === "pit_stop" && !c.releaseTried);
+  useEffect(() => {
+    const id = window.setInterval(() => bump((n) => n + 1), 50);
+    return () => window.clearInterval(id);
+  }, []);
+  const id = car?.id;
+  useEffect(() => {
+    if (id && was.current === null && session.speed > 1) { was.current = session.speed; session.speed = 1; }
+    if (!id && was.current !== null) { if (session.speed === 1) session.speed = was.current as SpeedSetting; was.current = null; }
+  });
+  useEffect(() => {
+    if (!id) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === "Space" || e.key === "Enter") { e.preventDefault(); e.stopPropagation(); sim.command({ type: "pitRelease", carId: id }); }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [id, sim]);
+  if (!car) return null;
+  const total = Math.max(1, car.stopSecs ?? 2);
+  const rem = car.pitTimer * DT;
+  const fill = Math.max(0, Math.min(1, 1 - rem / total));
+  const green = rem <= 0.55;
+  return (
+    <div className={`pitbox ${green ? "go" : ""}`}>
+      <b>{car.entry.driver.code} IN THE BOX</b>
+      <div className="pbar"><i style={{ width: `${fill * 100}%` }} /><u style={{ left: `${(1 - 0.55 / total) * 100}%` }} /></div>
+      <button className="big" onClick={() => sim.command({ type: "pitRelease", carId: car.id })}>RELEASE</button>
+      <small>Press Space in the green. Too early costs a second.</small>
+    </div>
+  );
+}
+
 function MomentBanners({ session }: { session: RaceSession }) {
   const [list, setList] = useState<Moment[]>([]);
   const seq = useRef(0);
@@ -384,6 +422,7 @@ function RaceOverlay({ session, onFinish, donuts }: { session: RaceSession; onFi
       )}
       <RaceControl sim={sim} humans={session.humanIds} />
       <MomentBanners session={session} />
+      <PitStopTimer session={session} />
       {celebrating && (
         <div className="dircap donut-cap">
           <i>VICTORY LAP</i> {session.donutIds.map((id) => session.sim.car(id).entry.driver.name).join(" and ")} {session.donutIds.length > 1 ? "put on a show" : "puts on a show"}
@@ -407,6 +446,15 @@ function TimingTower({ session }: { session: RaceSession }) {
   const [exact, setExact] = useState(false);
   const L = sim.track.length;
   const leader = sim.order[0];
+  // A3: remember each car's last position so a row can flash and slide when it changes
+  const prev = useRef<Map<string, number>>(new Map());
+  const moved = useRef<Map<string, { dir: 1 | -1; until: number }>>(new Map());
+  const now = performance.now();
+  for (const c of sim.order) {
+    const was = prev.current.get(c.id);
+    if (was !== undefined && was !== c.position && c.status !== "dnf") moved.current.set(c.id, { dir: c.position < was ? 1 : -1, until: now + 1600 });
+    prev.current.set(c.id, c.position);
+  }
   return (
     <section className="tower panel">
       <h3>TIMING</h3>
@@ -424,11 +472,12 @@ function TimingTower({ session }: { session: RaceSession }) {
           return (
             <li
               key={c.id}
-              className={`${c.entry.human ? "mine" : ""} ${session.followId === c.id ? "follow" : ""} ${c.status === "dnf" ? "out" : ""}`}
+              className={`${(moved.current.get(c.id)?.until ?? 0) > now ? (moved.current.get(c.id)!.dir > 0 ? "gain" : "lose") : ""} ${c.entry.human ? "mine" : ""} ${session.followId === c.id ? "follow" : ""} ${c.status === "dnf" ? "out" : ""}`}
               style={{ ["--team" as string]: hex(c.entry.team.color) }}
               onClick={() => (session.followId = c.id)}
             >
               <span className="p">{c.position}</span>
+              <b className="arr">{(moved.current.get(c.id)?.until ?? 0) > now ? (moved.current.get(c.id)!.dir > 0 ? "▲" : "▼") : ""}</b>
               <i className="chip" />
               <span className="code">{c.entry.driver.code}</span>
               <span className="secs">
