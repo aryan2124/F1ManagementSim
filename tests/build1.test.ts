@@ -46,7 +46,7 @@ describe("shared identity", () => {
     s.brand.prefix = "Aurelia";
     s.brand.color = 0x1f6bff;
     (s.identity ??= {})[s.teamId] = { prefix: s.brand.prefix, color: s.brand.color };
-    expect(teamLabel(s)).toBe("Aurelia Williams");
+    expect(teamLabel(s)).toBe("Aurelia Cerulean Racing");
     expect(teamColour(s)).toBe(0x1f6bff);
     expect(identityOf(s, "fer").changed).toBe(false);
     expect(identityOf(s, "wil").changed).toBe(true);

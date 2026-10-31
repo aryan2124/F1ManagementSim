@@ -231,6 +231,16 @@ export function generateDriver(rng: Rng, tier: Tier, taken: Set<string>, usedCod
     const rt = rate(name, tier);
     return { id, name, code, nat, tier, ...rt, fictional: true };
   }
+  // the plain pool is used up: add a middle initial so a name is never repeated
+  for (let k = 0; k < 2000; k++) {
+    const nat = rng.pick(nats);
+    const name = `${rng.pick(FIRST[nat])} ${String.fromCharCode(65 + Math.floor(rng.next() * 26))}. ${rng.pick(LAST[nat])}`;
+    if (taken.has(name)) continue;
+    taken.add(name);
+    const code = makeCode(name, usedCodes);
+    usedCodes.add(code);
+    return { id, name, code, nat, tier, ...rate(name, tier), fictional: true };
+  }
   throw new Error("name pool exhausted");
 }
 
