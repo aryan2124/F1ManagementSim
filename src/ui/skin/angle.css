@@ -187,3 +187,7 @@ body.fx-wash { animation: tier-wash 0.7s ease-out; }
 .promptbar .dcard .popts{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px}
 .promptbar .dcard .popts button{flex:1 1 120px}
 .promptbar .dcard .pevid{flex-direction:row}
+
+.ceremony{display:flex;flex-direction:column;gap:8px;margin:12px 0;align-items:stretch;min-width:320px}
+.cer-row{display:flex;align-items:center;gap:12px;background:rgba(10,12,20,.9);border-left:6px solid var(--team,#fff);padding:8px 14px;font-size:20px}
+.cer-pos{margin-left:auto;color:#f9c74f;font-size:26px}.cer-pts{color:#57cc99}

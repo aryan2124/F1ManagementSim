@@ -159,6 +159,24 @@ function FocusRow({ s, d, busy }: { s: Props["s"]; d: Props["d"]; busy: boolean 
 const WD_LONG = 7;
 void WD_LONG;
 
+/** D5: what the board and the owner expect, and how it is going. */
+function GoalsPanel({ s }: { s: Props["s"] }) {
+  const me = s.teams[s.teamId];
+  const obj = me.objectives[0];
+  const rank = standingsRank(s).indexOf(s.teamId) + 1;
+  const g = s.owner.goal;
+  const onTrack = obj ? rank <= obj.target : true;
+  return (
+    <section className="panel c-goals">
+      <h3>WHAT THEY EXPECT</h3>
+      <ul className="c-tasks">
+        {obj && <li className={onTrack ? "done" : "todo"}><b>Board:</b> {obj.text} <span className={onTrack ? "ok" : "warn"}>{s.round < 2 ? "too early to say" : onTrack ? `on track (P${rank})` : `behind (P${rank})`}</span></li>}
+        <li className={g.done === null ? "todo" : g.done ? "done" : "todo"}><b>{s.owner.name}:</b> {g.text} <span className={g.done === false ? "warn" : "ok"}>{g.done === null ? "in progress" : g.done ? "met" : "missed"}</span></li>
+      </ul>
+    </section>
+  );
+}
+
 const STAGE_BUTTON: Record<string, string> = { practice: "GO TO PRACTICE", sq: "GO TO SPRINT QUALIFYING", sprint: "GO TO THE SPRINT", quali: "GO TO QUALIFYING", race: "GO TO THE RACE" };
 /** The big button on a weekend day names the next thing to do, instead of CONTINUE. */
 export function weekendButton(s: CareerState): string {
@@ -263,6 +281,7 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
         </section>
 
         <aside>
+          <GoalsPanel s={s} />
           <section className="panel">
             <h3>NOTICES {notices.length > 0 && <button className="tiny" onClick={() => notices.forEach((n) => d({ type: "dismiss", id: n.id }))}>CLEAR ALL</button>}</h3>
             {notices.length === 0 && <p className="dim small">Nothing to read.</p>}

@@ -97,7 +97,7 @@ export function Briefing({
               {quali.map((q, i) => {
                 const e = byId.get(q.carId)!;
                 return (
-                  <tr key={q.carId} className={e.human ? "mine" : ""} style={{ ["--team" as string]: hex(e.team.color), animationDelay: `${i * 40}ms` }}>
+                  <tr key={q.carId} className={e.human ? "mine" : ""} style={{ ["--team" as string]: hex(e.team.color), animationDelay: `${(quali.length - 1 - i) * 70}ms` }}>
                     <td className="pos">P{q.position}</td>
                     <td>
                       <i className="chip" />

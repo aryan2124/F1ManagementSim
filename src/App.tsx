@@ -93,6 +93,20 @@ export default function App() {
 
   useEffect(() => { scrollTop(); }, [screen]);
 
+  // H1/B9: Enter presses the one big primary button on screen
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      const t = e.target as HTMLElement | null;
+      if (t && /^(INPUT|TEXTAREA|SELECT|BUTTON|A|SUMMARY)$/.test(t.tagName)) return;
+      if (document.querySelector("[role=dialog], .confirm-box, .modal")) return;
+      const btns = Array.from(document.querySelectorAll<HTMLButtonElement>("button.primary.big:not([disabled])")).filter((b) => b.offsetParent !== null);
+      if (btns.length === 1) { e.preventDefault(); btns[0].click(); }
+    };
+    window.addEventListener("keydown", on);
+    return () => window.removeEventListener("keydown", on);
+  }, []);
+
   return (
     <div className="app">
       <Swirl />

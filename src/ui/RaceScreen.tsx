@@ -3,6 +3,7 @@ import { advisePit, bestSet } from "../sim/tyreSets";
 import { SkipPrompt, type NetSkip } from "./SkipPrompt";
 import { useEffect, useRef, useState } from "react";
 import { feel } from "./skin/fx";
+import { Roll } from "./skin/Roll";
 import { PLink } from "./career/Profile";
 import type { RaceSession } from "../game/session";
 import type { LiveSession, LiveSim, SpeedSetting } from "../game/live";
@@ -360,6 +361,32 @@ function Commentary({ session }: { session: RaceSession }) {
   return line ? <div key={line.k} className="commentary">{line.t}</div> : null;
 }
 
+const F1_POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+/** D1: the result lands one number at a time. */
+function FinishCeremony({ session }: { session: RaceSession }) {
+  const [go, setGo] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => { setGo(true); const best = Math.min(...session.humanIds.map((id) => session.sim.car(id).position)); sfx.play(best <= 3 ? "win" : "flag"); }, 450);
+    return () => window.clearTimeout(t);
+  }, [session]);
+  return (
+    <div className="ceremony">
+      {session.humanIds.map((id) => {
+        const c = session.sim.car(id);
+        const pts = c.status === "dnf" ? 0 : F1_POINTS[c.position - 1] ?? 0;
+        return (
+          <div key={id} className="cer-row" style={{ ["--team" as string]: hex(c.entry.team.color) }}>
+            <i className="chip" />
+            <b>{c.entry.driver.code}</b>
+            <span className="cer-pos">{c.status === "dnf" ? "OUT" : <>P<Roll v={go ? c.position : 0} fmt={(x) => String(Math.max(1, Math.round(x)))} good="none" ms={900} /></>}</span>
+            <span className="cer-pts">+<Roll v={go ? pts : 0} ms={1100} /> pts</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function MomentBanners({ session }: { session: RaceSession }) {
   const [list, setList] = useState<Moment[]>([]);
   const seq = useRef(0);
@@ -477,6 +504,7 @@ function RaceOverlay({ session, onFinish, donuts }: { session: RaceSession; onFi
         <div className="finish-overlay">
           <div className="chq-burst" aria-hidden />
           <h2>RACE COMPLETE</h2>
+          <FinishCeremony session={session} />
           <button className="btn primary big" onClick={onFinish}>
             VIEW CLASSIFICATION
           </button>
