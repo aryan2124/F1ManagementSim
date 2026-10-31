@@ -180,12 +180,6 @@ body.fx-wash { animation: tier-wash 0.7s ease-out; }
 .briefing .gcard b{font-size:15px}.briefing .gcard .gain,.briefing .gcard .cost{font-size:13px}
 .tower li{position:relative}
 .tower li .arr{position:absolute;left:1px;top:50%;transform:translateY(-50%);width:auto}
-.promptbar .dcard{display:flex;flex-direction:column;gap:6px;position:relative}
-.promptbar .dcard .ptop{display:flex;flex-direction:row;align-items:flex-start;gap:8px;justify-content:flex-start}
-.promptbar .dcard .ptext{flex:1;min-width:0;margin:0;font-size:12px}
-.promptbar .dcard .popts{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px}
-.promptbar .dcard .popts button{flex:1 1 120px}
-.promptbar .dcard .pevid{flex-direction:row}
 
 .ceremony{display:flex;flex-direction:column;gap:8px;margin:12px 0;align-items:stretch;min-width:320px}
 .cer-row{display:flex;align-items:center;gap:12px;background:rgba(10,12,20,.9);border-left:6px solid var(--team,#fff);padding:8px 14px;font-size:20px}
@@ -203,9 +197,7 @@ body.fx-wash { animation: tier-wash 0.7s ease-out; }
 .floatnum{position:absolute;left:50%;top:38%;transform:translateX(-50%);font-size:44px;font-weight:bold;z-index:40;pointer-events:none;text-shadow:0 3px 0 #000;animation:floatup 1.8s ease-out forwards}
 .floatnum.good{color:#57cc99}.floatnum.bad{color:#ff6b75}
 @keyframes floatup{0%{opacity:0;transform:translate(-50%,16px) scale(.8)}15%{opacity:1;transform:translate(-50%,0) scale(1.15)}30%{transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,-54px)}}
-/* A9: a question lands on top of the radio instead of pushing everything down */
-.promptbar{position:relative;height:0;overflow:visible;z-index:25}
-.promptbar .dcard{box-shadow:0 8px 24px rgba(0,0,0,.6)}
+
 
 .briefing .brief-grid>section:first-child{grid-row:1 / span 3;align-self:start}
 .briefing .gamble-cards{grid-template-columns:repeat(3,1fr)}
@@ -228,3 +220,36 @@ body.fx-wash { animation: tier-wash 0.7s ease-out; }
 .review li b{font-size:14px;padding:2px 8px;margin-right:8px;display:inline-block}
 .review li.bluff b{background:#e63946;color:#fff}.review li.honest b,.review li.hint b{background:#2fb57d;color:#06120d}
 .dr-bubble{font-size:16px;line-height:1.45}
+
+/* the radio question: a big card docked at the foot of the map */
+.viewbox .promptbar{position:absolute;left:10px;right:10px;bottom:10px;z-index:30;display:flex;flex-direction:column;gap:8px;height:auto;max-height:78%;overflow:auto}
+.promptbar .dcard{display:grid;grid-template-columns:1fr auto;gap:10px 16px;padding:14px 16px;background:rgba(14,19,36,.97);border:2px solid var(--team,#f9c74f);border-left-width:8px;box-shadow:0 10px 30px rgba(0,0,0,.7);clip-path:none;position:relative}
+.promptbar .pwho{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.promptbar .pwho b{font-size:20px;color:#f9c74f}.promptbar .pwho small{font-size:14px;color:#9fb0d0}
+.promptbar .ptext{font-size:19px;line-height:1.4;margin:2px 0 6px;color:#fff}
+.promptbar .pnote2{font-size:15px;color:#cdd7ee;margin:0 0 6px}
+.promptbar .pevid2{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.promptbar .pevid2 li{font-size:14px;padding:4px 10px;background:#1d2845;border:1px solid #3a4666;color:#e8ecf5}
+.promptbar .pright{display:flex;align-items:center}
+.pring{width:62px;height:62px;transform:rotate(-90deg)}
+.pring text{transform:rotate(90deg);transform-origin:22px 22px;fill:#fff;font-size:15px;font-weight:bold}
+.pring .bg{fill:none;stroke:#2a3558;stroke-width:4}.pring .fg{fill:none;stroke:#57cc99;stroke-width:4;stroke-linecap:butt;transition:stroke-dasharray .25s linear}
+.pring.urgent .fg{stroke:#e63946}
+.promptbar .popts.big{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.promptbar .popt{display:flex;flex-direction:column;gap:4px}
+.promptbar .popt button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:3px;padding:10px 14px;min-height:56px;font-size:16px;background:#243050;color:#fff;border:2px solid #4a5a86;cursor:pointer;width:100%}
+.promptbar .popt button b{font-size:17px}.promptbar .popt button span{font-size:13px;color:#b9c6e6}
+.promptbar .popt button:hover{background:#2f3f6a;border-color:#f9c74f}
+.promptbar .popt .pchoose{min-height:0;padding:6px 12px;font-size:13px;background:#1a2238}
+.promptbar .optkey{font-size:13px;padding:1px 6px;margin-right:8px}
+.floatnum small{display:block;font-size:15px;color:#fff;text-shadow:0 2px 0 #000;margin-top:4px}
+/* the radio log: your own team loud, everything else quiet */
+.radio .feed .line{font-size:13px;opacity:.75}
+.radio .feed .line.mine,.radio .feed .line.ch-team,.radio .feed .line.ch-driver{font-size:17px;opacity:1;line-height:1.4;border-left:4px solid #f9c74f;padding-left:8px}
+.radio .feed .line.k-lap{font-size:12px;opacity:.5}
+.promptbar .pwho b{font-size:24px}.promptbar .pwho small{font-size:17px}
+.promptbar .ptext{font-size:26px}
+.promptbar .pevid2 li{font-size:17px;padding:5px 12px}
+.promptbar .popt button{min-height:70px;font-size:19px}.promptbar .popt button b{font-size:22px}.promptbar .popt button span{font-size:16px}
+.promptbar .popt .pchoose{font-size:16px;padding:8px 12px}
+.pring{width:76px;height:76px}

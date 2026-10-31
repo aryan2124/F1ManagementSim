@@ -217,8 +217,8 @@ export function RaceScreen({ session, meta, onFinish, skip, donuts, kind }: { se
               <RaceOverlay session={session} onFinish={onFinish} donuts={donuts} />
             </RaceView>
             <Minimap session={session} />
+            <PromptBar session={session} />
           </div>
-          <PromptBar session={session} />
           <div className="btabs">
             {(["radio", "sectors", "radar"] as BottomTab[]).map((t) => (
               <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
@@ -338,7 +338,7 @@ function FinishCeremony({ session }: { session: RaceSession }) {
 
 /** A8: the verdict on a call floats up as a number. */
 function FloatVerdict({ session }: { session: RaceSession }) {
-  const [f, setF] = useState<{ t: string; good: boolean; k: number } | null>(null);
+  const [f, setF] = useState<{ t: string; good: boolean; k: number; sub?: string } | null>(null);
   const seen = useRef(0);
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -348,13 +348,15 @@ function FloatVerdict({ session }: { session: RaceSession }) {
       const last = calls[calls.length - 1];
       const good = last.verdict === "good";
       const t = last.secs !== undefined && Math.abs(last.secs) >= 0.1 ? `${last.secs > 0 ? "+" : "-"}${Math.abs(last.secs).toFixed(1)} s` : good ? "GOOD CALL" : "BAD CALL";
+      const who = last.kind === "standing" ? "The strategist's call" : "Your call";
+      const sub = `${who}: ${last.text}`;
       const k = Date.now();
-      setF({ t, good, k });
+      setF({ t, good, k, sub });
       window.setTimeout(() => setF((x) => (x && x.k === k ? null : x)), 1800);
     }, 250);
     return () => window.clearInterval(id);
   }, [session]);
-  return f ? <div key={f.k} className={`floatnum ${f.good ? "good" : "bad"}`}>{f.t}</div> : null;
+  return f ? <div key={f.k} className={`floatnum ${f.good ? "good" : "bad"}`}>{f.t}<small>{f.sub}</small></div> : null;
 }
 
 function MomentBanners({ session }: { session: RaceSession }) {

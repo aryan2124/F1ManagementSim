@@ -101,8 +101,11 @@ export function RadioFeed({ session }: { session: LiveSession<LiveSim> }) {
     }, 4000);
     return () => window.clearTimeout(h);
   });
+  const openTexts = new Set((session.sim as unknown as { radio?: { open(): { text: string }[] } }).radio?.open().map((p) => p.text) ?? []);
   const lines = all
     .filter((l) => {
+      if (l.kind === "prompt" && openTexts.has(l.text.replace(/^[A-Z]{2,4}: /, ""))) return false;
+      if (l.kind === "prompt" && [...openTexts].some((t) => l.text.endsWith(t))) return false;
       const radio = l.kind === "radio" || l.kind === "prompt";
       if (filter === "all") return true;
       if (filter === "control") return !radio;
@@ -187,22 +190,30 @@ function PromptRow({ session, p, first }: { session: RaceSession; p: Prompt; fir
   }); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className={`prompt dcard ${urgent ? "urgent" : ""}`} style={{ ["--team" as string]: hex(car.entry.team.color) }}>
-      <div className="ptop">
-        <i className="chip" />
-        <b>{car.entry.driver.code}</b>
-        <span className="ptext">
-          {p.text}
-          {p.note && <em className="pnote">{p.note}</em>}
-        </span>
-      </div>
-      {p.evidence && p.evidence.length > 0 && (
-        <div className="pevid">
-          {p.evidence.map((e) => (
-            <span key={e}>{e}</span>
-          ))}
+      <div className="pq">
+        <div className="pwho">
+          <i className="chip" />
+          <b>{car.entry.driver.code}</b>
+          <small>{car.entry.driver.name} is on the radio</small>
         </div>
-      )}
-      <div className="popts">
+        <p className="ptext">{p.text}</p>
+        {p.note && <p className="pnote2">{p.note}</p>}
+        {p.evidence && p.evidence.length > 0 && (
+          <ul className="pevid2">
+            {p.evidence.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div className="pright">
+        <svg className={`pring ${urgent ? "urgent" : ""}`} viewBox="0 0 44 44" aria-label={`${secs} seconds left`}>
+          <circle cx="22" cy="22" r="18" className="bg" />
+          <circle cx="22" cy="22" r="18" className="fg" style={{ strokeDasharray: `${left * 113} 113` }} />
+          <text x="22" y="27" textAnchor="middle">{secs}</text>
+        </svg>
+      </div>
+      <div className="popts big">
         {picking ? (
           <>
             <span className="ppick">FIT WHICH {list.length ? "SET" : "TYRE"}?</span>
@@ -215,35 +226,25 @@ function PromptRow({ session, p, first }: { session: RaceSession; p: Prompt; fir
             )}
             {!list.length && PICK.map((t) => (
               <button key={t.c} className={`pcomp ${p.compound === t.c ? "rec" : ""}`} title={p.compound === t.c ? "The pit wall's suggestion" : `Fit ${t.name}`} onClick={() => send(`box:${t.c}`)}>
-                <CompoundBadge c={t.c} size={18} /> {t.name}
+                <CompoundBadge c={t.c} size={22} /> {t.name}
               </button>
             ))}
             <button onClick={() => setPicking(false)}>BACK</button>
           </>
         ) : (
-          p.options.map((o, oi) =>
-            o.id === "box" ? (
-              <span key={o.id} className="boxopt">
-                <button title={o.note} onClick={() => send("box")}>
-                  {first && <kbd className="optkey">{OPT_KEYS[oi]?.toUpperCase()}</kbd>}{o.label}
-                </button>
-                <button className="pchoose" title="Choose which tyre to fit" onClick={() => setPicking(true)}>
-                  CHOOSE TYRE
-                </button>
-              </span>
-            ) : (
-              <button key={o.id} title={o.note} onClick={() => send(o.id)}>
-                {first && oi < 5 && <kbd className="optkey">{OPT_KEYS[oi].toUpperCase()}</kbd>}{o.label}
+          p.options.map((o, oi) => (
+            <div key={o.id} className="popt">
+              <button onClick={() => send(o.id)}>
+                {first && oi < 5 && <kbd className="optkey">{OPT_KEYS[oi].toUpperCase()}</kbd>}
+                <b>{o.label}</b>
+                {o.note && <span>{o.note}</span>}
               </button>
-            ),
-          )
+              {o.id === "box" && (
+                <button className="pchoose" onClick={() => setPicking(true)}>CHOOSE THE TYRE</button>
+              )}
+            </div>
+          ))
         )}
-      </div>
-      <div className={`pclock ${urgent ? "urgent" : ""}`} title="Time left to answer before the driver carries on by himself">
-        {secs}s
-      </div>
-      <div className={`ptimer ${urgent ? "urgent" : ""}`}>
-        <i style={{ width: `${left * 100}%` }} />
       </div>
     </div>
   );
