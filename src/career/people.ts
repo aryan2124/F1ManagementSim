@@ -603,7 +603,17 @@ export function afterRace(s: CareerState, order: string[], dnf: string[], skipWo
     }
   };
   // wheel to wheel racing is remembered: every pass and every touch heats a rivalry
-  for (const d of duels) bump(d.a, d.b, Math.min(0.3, d.passes * 0.05 + d.contacts * 0.12));
+  for (const d of duels) {
+    bump(d.a, d.b, Math.min(0.3, d.passes * 0.05 + d.contacts * 0.12));
+    // D4: a rivalry that is already hot makes the paddock news every time they meet
+    const [x, y] = d.a < d.b ? [d.a, d.b] : [d.b, d.a];
+    const r = s.rivalries.find((q) => q.a === x && q.b === y);
+    const na = s.drivers[d.a]?.spec.name;
+    const nb = s.drivers[d.b]?.spec.name;
+    if (r && r.heat >= 0.6 && na && nb && (d.passes >= 2 || d.contacts > 0)) {
+      news(s, d.contacts > 0 ? `${na} and ${nb} touched again. The rivalry is far from over.` : `${na} and ${nb} swapped places ${d.passes} times. Nobody gives an inch.`, { importance: 2, cause: "A hot rivalry met again", tag: "rivalry" });
+    }
+  }
   for (let i = 0; i < top.length - 1; i++) {
     const a = s.drivers[top[i]];
     const b = s.drivers[top[i + 1]];

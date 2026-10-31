@@ -121,6 +121,17 @@ export function CareerApp({ initial, onExit, net, tutorial }: { initial: CareerS
   useEffect(() => {
     if (msg) { toast(msg, /fail|cannot|can't|not enough|no /i.test(msg) ? "bad" : "info"); setMsg(""); }
   }, [msg]); // eslint-disable-line react-hooks/exhaustive-deps
+  // C5: the newest thing that happened lands as a toast with a soft chime, at most one a second
+  const lastRecap = useRef({ n: s.recap.length, at: 0 });
+  useEffect(() => {
+    const n = s.recap.length;
+    const prev = lastRecap.current;
+    if (n > prev.n && Date.now() - prev.at > 1000) {
+      toast(s.recap[n - 1], "info");
+      sfx.play("notice");
+      lastRecap.current = { n, at: Date.now() };
+    } else lastRecap.current = { n, at: prev.at };
+  }, [s.recap.length]); // eslint-disable-line react-hooks/exhaustive-deps
   // a short wipe when a race weekend starts, so race day feels like a different place
   const [wipe, setWipe] = useState(0);
   const wasIn = useRef(false);

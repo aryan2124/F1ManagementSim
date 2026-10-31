@@ -222,6 +222,12 @@ export function Briefing({
                   const c = tyres[id];
                   return inv && (c === "S" || c === "M" || c === "H") && (inv[c] ?? 0) <= 0 ? <p className="hint warn">No fresh {COMPOUNDS[c].name} sets left after qualifying. This one starts used and worn.</p> : null;
                 })()}
+                {!wetTyre && (
+                  <button className="tiny wide" title="The strategist reads the tyre life and picks a stance and a stop lap for you" onClick={() => {
+                    const l = life[tyres[id] as "S" | "M" | "H"];
+                    setOrders({ ...orders, [id]: { ...(orders[id] ?? NO_ORDERS), stance: l < laps * 0.5 ? "tyres" : "balanced", stopLap: Math.max(2, Math.min(laps - 3, Math.round(l * 0.9))), delegated: false } });
+                  }}>STRATEGIST'S PROPOSAL</button>
+                )}
                 {!wetTyre && (() => {
                   const o = orders[id] ?? NO_ORDERS;
                   const k = o.stance === "tyres" ? 0.7 : o.stance === "attack" ? 1.45 : 1;

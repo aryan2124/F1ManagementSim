@@ -204,3 +204,6 @@ body.fx-wash { animation: tier-wash 0.7s ease-out; }
 .floatnum{position:absolute;left:50%;top:38%;transform:translateX(-50%);font-size:44px;font-weight:bold;z-index:40;pointer-events:none;text-shadow:0 3px 0 #000;animation:floatup 1.8s ease-out forwards}
 .floatnum.good{color:#57cc99}.floatnum.bad{color:#ff6b75}
 @keyframes floatup{0%{opacity:0;transform:translate(-50%,16px) scale(.8)}15%{opacity:1;transform:translate(-50%,0) scale(1.15)}30%{transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,-54px)}}
+/* A9: a question lands on top of the radio instead of pushing everything down */
+.promptbar{position:relative;height:0;overflow:visible;z-index:25}
+.promptbar .dcard{box-shadow:0 8px 24px rgba(0,0,0,.6)}

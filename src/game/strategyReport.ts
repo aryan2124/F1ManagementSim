@@ -76,6 +76,14 @@ export function strategyReport(sim: RaceSim, humanIds: string[]): StrategyReport
   lines.sort((a, b) => a.lap - b.lap);
   const grade = score >= 4 ? "A" : score >= 2 ? "B" : score >= 0 ? "C" : "D";
   const ran = new Set(calls.filter((c) => humanIds.includes(c.carId) && c.kind === "standing").map((c) => c.text)).size;
-  const summary = ran ? `Your standing orders made ${ran} call${ran > 1 ? "s" : ""} for you.` : "";
+  let summary = ran ? `Your standing orders made ${ran} call${ran > 1 ? "s" : ""} for you.` : "";
+  // D3: the pre-race call is judged too
+  const g = sim.cfg.gamble;
+  if (g && g !== "safe") {
+    const mine = sim.stopLog.filter((x) => humanIds.includes(x.carId));
+    const avg = mine.length ? mine.reduce((a, x) => a + x.secs, 0) / mine.length : 0;
+    const name = g === "undercut" ? "Undercut ready" : "Long run";
+    summary += `${summary ? " " : ""}Pre-race call, ${name}: ${mine.length ? `${mine.length} stop${mine.length > 1 ? "s" : ""}, average ${avg.toFixed(1)} s in the box.` : "you never stopped, so the quick crew was not needed."}`;
+  }
   return { grade, score, lines, summary };
 }

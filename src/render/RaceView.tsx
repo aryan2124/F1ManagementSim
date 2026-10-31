@@ -225,7 +225,12 @@ export function RaceView({ session, meta, children }: { session: LiveSession<Liv
         const offEvent = session.onEvent((e: SimEvent) => {
           if (!e.carId) return;
           const p = posOf(e.carId);
-          if (e.kind === "overtake") burst(p.x, p.y, [0xffffff, 0xf9c74f, 0xff7a1a], 14, 40);
+          if (e.kind === "overtake") {
+            // A13: your own pass leaves a longer, brighter streak in your team colour
+            const mine = session.humanIds.includes(e.carId);
+            burst(p.x, p.y, mine ? [0xffffff, 0xf9c74f, 0x57cc99] : [0xffffff, 0xf9c74f, 0xff7a1a], mine ? 34 : 14, mine ? 70 : 40);
+            if (mine) shake = Math.max(shake, 2.5);
+          }
           else if (e.kind === "fastest_lap") burst(p.x, p.y, [0xb66cff, 0xe0b8ff, 0xffffff], 22, 55);
           else if (e.kind === "crash") {
             burst(p.x, p.y, [0xff7a1a, 0xe63946, 0xf9c74f, 0x333333], 34, 70);
