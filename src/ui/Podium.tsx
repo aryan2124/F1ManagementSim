@@ -14,7 +14,7 @@ const CONFETTI = ["#ff8a1f", "#ffd25a", "#4fd08a", "#3b9cff", "#ff5560", "#c28bf
 const fmtGap = (g: number, p: number) => (p === 1 ? "WINNER" : Number.isFinite(g) ? `+${g.toFixed(3)}s` : "");
 
 /**
- * The podium as a staged reveal, in the Balatro spirit: third place drops in, then second, then the winner, each with a
+ * The podium as a staged reveal, third place drops in, then second, then the winner, each with a
  * thunk, a rising chime, a wobble, and for the winner a shake, a flash and a confetti burst. Click or any key skips.
  */
 export function Podium({ session, gp, onDone }: { session: RaceSession; gp: string; onDone: () => void }) {

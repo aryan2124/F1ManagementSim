@@ -4,18 +4,18 @@ export type SwirlTheme = "home" | "hq" | "car" | "people" | "money" | "rules" | 
 
 /** Four-tone palettes, darkest first. They stay dim so text on top stays readable. */
 const PAL: Record<SwirlTheme, [string, string, string, string]> = {
-  home: ["#120e22", "#1c1535", "#2b1f4e", "#46286a"],
-  hq: ["#120e22", "#1a1736", "#27234f", "#3a3470"],
+  home: ["#0d1420", "#14203a", "#1d3158", "#2a4a7a"],
+  hq: ["#0d1420", "#131e38", "#1b2d52", "#2a4577"],
   car: ["#0c1530", "#122248", "#1a3468", "#244a8a"],
-  people: ["#1a0f22", "#2a1634", "#3f1f4a", "#5a2a5a"],
+  people: ["#170f1c", "#261630", "#3a1f44", "#552a58"],
   money: ["#0e1a16", "#14281f", "#1d3c2c", "#2b5a3c"],
-  rules: ["#1a1030", "#27184a", "#3a2468", "#52328a"],
+  rules: ["#101626", "#182540", "#243a62", "#34528a"],
   academy: ["#0f1a22", "#162a36", "#203f50", "#2c5a70"],
   world: ["#101a20", "#18282f", "#233d46", "#32565f"],
-  calendar: ["#1a1426", "#261c38", "#38284f", "#4c3668"],
-  inbox: ["#161426", "#211d3a", "#30294f", "#443a6c"],
+  calendar: ["#10161f", "#18232f", "#243646", "#34506a"],
+  inbox: ["#0f1520", "#17203a", "#222f55", "#324476"],
   garage: ["#1a120e", "#2a1b14", "#40281a", "#5c3a22"],
-  race: ["#100c1e", "#17122c", "#201a40", "#2e2458"],
+  race: ["#0a1018", "#10192a", "#182540", "#223458"],
   crisis: ["#220e12", "#341418", "#4e1c20", "#6e282c"],
 };
 
@@ -29,7 +29,7 @@ export function setSwirl(t: SwirlTheme) {
 
 const hexRgb = (h: string): [number, number, number] => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 
-/** Balatro's table: a slow marbled paint swirl, drawn at a very low resolution and scaled up, so it stays pixel-crisp and costs almost nothing. */
+/** The table: slow flowing race-line contours, drawn at a very low resolution and scaled up, so it stays pixel-crisp and costs almost nothing. The palette follows the screen. */
 export function Swirl() {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -68,11 +68,13 @@ export function Swirl() {
         const v = (y / H) * 3.2;
         for (let x = 0; x < W; x++) {
           const u = (x / W) * 5.4;
-          const a = Math.sin(u * 1.1 + Math.sin(v * 1.7 + t * 0.35) * 1.6 + t * 0.22);
-          const b = Math.sin(v * 1.3 + Math.sin(u * 0.9 - t * 0.3) * 1.7 - t * 0.17);
-          const c = Math.sin((u + v) * 0.8 + a * 1.2 + b * 1.2);
-          const n = (a + b + c) / 6 + 0.5;
-          const q = n < 0.36 ? 0 : n < 0.5 ? 1 : n < 0.64 ? 2 : 3;
+          // racing-line contours: a warped diagonal flow field read as banded isolines, with a bright thread on each band edge
+          const warp = Math.sin(v * 1.5 + t * 0.28) * 0.7 + Math.sin(u * 0.8 - t * 0.2) * 0.5;
+          const s = (u * 0.85 + v * 0.45 + warp) * 1.35 - t * 0.06;
+          const band = s - Math.floor(s);
+          const tri = Math.abs(band * 2 - 1);
+          const edge = tri > 0.94 || tri < 0.035;
+          const q = edge ? 3 : tri < 0.35 ? 0 : tri < 0.62 ? 1 : 2;
           const col = cols[q]!;
           d[o++] = col[0]!;
           d[o++] = col[1]!;

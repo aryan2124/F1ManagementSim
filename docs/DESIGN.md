@@ -1,4 +1,4 @@
-# BOX BOX design language (the Balatro study)
+# BOX BOX design language
 
 How this was made: I read what is published about Balatro's feel (Blake Crosley's breakdown of its feedback, the TouchArcade interview with its creator) and combined it with my own knowledge of the game. The web sources were thin on UI detail, so the rules below are my reading of the game, not leaked specs. Treat the numbers as tuned-by-eye starting points.
 

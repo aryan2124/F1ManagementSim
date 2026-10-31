@@ -1,6 +1,6 @@
 import { sfx } from "../../audio/sound";
 
-/** Balatro's "juice up": a quick overshoot scale and a decaying wobble. Safe to call on any element. */
+/** "Juice": a quick overshoot scale and a decaying wobble. Safe to call on any element. */
 export function juiceUp(el: Element | null | undefined, amount = 0.14, rot = 3): void {
   if (!el || typeof (el as HTMLElement).animate !== "function") return;
   if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;

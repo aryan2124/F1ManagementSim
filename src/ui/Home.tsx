@@ -52,7 +52,7 @@ export function Home({ onNew, onLoad, onOnline, onWeekend, onTutorial }: { onNew
           <i className="lg-gap" />
           {"BOX".split("").map((ch, i) => <b key={"b" + i} className="lg hot" style={{ ["--d" as string]: `${0.5 + i * 0.16}s` }} onPointerEnter={(e) => juiceUp(e.currentTarget, 0.2, 6)}>{ch}</b>)}
         </h1>
-        <p><span>THE FORMULA ONE TEAM PRINCIPAL SIM</span></p>
+        <p><span>THE RACING TEAM PRINCIPAL SIM</span></p>
       </header>
       <div className="home-frame tilt"><ScreenBanner theme="hq" className="home-banner" plate={false} /><i className="shine" /></div>
       <nav className="home-menu" aria-label="Main menu">
