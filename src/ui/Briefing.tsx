@@ -40,7 +40,7 @@ export function Briefing({
   title?: string;
   quali: QualiRow[];
   onBack: () => void;
-  onStart: (tyres: Record<string, Compound>, startSets?: Record<string, string>, standing?: Record<string, StandingOrders>) => void;
+  onStart: (tyres: Record<string, Compound>, startSets?: Record<string, string>, standing?: Record<string, StandingOrders>, gamble?: "safe" | "undercut" | "long") => void;
   /** Career: the physical sets each car can start on (keyed by driver, or by team when the pool rule is on). */
   setLists?: Record<string, TyreSet[]>;
   /** Career: start tyres fixed by the qualifying lock rule. */
@@ -53,6 +53,7 @@ export function Briefing({
   extraRules?: string[];
 }) {
   useMusic("garage");
+  const [gamble, setGamble] = useState<"safe" | "undercut" | "long">("safe");
   const [startSets, setStartSets] = useState<Record<string, string>>({});
   const [orders, setOrders] = useState<Record<string, StandingOrders>>(() => Object.fromEntries(weekend.humanIds.map((id) => [id, NO_ORDERS])));
   const [tyres, setTyres] = useState<Record<string, Compound>>(() => Object.fromEntries(weekend.humanIds.map((id) => [id, (locks?.[id] ?? "M") as Compound])));
@@ -114,6 +115,43 @@ export function Briefing({
               })}
             </tbody>
           </table>
+        </section>
+
+
+        <section className="panel gamble">
+          <h3>PRE-RACE CALL</h3>
+          <p className="dim small">One call for the whole race. Each has a price. None is always best.</p>
+          <div className="gamble-cards">
+            {([
+              { k: "safe", name: "PLAY IT STRAIGHT", gain: "No surprises", risk: "Nothing gained" },
+              { k: "undercut", name: "UNDERCUT READY", gain: "Pit stops 0.35 s faster", risk: "1 stop in 5 goes wrong (+0.8 s). Tyres wear 6% faster" },
+              { k: "long", name: "LONG RUN", gain: "Tyres wear 8% slower", risk: "Pit stops 0.4 s slower" },
+            ] as const).map((g) => (
+              <button key={g.k} className={`gcard clickable ${gamble === g.k ? "sel" : ""}`} onClick={() => setGamble(g.k)}>
+                <b>{g.name}</b>
+                <span className="gain">{g.gain}</span>
+                <span className="cost">{g.risk}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel versus">
+          <h3>VERSUS</h3>
+          {weekend.humanIds.map((id) => {
+            const i = quali.findIndex((x) => x.carId === id);
+            const me = byId.get(id)!;
+            const ahead = quali[i - 1] ? byId.get(quali[i - 1].carId) : undefined;
+            const behind = quali[i + 1] ? byId.get(quali[i + 1].carId) : undefined;
+            return (
+              <div key={id} className="vs-row">
+                <span className="vs-side">{ahead ? `${ahead.driver.code} (${ahead.team.short})` : "OPEN ROAD"}</span>
+                <b className="vs-me" style={{ color: hex(me.team.color) }}>{me.driver.code} P{i + 1}</b>
+                <span className="vs-side">{behind ? `${behind.driver.code} (${behind.team.short})` : "LAST"}</span>
+              </div>
+            );
+          })}
+          <p className="dim small">Ahead is who you hunt. Behind is who hunts you.</p>
         </section>
 
         <section className="panel">
@@ -215,7 +253,7 @@ export function Briefing({
               ))}
             </ul>
           </div>
-          <button className="btn primary big" onClick={() => onStart(tyres, startSets, orders)}>
+          <button className="btn primary big" onClick={() => onStart(tyres, startSets, orders, gamble)}>
             GO TO THE GRID
           </button>
         </section>

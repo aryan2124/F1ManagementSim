@@ -104,6 +104,8 @@ export interface RaceConfig {
   standing?: Record<string, Partial<import("./standing").StandingOrders>>;
   /** 0..1: how good the player's race engineer and strategist are. Sharper staff read the car better and make fewer slips on delegated calls. */
   engineerSkill?: number;
+  /** The pre-race gamble the player picked: safe, undercut (fast but fragile stops) or long (gentle tyres, slower stops). */
+  gamble?: "safe" | "undercut" | "long";
   /** The season's year, used for age and experience (Race IQ). Defaults to 2026. */
   year?: number;
   laps: number;
