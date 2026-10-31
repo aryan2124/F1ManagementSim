@@ -28,6 +28,12 @@ export function SettingsButton({ children }: { children?: ReactNode }) {
   const [crt, setCrt] = useState(() => getPrefs().crt);
   const [swirl, setSwirlP] = useState(() => getPrefs().swirl);
   const [tone, setTone] = useState(() => getPrefs().engineTone);
+  const [full, setFull] = useState(() => !!document.fullscreenElement);
+  useEffect(() => {
+    const on = () => setFull(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", on);
+    return () => document.removeEventListener("fullscreenchange", on);
+  }, []);
   const [zoom, setZoom] = useState(() => Math.max(1, Math.min(2.5, Math.round(getPrefs().zoom * 4) / 4 || 1)));
   useEffect(() => {
     if (!open) return;
@@ -62,6 +68,14 @@ export function SettingsButton({ children }: { children?: ReactNode }) {
               <label className="set-check set-range">Race view zoom ({zoom.toFixed(2)}x)
                 <input type="range" min={1} max={2.5} step={0.25} value={zoom} onChange={(e) => { const v = Number(e.target.value); setZoom(v); setPref("zoom", v); window.dispatchEvent(new CustomEvent("boxbox-zoom", { detail: v })); }} />
               </label>
+            </section>
+            <section>
+              <h4>SCREEN</h4>
+              <div className="set-game">
+                <button className={`btn ${!full ? "primary" : ""}`} onClick={() => { if (document.fullscreenElement) void document.exitFullscreen(); }}>WINDOWED</button>
+                <button className={`btn ${full ? "primary" : ""}`} onClick={() => { if (!document.fullscreenElement) void document.documentElement.requestFullscreen().catch(() => {}); }}>FULL SCREEN</button>
+              </div>
+              <p className="dim small">Press F11 any time to switch. The game always fits the window, so nothing needs scrolling.</p>
             </section>
             <section>
               <h4>LOOK</h4>

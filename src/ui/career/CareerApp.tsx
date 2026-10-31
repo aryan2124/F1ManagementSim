@@ -289,7 +289,7 @@ export function CareerApp({ initial, onExit, net, tutorial }: { initial: CareerS
     <>
     <ProfileHost s={s} d={d}>
     {weekendLive && (
-      <div style={{ display: peek ? "none" : "block" }}>
+      <div className="wk-wrap" style={{ display: peek ? "none" : "flex" }}>
         {net ? <NetWeekend room={net} s={s} d={d} msg={msg} onExit={() => { setPeek(false); setInWeekend(false); }} /> : <WeekendFlow s={s} d={d} msg={msg} onExit={() => { setPeek(false); setInWeekend(false); }} />}
       </div>
     )}

@@ -1,0 +1,104 @@
+/* ===== Fixed window: the page never scrolls, only panels inside it do ===== */
+html,body,#root{height:100%;overflow:hidden}
+.app{height:100vh;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.app > .screen,.app > div > .screen,.app .screen{min-height:0}
+.app > .screen,.app > div > .screen{flex:1 1 0;overflow:auto;max-width:none;width:100%}
+
+/* ---- career shell ---- */
+.screen.career{display:flex;flex-direction:column;height:100%;overflow:hidden;padding:8px 14px 0}
+.screen.career > .topline{flex:none}
+.screen.career .bbn-frame{flex:none;height:64px;overflow:hidden;margin:0 0 6px}
+.screen.career .bbn-frame svg{height:100%;width:100%}
+.screen.career > .tab-in{flex:1 1 0;min-height:0;overflow:auto;padding-bottom:8px}
+
+/* ---- Today: two columns, each scrolls on its own, dock stays put ---- */
+.c-today{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);grid-template-rows:minmax(0,1fr) auto;gap:12px;height:100%}
+.c-today > .c-main,.c-today > .c-side{min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:6px}
+.c-today > .c-dock{grid-column:1/-1;position:static;margin:0;display:flex;gap:12px;align-items:center;flex-wrap:nowrap}
+.c-today .c-dock .btn.big{flex:1 1 auto}
+.c-today .hero-head{display:grid;grid-template-columns:minmax(220px,1fr) 2fr;gap:12px;align-items:start}
+.c-today .hero-head .hh-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0}
+.c-today .hero-head .hh-tiles.c-drawer{grid-column:1/-1}
+.c-today .hero-head .c-drawer{grid-template-columns:repeat(3,1fr)}
+.c-today .c-date{font-size:26px}
+.c-today .stat-tile{min-height:0;padding:8px 10px}
+.c-strip{margin:4px 0}
+
+/* ---- race and qualifying: everything fits the window ---- */
+.screen.race{height:100%;max-width:none;padding:8px;display:flex;flex-direction:column;overflow:hidden}
+.screen.race > .racebar{flex:none;margin-bottom:8px}
+.screen.race .race-grid{flex:1 1 0;min-height:0;height:auto;align-items:stretch;grid-template-columns:260px minmax(0,1fr) 360px}
+.screen.race .race-grid > .tower,.screen.race .race-grid > .cars{align-self:stretch;min-height:0;overflow-y:auto}
+.screen.race .race-grid > .center{display:flex;flex-direction:column;min-height:0;min-width:0}
+.screen.race .race-grid > .center > .viewbox{flex:1 1 0;min-height:160px;margin-bottom:8px}
+.screen.race .viewbox .raceview{position:absolute;inset:0;aspect-ratio:auto;height:100%}
+.screen.race .race-grid > .center > .btabs{flex:none}
+.screen.race .race-grid > .center > .panel,.screen.race .race-grid > .center > .radar{flex:0 0 clamp(120px,22vh,240px);min-height:0;overflow:auto}
+.screen.race .race-grid > .center > .promptbar{flex:none}
+.screen.race .race-grid > .center > .panel .feed{overflow-y:auto}
+
+/* the radio question sits in the layout under the map, never over it */
+.screen.race .promptbar{position:static;max-height:none;overflow:visible;display:flex;flex-direction:column;gap:6px;margin:0 6px 8px 4px}
+.screen.race .promptbar .dcard{padding:10px 12px;gap:6px 12px}
+.screen.race .promptbar .pwho{margin-bottom:0}.screen.race .promptbar .pwho b{font-size:20px}.screen.race .promptbar .pwho small{font-size:15px}
+.screen.race .promptbar .ptext{font-size:20px;margin:0 0 4px}
+.screen.race .promptbar .pevid2 li{font-size:15px;padding:2px 8px}
+.screen.race .promptbar .popt button{min-height:46px;padding:6px 10px}
+.screen.race .promptbar .popt button b{font-size:18px}.screen.race .promptbar .popt button span{font-size:14px}
+.screen.race .promptbar .popt .pchoose{padding:4px 10px;font-size:14px}
+.screen.race .promptbar .pring{width:54px;height:54px}
+
+/* ---- pit wall: two columns, one screen ---- */
+.pitwall{height:100%;max-width:none;margin:0;padding:10px 18px 0;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.pitwall .pw-top,.pitwall .pw-drivers{flex:none}
+.pitwall .pw-body{flex:1 1 0;min-height:0;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;overflow:hidden}
+.pitwall .pw-left,.pitwall .pw-right{min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-right:6px}
+.pitwall .pw-tyres{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.pitwall .pw-tyre{padding:8px 4px;gap:3px}
+.pitwall .pw-tyre small{font-size:14px}
+.pitwall .pw-cards{grid-template-columns:1fr;gap:8px}
+.pitwall .pw-card{min-height:0;padding:10px 14px;display:grid;grid-template-columns:1fr;gap:2px}
+.pitwall .pw-go{position:static;flex:none;margin:0 -18px;padding:10px 18px}
+.pitwall .pw-sec{padding:10px 14px}
+
+/* ---- grid briefing ---- */
+.screen.briefing{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.briefing .brief-grid{flex:1 1 0;min-height:0;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.1fr);gap:12px;overflow:hidden}
+.briefing .brief-grid > *{min-height:0;overflow-y:auto}
+.briefing .brief-extras{display:flex;flex-direction:column;gap:8px}
+.briefing .grid-table td{padding:2px 6px}
+
+/* ---- weekend pages and dialogs keep their own inner scroll ---- */
+.set-box{max-height:92vh;overflow:auto}
+.wk-wrap{flex:1 1 0;min-height:0;flex-direction:column}
+.wk-wrap > .screen,.wk-wrap > *{flex:1 1 0;min-height:0}
+.app .c-tabs{flex-wrap:nowrap;padding-right:140px;gap:4px;justify-content:flex-start}
+.app .c-tabs button{padding:8px 10px;font-size:14px}
+.screen.career > .topline{display:flex;align-items:center;gap:10px}
+.toasts{top:74px;bottom:auto;right:16px;align-items:flex-end}
+.app .dash-btn{bottom:8px !important;left:8px !important}
+.pitwall .pw-go{padding-left:200px}
+.pitwall .pw-card{padding:8px 12px}.pitwall .pw-card b{font-size:18px}.pitwall .pw-card .gain,.pitwall .pw-card .cost{font-size:15px}
+.pitwall .pw-sec h3 small{display:block;margin:2px 0 0}
+.briefing .brief-grid > :first-child{grid-row:1 / span 2}
+.briefing .brief-grid .brief-extras{grid-column:2 / span 2}
+.screen.race .racebar .gp,.screen.race .racebar .title{white-space:nowrap}
+.screen.race > .racebar{flex-wrap:nowrap;overflow:hidden}
+.skip-prompt,.skip-prompt span{font-size:22px !important}
+.skip-prompt .btn{font-size:20px !important}
+.screen.race .race-grid > .center:has(.promptbar .dcard) > .panel,.screen.race .race-grid > .center:has(.promptbar .dcard) > .radar{flex-basis:clamp(90px,13vh,140px)}
+.c-today .hero-head{display:flex;flex-direction:column;gap:8px}
+.c-today .hero-head .hh-date{display:flex;flex-wrap:wrap;gap:4px 18px;align-items:baseline}
+.c-today .hero-head .hh-date .c-date{flex:none}
+.c-today .hero-head .hh-tiles,.c-today .hero-head .hh-tiles.c-drawer{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0}
+.c-today .hero-head .hh-tiles.c-drawer{grid-column:auto}
+@media (max-width:1500px){.app .c-tabs button{padding:6px 7px;font-size:13px}.app .c-tabs{gap:3px;padding-right:130px}}
+
+/* practice garage: two columns, each scrolls inside */
+.c-garage.screen{display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:12px;overflow:hidden}
+.c-garage > .screen-banner,.c-garage > :first-child:not(.pr-left){grid-column:1/-1}
+.c-garage .pr-left,.c-garage .pr-right{min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.c-garage .bbn-frame{height:72px;overflow:hidden;flex:0 0 auto}
+.c-garage .pr-right .c-cols{grid-template-columns:minmax(0,1fr);margin-top:0}
+.c-garage .panel h3,.c-garage .panel h4{white-space:normal}
+.c-garage .bbn-frame{display:none}.c-garage.screen{grid-template-rows:minmax(0,1fr)}

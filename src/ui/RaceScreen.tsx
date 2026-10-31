@@ -217,8 +217,8 @@ export function RaceScreen({ session, meta, onFinish, skip, donuts, kind }: { se
               <RaceOverlay session={session} onFinish={onFinish} donuts={donuts} />
             </RaceView>
             <Minimap session={session} />
-            <PromptBar session={session} />
           </div>
+          <PromptBar session={session} />
           <div className="btabs">
             {(["radio", "sectors", "radar"] as BottomTab[]).map((t) => (
               <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
