@@ -2,8 +2,7 @@ import { DriverPortrait } from "./pixel/portraits";
 import { QualiKindCtx, sessionTitle, useQPrefix, useQualiName } from "./sessionTitle";
 import { SkipPrompt, type NetSkip } from "./SkipPrompt";
 import { useMusic } from "../audio/useMusic";
-import { useEffect, useRef, useState } from "react";
-import { feel } from "./skin/fx";
+import { useEffect, useState } from "react";
 import { PLink } from "./career/Profile";
 import type { QualiSession } from "../game/qsession";
 import type { SpeedSetting } from "../game/live";
@@ -49,26 +48,6 @@ function fmtTime(t: number) {
 }
 
 type QTab = "radio" | "sectors" | "radar";
-
-/** B2: laps, eliminations and the flag announce themselves as they happen. */
-function QualiMoments({ session }: { session: QualiSession }) {
-  const [list, setList] = useState<{ id: number; head: string; tone: string }[]>([]);
-  const seq = useRef(0);
-  useEffect(() => {
-    const mine = new Set(session.humanIds);
-    const add = (head: string, tone: string) => {
-      const id = ++seq.current;
-      setList((l) => [...l.slice(-2), { id, head, tone }]);
-      window.setTimeout(() => setList((l) => l.filter((x) => x.id !== id)), 3200);
-    };
-    return session.onEvent((e) => {
-      if (e.kind === "q_eliminated" && e.carId && mine.has(e.carId)) { add(e.text, "bad"); feel("bad", "small"); }
-      else if (e.kind === "q_chequered") { add("CHEQUERED FLAG", "info"); feel("info", "small"); }
-      else if (e.kind === "q_lap" && e.carId && mine.has(e.carId) && /lap|time|pole|P\d/i.test(e.text) && !/Abort|One shot/i.test(e.text)) add(e.text, "good");
-    });
-  }, [session]);
-  return <div className="moments">{list.map((m) => <div key={m.id} className={`moment ${m.tone}`}><b>{m.head}</b></div>)}</div>;
-}
 
 export function QualiScreen(props: { session: QualiSession; meta: CircuitMeta; onDone: () => void; skip?: NetSkip; kind?: "quali" | "sq" }) {
   useEffect(() => { scrollTop(); }, []);
@@ -129,7 +108,6 @@ function QualiScreenInner({ session, meta, onDone, skip, kind }: { session: Qual
 
   return (
     <div className="screen race">
-      <QualiMoments session={session} />
       <header className="racebar">
         <div className="logo-sm">
           BOX<span>BOX</span>

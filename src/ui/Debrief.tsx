@@ -75,7 +75,7 @@ function EngineerReplay({ db, n }: { db: ReturnType<typeof buildDebrief>; n: num
         <div className="dr-col">
           <div className="dr-timeline" role="slider" aria-valuemin={0} aria-valuemax={laps} aria-valuenow={lap} aria-label="Race lap">
             {moments.slice(0, 60).map((m, i) => <i key={i} className={`m-${m.tone}`} style={{ left: `${(m.lap / laps) * 100}%` }} title={`L${m.lap}: ${m.text}`} />)}
-            <b style={{ left: `${(lap / laps) * 100}%` }} />
+            <b style={{ left: `${(lap / laps) * 100}%`, transition: play ? `left ${Math.max(60, Math.min(220, 14000 / laps))}ms linear` : "left 160ms ease-out" }} />
           </div>
           <div className="dr-tower">
             {db.cars.map((c) => {

@@ -209,3 +209,22 @@ body.fx-wash { animation: tier-wash 0.7s ease-out; }
 
 .briefing .brief-grid>section:first-child{grid-row:1 / span 3;align-self:start}
 .briefing .gamble-cards{grid-template-columns:repeat(3,1fr)}
+
+/* the label plate sits in the panel's top padding, so the first row can never run under it */
+.app .panel:has(> h3:first-child),
+.app .panel:has(> h4:first-child) { padding-top: 48px; }
+/* a team card that is no longer selected must not replay its entrance and vanish */
+.app .team-card:not(.selected), .app .c-prog:not(.on) { animation: none; opacity: 1; }
+
+.cer-row{font-size:26px;padding:12px 20px}.cer-pos{font-size:36px}.cer-pts{font-size:24px}
+
+/* readable replay and review text */
+.dr-replay .dr-tower small,.dr-replay .dr-tower b{font-size:16px}
+.dr-replay .dr-tower .dim.small{font-size:15px}
+.dr-replay .speech,.dr-replay [class*="say"],.dr-replay .bubble{font-size:16px;line-height:1.45;color:#10131f;background:#f3efe2}
+.review{max-height:460px;overflow-y:auto;padding-right:8px}
+.review p{font-size:16px;line-height:1.5}
+.review li{font-size:16px;line-height:1.5;margin-bottom:6px}
+.review li b{font-size:14px;padding:2px 8px;margin-right:8px;display:inline-block}
+.review li.bluff b{background:#e63946;color:#fff}.review li.honest b,.review li.hint b{background:#2fb57d;color:#06120d}
+.dr-bubble{font-size:16px;line-height:1.45}

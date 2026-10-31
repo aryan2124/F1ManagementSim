@@ -226,7 +226,6 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
   const topDrivers = Object.entries(s.standings.drivers).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const topTeams = Object.entries(s.standings.teams).sort((a, b) => b[1] - a[1]);
   const urgent = decisions.some((c) => c.urgency === 3);
-  const [more, setMore] = useState(false);
   const [fullTable, setFullTable] = useState(false);
   // notices clear themselves after five days
   useEffect(() => {
@@ -274,12 +273,11 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
           <div className="stat-tile" style={{ ["--tile" as string]: me.board < 28 ? "var(--c-bad)" : "var(--c-good)", ["--i" as string]: 3 }}><span>BOARD <Tip text="How much the board trusts you, 0 to 100. Below about 15 you can be sacked, unless yours is the weakest car on the grid." /></span><b><Num v={Math.round(me.board)}>{Math.round(me.board)}</Num></b><Bar v={me.board} max={100} color={me.board < 28 ? "var(--c-bad)" : "var(--c-good)"} /><u><DeptIcon kind="board" size={22} /></u></div>
           <div className="stat-tile" style={{ ["--tile" as string]: "var(--c-go)", ["--i" as string]: 5 }}><span>STANDING</span><b><Num v={rank} good="down">P{rank}</Num></b><u><DeptIcon kind="car" size={22} /></u></div>
         </div>
-        <button className="tiny c-morebtn" onClick={() => setMore((m) => !m)}>{more ? "LESS" : "MORE NUMBERS"}</button>
-        {more && <div className="tiles hh-tiles c-drawer">
+        <div className="tiles hh-tiles c-drawer">
           <div className="stat-tile" style={{ ["--tile" as string]: capRoom(me) < 0 ? "var(--c-bad)" : "var(--c-cap)", ["--i" as string]: 1 }}><span>CAP ROOM <Tip text="How much more you can spend on new car parts this season under the cost cap. Each project uses some when you start it. It resets at the new financial year." /></span><b><Num v={capRoom(me)}>{fmtMoney(capRoom(me))}</Num></b><u><DeptIcon kind="cap" size={22} /></u></div>
           <div className="stat-tile" style={{ ["--tile" as string]: "var(--c-time)", ["--i" as string]: 2 }}><span>TUNNEL <Tip text={`Wind tunnel hours left. Projects that need the tunnel use some every day. The allowance refills on ${fmtDay(nextAllowanceReset(s))}.`} /></span><b><Num v={Math.round(me.tunnelLeft)}>{Math.round(me.tunnelLeft)}h</Num></b><u><DeptIcon kind="tunnel" size={22} /></u></div>
           <div className="stat-tile" style={{ ["--tile" as string]: s.brand.fans < 25 ? "var(--c-bad)" : "var(--c-tech)", ["--i" as string]: 4 }}><span>FANS <Tip text={`How much supporters love the team, 0 to 100. Results move it slowly. Changing the livery or name for a sponsor hurts it, most for historic teams. Fans pay through merchandise and make sponsors offer more. Below about 22 the board worries.`} /></span><b><Num v={Math.round(s.brand.fans)}>{Math.round(s.brand.fans)}</Num></b><Bar v={s.brand.fans} max={100} color="var(--c-tech)" /><u><DeptIcon kind="fans" size={22} /></u></div>
-        </div>}
+        </div>
       </section>
 
       {!inWeekend && !closedYearNow(s) && <FocusRow s={s} d={d} busy={decisions.length > 0} />}

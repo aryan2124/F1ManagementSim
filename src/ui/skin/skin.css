@@ -172,7 +172,7 @@ body.no-crt .crt-global {
   margin: 0;
   max-width: calc(100% - 28px);
   padding: 7px 12px 6px;
-  font-size: 10px;
+  font-size: 13px;
   line-height: 1.25;
   letter-spacing: 1.5px;
   color: #1a0f05;
@@ -185,7 +185,7 @@ body.no-crt .crt-global {
   z-index: 2;
 }
 .app .panel h3:not(:first-child) {
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 1.5px;
   color: var(--c-gold);
   margin: 16px 0 8px;
@@ -197,7 +197,7 @@ body.no-crt .crt-global {
 }
 .panel h4 {
   font-family: var(--pix);
-  font-size: 9px;
+  font-size: 13px;
   letter-spacing: 1px;
   color: var(--c-gold);
   margin: 18px 0 8px;
@@ -471,7 +471,7 @@ body.no-crt .crt-global {
     0 6px 0 3px var(--c-go-lip);
 }
 .app .c-card h4 {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--c-gold);
   text-shadow: var(--sh);
   line-height: 1.5;
@@ -592,7 +592,7 @@ body.no-crt .crt-global {
   height: 20px;
   line-height: 20px;
   font-family: var(--pix);
-  font-size: 9px;
+  font-size: 13px;
   box-shadow:
     0 0 0 2px var(--outline),
     0 3px 0 2px var(--c-info-lip);
@@ -665,7 +665,7 @@ body.no-crt .crt-global {
     inset 0 0 0 2px var(--rim),
     0 0 0 2px var(--outline),
     0 5px 0 2px var(--lip);
-  font-size: 10px;
+  font-size: 13px;
   padding: 12px 14px;
   border-radius: 10px 10px 8px 8px;
 }
@@ -693,7 +693,7 @@ body.no-crt .crt-global {
 }
 .sub button {
   font-family: var(--pix);
-  font-size: 9px;
+  font-size: 13px;
   letter-spacing: 1px;
   padding: 11px 14px;
   border: 0;
@@ -730,7 +730,7 @@ body.no-crt .crt-global {
   border-radius: 9px;
   background: var(--c-bad);
   color: #2a0509;
-  font-size: 8px;
+  font-size: 12px;
 }
 
 details.fold {
@@ -744,7 +744,7 @@ details.fold > summary {
   list-style: none;
   padding: 9px 12px;
   font-family: var(--pix);
-  font-size: 9px;
+  font-size: 13px;
   letter-spacing: 1px;
   color: var(--c-info);
   display: flex;
@@ -793,7 +793,7 @@ details.fold > .fold-body {
 .stat-tile > span {
   display: block;
   font-family: var(--pix);
-  font-size: 8px;
+  font-size: 12px;
   letter-spacing: 1px;
   color: var(--dim);
   margin-bottom: 8px;
@@ -815,7 +815,7 @@ details.fold > .fold-body {
 .badge {
   display: inline-block;
   font-family: var(--pix);
-  font-size: 8px;
+  font-size: 12px;
   letter-spacing: 1px;
   padding: 4px 7px 3px;
   border-radius: 6px;
@@ -1169,7 +1169,7 @@ details.fold > .fold-body {
 .bbn-text b {
   display: block;
   font-family: var(--pix);
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 2px;
   color: var(--ink);
   text-shadow: var(--sh);
@@ -1469,13 +1469,13 @@ body.no-swirl .swirl {
   background: var(--c-gold);
   color: #2a1c00;
   font-family: var(--pix);
-  font-size: 9px;
+  font-size: 13px;
   letter-spacing: 2px;
   box-shadow: 0 0 0 2px var(--outline), 0 3px 0 2px var(--c-gold-lip);
 }
 .pd-name {
   font-family: var(--pix);
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.4;
   color: var(--ink);
   text-shadow: var(--sh);
@@ -1545,13 +1545,13 @@ body.no-swirl .swirl {
 .podium2 .podium-skip {
   margin: 0;
   font-family: var(--pix);
-  font-size: 9px;
+  font-size: 13px;
   color: var(--dim);
   animation: bob 2s ease-in-out infinite;
 }
 @media (max-width: 700px) {
   .pd-stage { gap: 8px; }
-  .pd-name { font-size: 8px; }
+  .pd-name { font-size: 12px; }
 }
 
 /* crushed labels: give button text room */
@@ -1597,7 +1597,7 @@ body.no-swirl .swirl {
 }
 .app .c-axis .c-row > span:first-child {
   font-family: var(--pix);
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 1px;
   color: var(--ink);
   text-shadow: var(--sh);
@@ -1686,7 +1686,7 @@ body.no-swirl .swirl {
 }
 .app .c-prog b {
   font-family: var(--pix);
-  font-size: 10px;
+  font-size: 13px;
   color: var(--c-gold);
   text-shadow: var(--sh);
 }
@@ -1749,7 +1749,7 @@ body.no-swirl .swirl {
 }
 .app .nc .team-card .tname {
   font-family: var(--pix);
-  font-size: 10px;
+  font-size: 13px;
   line-height: 1.5;
   color: var(--ink);
   text-shadow: var(--sh);
@@ -1832,7 +1832,7 @@ body.no-swirl .swirl {
 }
 .app .c-prog b {
   line-height: 1.6;
-  font-size: 9px;
+  font-size: 13px;
 }
 .app .c-prog.on {
   animation: none;
@@ -2272,7 +2272,7 @@ body.no-swirl .swirl {
 
 /* podium: flags and the anthem caption */
 .pd-flag { display: flex; justify-content: center; margin: 2px 0; }
-.pd-anthem { position: absolute; left: 0; right: 0; bottom: 44px; display: flex; gap: 10px; align-items: center; justify-content: center; font-family: var(--pix); font-size: 11px; letter-spacing: 2px; color: var(--c-gold, #ffd25a); text-shadow: 0 2px 0 #000; animation: pd-anthem-in 0.6s ease-out both; }
+.pd-anthem { position: absolute; left: 0; right: 0; bottom: 44px; display: flex; gap: 10px; align-items: center; justify-content: center; font-family: var(--pix); font-size: 14px; letter-spacing: 2px; color: var(--c-gold, #ffd25a); text-shadow: 0 2px 0 #000; animation: pd-anthem-in 0.6s ease-out both; }
 @keyframes pd-anthem-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 /* victory lap caption sits low and centred so it never covers the zoom box */
@@ -2324,7 +2324,7 @@ button.link { background: none; border: 0; padding: 0; color: var(--c-gold, #ffd
 .app .radar.wx2 .wx-times button { flex: 1; min-width: 52px; }
 .app .radar.wx2 .wx-legend { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 2px; max-width: 360px; }
 .app .radar.wx2 .wx-legend i { height: 8px; display: block; }
-.app .radar.wx2 .wx-legend span { font-size: 12px; color: var(--dim, #9aa3c7); text-align: center; margin-top: 3px; }
+.app .radar.wx2 .wx-legend span { font-size: 14px; color: var(--dim, #9aa3c7); text-align: center; margin-top: 3px; }
 .app .radar.wx2 .wx-right { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .app .radar.wx2 .wx-head { display: flex; gap: 12px; align-items: center; margin: 0; padding: 10px 12px; }
 .app .radar.wx2 .wx-head b { font-size: 20px; display: block; line-height: 1.15; }
@@ -2334,16 +2334,16 @@ button.link { background: none; border: 0; padding: 0; color: var(--c-gold, #ffd
 .app .radar.wx2 .wx-ico.cloud { color: #c6cbe6; }
 .app .radar.wx2 .wx-conf { position: relative; margin-top: 6px; height: 14px; background: #0b1020; border: 2px solid var(--line, #3b4272); }
 .app .radar.wx2 .wx-conf i { position: absolute; inset: 0 auto 0 0; background: #4682ff; opacity: 0.8; }
-.app .radar.wx2 .wx-conf em { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal; font-size: 12px; color: #fff; }
+.app .radar.wx2 .wx-conf em { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal; font-size: 14px; color: #fff; }
 .app .radar.wx2 .wx-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .app .radar.wx2 .wx-tiles > div { background: var(--panel2, #1d2140); padding: 8px 6px; display: flex; flex-direction: column; gap: 4px; align-items: center; text-align: center; }
-.app .radar.wx2 .wx-tiles em { font-style: normal; font-size: 12px; opacity: 0.65; }
+.app .radar.wx2 .wx-tiles em { font-style: normal; font-size: 14px; opacity: 0.65; }
 .app .radar.wx2 .wx-tiles b { font-size: 16px; }
 .app .radar.wx2 .wx-card { background: var(--panel2, #1d2140); padding: 8px 10px 10px; }
 .app .radar.wx2 .wx-card h4 { margin: 0 0 8px; font-size: 13px; opacity: 0.8; }
 .app .radar.wx2 .wx-card .fcurve { margin: 0; }
 @media (max-width: 560px) { .app .radar.wx2 .wx-tiles { grid-template-columns: repeat(2, 1fr); } }
-.app .radar.wx2 .wx-card h4 { font-size: 12px !important; line-height: 1.3; text-shadow: none; -webkit-text-stroke: 0; background: none; padding: 0; letter-spacing: 0; }
+.app .radar.wx2 .wx-card h4 { font-size: 14px !important; line-height: 1.3; text-shadow: none; -webkit-text-stroke: 0; background: none; padding: 0; letter-spacing: 0; }
 
 /* Firefox repaints full-screen overlays on the CPU: drop the scanline and vignette layer there */
 @-moz-document url-prefix() {

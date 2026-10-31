@@ -269,8 +269,6 @@ export interface CarState {
   push: PushLevel;
   pitRequest: Compound | null;
   pitTimer: number;
-  /** The player has already tried the timed release this stop. */
-  releaseTried?: boolean;
   stops: number;
   /** Overtake in progress against this car id until overtakeUntil tick. */
   overtaking: string | null;
@@ -431,7 +429,6 @@ export type Command =
   | { type: "mode"; carId: string; mode: EnergyMode }
   | { type: "push"; carId: string; push: PushLevel }
   /** Timed release in the pit box: pressed in the last half second of the stop it saves that time, pressed early it costs a second. */
-  | { type: "pitRelease"; carId: string }
   /** A team order to one of the player's cars. */
   | { type: "order"; carId: string; order: TeamOrder }
   /** Answer a driver's radio call (see Prompt). */
