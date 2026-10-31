@@ -632,6 +632,10 @@ function prospectFor(s: CareerState) {
 }
 
 /** Once a week: at most one big event, and only ones the state has earned. */
+/** Options that mean "do nothing". They are never free: letting things slide costs standing with the board. */
+const PASS = new Set(["no", "ignore", "decline", "wait", "quiet", "walk", "carry", "risk", "monitor"]);
+const PASS_COST = 0.5;
+
 export function eventsWeekly(s: CareerState) {
   const st = s.story;
   if (s.weekend || s.cards.some((c) => !c.notice && !c.mail && c.kind === "event")) return; // at most one open event at a time
@@ -652,6 +656,7 @@ export function eventsWeekly(s: CareerState) {
   }
   const b = pick.build(s, rng);
   if (!b) return;
+  for (const o of b.options) if (PASS.has(o.id) && !o.warn) o.warn = "Letting it slide: board -0.5";
   st.last[pick.id] = s.day;
   st.count[pick.id] = (st.count[pick.id] ?? 0) + 1;
   if (pick.big) st.bigDay = s.day;
@@ -672,7 +677,10 @@ export function resolveEvent(s: CareerState, c: { data?: Record<string, number |
   if (ev === "g3" || ev === "g4" || ev === "g5") return resolveGrievance(s, c, option);
   if (ev === "reach") return resolveReach(s, c, option);
   const e = EVENTS.find((x) => x.id === ev);
-  if (e) e.resolve(s, option, c.data ?? {});
+  if (e) {
+    e.resolve(s, option, c.data ?? {});
+    if (PASS.has(option)) { boardMove(s, s.teams[s.teamId], -PASS_COST, "You let a problem slide"); recap(s, "You let it slide: the board noticed."); }
+  }
 }
 
 /** At the end of the year, pay off or call in anything the player promised the owner. */

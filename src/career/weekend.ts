@@ -863,6 +863,20 @@ export function recordSession(s: CareerState, kind: SessionKind, order: string[]
     }
     afterRaceService(s, driversOf(s, s.teamId).map((d) => d.id));
     if (!extra?.skipWorld) checkClinch(s, ws.round + 1);
+    {
+      const mineIds = driversOf(s, s.teamId).map((d) => d.id);
+      const lines = mineIds.map((id) => {
+        const pos = order.indexOf(id) + 1;
+        const out = dnf.includes(id);
+        const pts = points[id] ?? 0;
+        return `${s.drivers[id].spec.code} ${out ? "retired" : `P${pos}`}${pts ? `, +${pts} pts` : ""}`;
+      });
+      const my = s.teams[s.teamId];
+      lines.push(`Cash $${my.cash.toFixed(1)}m, board ${Math.round(my.board)}.`);
+      const moods = driversOf(s, s.teamId).map((d) => `${d.spec.code} ${d.morale > 0.7 ? "happy" : d.morale > 0.5 ? "fine" : d.morale > 0.3 ? "annoyed" : "furious"}`).join(", ");
+      lines.push(`Mood: ${moods}.`);
+      s.lastRace = lines;
+    }
   }
 }
 

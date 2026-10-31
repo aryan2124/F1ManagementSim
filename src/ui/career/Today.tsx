@@ -1,12 +1,13 @@
 import { PLink } from "./Profile";
 import { useEffect, useState, type ReactNode } from "react";
-import { FOCUS, DEPT_LABEL, type Dept, type FocusKind } from "../../career/focus";
+import { DEPT_LABEL, type Dept } from "../../career/focus";
+import { campaignLine, rivalHint, AREA_PLAIN } from "../../career/campaign";
 import type { CareerState } from "../../career/types";
 import { circuitMeta } from "../../game/circuits";
 import { daysTo, factoryClosed, inSummerBreak, launchDay, summerEnd, winterEnd } from "../../career/calendar";
 import { fmtDay, fmtMoney, ymd } from "../../career/util";
 import { capRoom, nextAllowanceReset } from "../../career/rnd";
-import { standingsRank } from "../../career/car";
+import { standingsRank, staffOf } from "../../career/car";
 import { agenda, type AgendaItem } from "../../career/agenda";
 import { eraNote } from "../../career/eras";
 import { ordinal } from "../../career/world";
@@ -139,20 +140,47 @@ function threatLine(s: CareerState): string {
   return above ? `${teamLabel(s, above[0])} are ${above[1] - mine} points ahead.` : "";
 }
 
-function FocusRow({ s, d, busy }: { s: Props["s"]; d: Props["d"]; busy: boolean }) {
-  const cur = s.focus?.kind;
+const mood = (m: number) => (m > 0.7 ? "is happy" : m > 0.5 ? "is fine" : m > 0.3 ? "is annoyed" : "is furious");
+
+function Headline({ s }: { s: Props["s"] }) {
+  const camp = campaignLine(s);
+  const rivals = (s.rivalCamps ?? []).slice(0, 3);
+  const next = s.calendar[s.round];
+  const obj = s.teams[s.teamId].objectives[0];
+  const rank = standingsRank(s).indexOf(s.teamId) + 1;
+  const c = s.campaign;
+  if (!next) return null;
   return (
-    <section className="panel c-focus">
-      <h3>THIS WEEK'S FOCUS</h3>
-      <div className="focus-cards">
-        {(Object.keys(FOCUS) as FocusKind[]).map((k, i) => (
-          <button key={k} className={`focus-card clickable ${cur === k ? "sel" : ""}`} onClick={() => d({ type: "setFocus", kind: k })} title={busy ? "Answer the decision first" : `Press ${i + 1}`}>
-            <b>{i + 1}. {FOCUS[k].label}</b>
-            <span className="gain">{FOCUS[k].gain}</span>
-            <span className="cost">{FOCUS[k].cost}</span>
-          </button>
+    <section className="panel c-headline">
+      <h3>THE PLAN</h3>
+      {camp ? (
+        <div className="hl-camp">
+          <b className="hl-t">{camp.text}</b>
+          <div className="hl-track">
+            <i style={{ width: `${camp.pct}%` }} />
+            <u style={{ left: "45%" }} title="Midway check" />
+            <em>{camp.pct}%</em>
+          </div>
+          <span className="dim">{camp.mile}. {c && c.hist.length ? `This week's work: ${c.hist.map((h) => `+${h}`).join(", ")}.` : ""}</span>
+        </div>
+      ) : (
+        <p className="hl-t">No campaign running. The next one is offered when a race is three to five weeks away.</p>
+      )}
+      {rivals.map((r) => (
+        <p key={r.teamId + r.area} className="hl-rival"><b style={{ color: hex(teamColour(s, r.teamId)) }}>{teamLabel(s, r.teamId)}</b> are bringing {AREA_PLAIN[r.area]} to round {s.calendar[r.target]?.round}. <span className="dim">{rivalHint(r)}.</span></p>
+      ))}
+      {obj && <p className="hl-stake"><b>At stake:</b> the board wants P{obj.target} or better this year. You are P{rank}.</p>}
+      <ul className="hl-people">
+        {Object.values(s.drivers).filter((x) => x.teamId === s.teamId && !x.retired).map((x) => (
+          <li key={x.id} className={x.morale < 0.4 ? "bad" : x.morale > 0.7 ? "good" : ""}><b>{x.spec.name}</b> {mood(x.morale)}{x.morale < 0.4 ? ": wants attention" : x.trust < 0.4 ? ": does not trust the pit wall" : ""}</li>
         ))}
-      </div>
+        {(["td", "designer", "mechanic"] as const).map((role) => {
+          const st = staffOf(s, s.teamId, role);
+          return st ? <li key={role} className={st.mood < 0.4 ? "bad" : st.mood > 0.7 ? "good" : ""}><b>{st.name}</b> ({role === "td" ? "technical director" : role === "designer" ? "chief designer" : "crew chief"}) {mood(st.mood)}</li> : null;
+        })}
+        <li className={s.owner.trust < 0.4 ? "bad" : s.owner.trust > 0.7 ? "good" : ""}><b>{s.owner.name}</b> (owner) {s.owner.trust > 0.7 ? "is behind you" : s.owner.trust > 0.4 ? "is watching" : "is losing patience"}</li>
+      </ul>
+      {s.lastWeek && s.lastWeek.length > 0 && <p className="hl-last"><b>Last week:</b> {s.lastWeek.join(" ")}</p>}
     </section>
   );
 }
@@ -171,7 +199,7 @@ function GoalsPanel({ s }: { s: Props["s"] }) {
     <section className="panel c-goals">
       <h3>WHAT THEY EXPECT</h3>
       <ul className="c-tasks">
-        {obj && <li className={onTrack ? "done" : "todo"}><b>Board:</b> {obj.text} <span className={onTrack ? "ok" : "warn"}>{s.round < 2 ? "too early to say" : onTrack ? `on track (P${rank})` : `behind (P${rank})`}</span></li>}
+        {obj && <li className={onTrack ? "done" : "todo"}><b>Board:</b> {obj.text} <span className={onTrack ? "ok" : "warn"}>{s.round < 2 ? `season just started, you are P${rank}` : onTrack ? `you are P${rank}: fine for now` : `you are P${rank}: gain ${rank - obj.target} place${rank - obj.target === 1 ? "" : "s"}`}</span></li>}
         <li className={g.done === null ? "todo" : g.done ? "done" : "todo"}><b>{s.owner.name}:</b> {g.text} <span className={g.done === false ? "warn" : "ok"}>{g.done === null ? "in progress" : g.done ? "met" : "missed"}</span></li>
       </ul>
     </section>
@@ -200,6 +228,32 @@ function RaceWeek({ s, go }: { s: Props["s"]; go: (t: Tab) => void }) {
   );
 }
 
+/** Race week, first beat: what is at stake this weekend, before anyone gets in a car. */
+function WeekendIntro({ s }: { s: Props["s"] }) {
+  const ws = s.weekend;
+  if (!ws || ws.entered) return null;
+  const race = s.calendar[ws.round];
+  const c = s.campaign;
+  const mineHere = c && c.target === ws.round;
+  const rivalsHere = (s.rivalCamps ?? []).filter((r) => r.target === ws.round);
+  const rank = standingsRank(s).indexOf(s.teamId) + 1;
+  const ranked = Object.entries(s.standings.teams).sort((a, b) => b[1] - a[1]);
+  const i = ranked.findIndex(([id]) => id === s.teamId);
+  const above = ranked[i - 1];
+  const below = ranked[i + 1];
+  return (
+    <section className="panel c-intro">
+      <h3>RACE WEEK: {circuitMeta(race.circuitId).gp.toUpperCase()}</h3>
+      <ul className="c-tasks big">
+        {mineHere && c && <li className="todo"><b>Your {AREA_PLAIN[c.area].replace(/^an? /, "")} is judged this weekend.</b> It is at {Math.round(c.progress)}% of the plan. Practice will show what it really gives.</li>}
+        {rivalsHere.map((r) => <li key={r.teamId} className="todo"><b>{teamLabel(s, r.teamId)}</b> bring {AREA_PLAIN[r.area]}. {rivalHint(r)}.</li>)}
+        <li className="todo"><b>Stakes:</b> you are P{rank} in the constructors.{above ? ` ${teamLabel(s, above[0])} are ${above[1] - (ranked[i]?.[1] ?? 0)} points up the road.` : ""}{below ? ` ${teamLabel(s, below[0])} are ${(ranked[i]?.[1] ?? 0) - below[1]} points behind.` : ""}</li>
+        <li className="todo">Friday practice, Saturday qualifying, Sunday the race. The big button always names the next step.</li>
+      </ul>
+    </section>
+  );
+}
+
 const STAGE_BUTTON: Record<string, string> = { practice: "GO TO PRACTICE", sq: "GO TO SPRINT QUALIFYING", sprint: "GO TO THE SPRINT", quali: "GO TO QUALIFYING", race: "GO TO THE RACE" };
 /** The big button on a weekend day names the next thing to do, instead of CONTINUE. */
 export function weekendButton(s: CareerState): string {
@@ -222,6 +276,7 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
   const toNext = next ? daysTo(s.day, next.day) : null;
   const rank = standingsRank(s).indexOf(s.teamId) + 1;
   const decisions = s.cards.filter((c) => !c.notice && !c.mail).sort((a, b) => b.urgency - a.urgency || a.created - b.created);
+  const nowCards = decisions.filter((c) => c.kind === "weekPlan" || c.kind === "campaign");
   const notices = s.cards.filter((c) => c.notice).sort((a, b) => b.created - a.created);
   const topDrivers = Object.entries(s.standings.drivers).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const topTeams = Object.entries(s.standings.teams).sort((a, b) => b[1] - a[1]);
@@ -233,14 +288,12 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
   }, [s.day]); // eslint-disable-line react-hooks/exhaustive-deps
   // number keys choose the weekly focus
   useEffect(() => {
-    const ks: FocusKind[] = ["car", "drivers", "money", "academy"];
     const on = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === "INPUT" || e.ctrlKey || e.metaKey) return;
       const i = Number(e.key) - 1;
       if (!(i >= 0)) return;
       const top = decisions[0];
       if (top && !inWeekend) { if (top.options[i]) d({ type: "card", id: top.id, option: top.options[i].id }); return; }
-      if (i < 4 && !inWeekend && !clock.running) d({ type: "setFocus", kind: ks[i] });
     };
     window.addEventListener("keydown", on);
     return () => window.removeEventListener("keydown", on);
@@ -249,6 +302,13 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
   const shownTeams = fullTable ? topTeams : topTeams.slice(Math.max(0, Math.min(myIdx - 2, topTeams.length - 5)), Math.max(0, Math.min(myIdx - 2, topTeams.length - 5)) + 5);
   return (
     <div className="c-today">
+      {nowCards.length > 0 && !inWeekend && (
+        <section className="panel c-now">
+          <h3>DECIDE NOW</h3>
+          {nowCards.map((c, i) => <CardView key={c.id} c={c} d={d} keys={i === 0} />)}
+        </section>
+      )}
+
       <section className="panel c-head hero-head">
         <div className="hh-date">
           <h2 className="c-date">{fmtDay(s.day, true).toUpperCase()}, {s.year}</h2>
@@ -280,8 +340,8 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
         </div>
       </section>
 
-      {!inWeekend && !closedYearNow(s) && <FocusRow s={s} d={d} busy={decisions.length > 0} />}
-
+      {!inWeekend && !closedYearNow(s) && <Headline s={s} />}
+      <WeekendIntro s={s} />
       <RaceWeek s={s} go={go} />
       <FactoryBox s={s} go={go} />
       <DayStrip s={s} />
@@ -297,7 +357,7 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
             ))}
           </div>
           {decisions.length === 0 && <p className="dim">Nothing needs you. The factory is working.</p>}
-          {decisions.map((c, i) => <CardView key={c.id} c={c} d={d} keys={i === 0} />)}
+          {decisions.filter((c) => !nowCards.includes(c)).map((c, i) => <CardView key={c.id} c={c} d={d} keys={!nowCards.length && i === 0} />)}
           {s.recap.length > 0 && (
             <div className="c-recap">
               <h4>SINCE LAST TIME</h4>

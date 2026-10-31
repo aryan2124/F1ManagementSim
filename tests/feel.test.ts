@@ -1,25 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { newCareer } from "../src/career/world";
 import { reduce } from "../src/career/reducer";
-import { focusWeekly, delegated, pepTalk } from "../src/career/focus";
+import { delegated, pepTalk } from "../src/career/focus";
+import { resolveWeekPlan } from "../src/career/week";
 import { driversOf } from "../src/career/finance";
 
-describe("weekly focus", () => {
-  it("the drivers focus raises morale and costs cash; the money focus saves cash and costs fans", () => {
+describe("weekly plan", () => {
+  it("the drivers choice raises morale and costs cash; the money choice saves cash and costs fans", () => {
     const s = newCareer("wil", 3);
     const mine = driversOf(s, s.teamId);
     for (const d of mine) d.morale = 0.5;
     const cash = s.teams[s.teamId].cash;
-    s.focus = { kind: "drivers", since: s.day };
-    focusWeekly(s);
+    resolveWeekPlan(s, "drivers");
     expect(mine.every((d) => d.morale > 0.5)).toBe(true);
     expect(s.teams[s.teamId].cash).toBeLessThan(cash);
     const fans = s.brand.fans;
     const cash2 = s.teams[s.teamId].cash;
-    s.focus = { kind: "money", since: s.day };
-    focusWeekly(s);
+    resolveWeekPlan(s, "money");
     expect(s.teams[s.teamId].cash).toBeGreaterThan(cash2);
     expect(s.brand.fans).toBeLessThan(fans);
+    expect(s.lastWeek?.length).toBeGreaterThan(0);
   });
 
   it("the setFocus action stores the choice", () => {

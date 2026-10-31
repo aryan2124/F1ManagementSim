@@ -1,4 +1,6 @@
-import { focusWeekly, delegated } from "./focus";
+import { delegated } from "./focus";
+import { campaignWeekly, resolveCampaign, campaignOpen } from "./campaign";
+import { weekPlanCard, resolveWeekPlan, weekPlanOpen } from "./week";
 import { socialWeekly } from "./social";
 import { boardMove } from "./board";
 import { CFG } from "./config";
@@ -95,6 +97,12 @@ export function resolveCard(s: CareerState, id: number, option: string, auto = f
     if (label) recap(s, `${auto ? "No answer, so" : "You chose"}: ${label}.`);
   }
   switch (c.kind) {
+    case "weekPlan":
+      resolveWeekPlan(s, option);
+      break;
+    case "campaign":
+      resolveCampaign(s, c, option);
+      break;
     case "rndDirection": {
       if (option.startsWith("brief:")) {
         const plan = planOf(me);
@@ -404,7 +412,7 @@ export function weeklyPlayer(s: CareerState, first: boolean) {
     driverRumours(s, first);
   }
   nextCarWeekly(s);
-  if (!closed) focusWeekly(s);
+  if (!closed) { campaignWeekly(s); weekPlanCard(s); }
   devEventsWeekly(s);
   passiveRead(s, s.teamId);
   generateIdeas(s, s.teamId);
@@ -791,6 +799,8 @@ export function stopNow(s: CareerState, before: number): string | null {
 export function stepDay(s: CareerState, first: boolean): string {
   if (s.weekend && s.weekend.stage !== "done") return "Finish the race weekend first.";
   if (s.fired) return "Choose where to go next.";
+  if (weekPlanOpen(s)) return "Pick this week's plan first.";
+  if (campaignOpen(s)) return "Answer the campaign decision first.";
   if (first) {
     s.recap = [];
     s.stopReason = "";
@@ -806,6 +816,8 @@ export function stepDay(s: CareerState, first: boolean): string {
 export function continueClock(s: CareerState, single = false): string {
   if (s.weekend && s.weekend.stage !== "done") return "Finish the race weekend first.";
   if (s.fired) return "Choose where to go next.";
+  if (weekPlanOpen(s)) return "Pick this week's plan first.";
+  if (campaignOpen(s)) return "Answer the campaign decision first.";
   s.recap = [];
   s.stopReason = "";
   const startDay = s.day;

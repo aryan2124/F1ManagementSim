@@ -472,7 +472,9 @@ export type CardKind =
   | "rivalry"
   | "mail"
   | "nextCar"
-  | "devEvent";
+  | "devEvent"
+  | "weekPlan"
+  | "campaign";
 
 export interface CardOption {
   id: string;
@@ -731,7 +733,35 @@ export interface LegacyEntry {
   text: string;
 }
 
+/** A development campaign: three or four weeks of work on one area, aimed at a named race and judged there. */
+export interface Campaign {
+  area: Area;
+  approach: "steady" | "allin" | "bold";
+  /** Index into the calendar of the race it is judged at. */
+  target: number;
+  start: number;
+  /** 0 to 100 (it can pass 100 with a breakthrough). */
+  progress: number;
+  mile: number;
+  /** Progress added each week, newest last. */
+  hist: number[];
+}
+/** A rival team's campaign, visible to the player. */
+export interface RivalCamp {
+  teamId: string;
+  area: Area;
+  target: number;
+  /** Whether the concept they picked suits the regulations. */
+  right: boolean;
+}
+
 export interface CareerState {
+  campaign?: Campaign;
+  rivalCamps?: RivalCamp[];
+  /** What last week's choice did, shown on the next weekly plan card. */
+  lastWeek?: string[];
+  /** The Monday review of the race just run, shown once on the weekly plan card. */
+  lastRace?: string[];
   v: 1;
   /** Power unit and gearbox wear per driver, and grid drops waiting for the next race. */
   wear?: Record<string, DriverWear>;

@@ -325,7 +325,7 @@ export function CareerApp({ initial, onExit, net, tutorial }: { initial: CareerS
       {msg && tab !== "today" && <p className="c-msg floating" role="status" onClick={() => setMsg("")} title="Click to dismiss">{msg}</p>}
     </div>}
     {(!weekendLive || peek) && <ConvoPanel s={s} d={d} />}
-    {(!weekendLive || peek) && <DevRoom s={s} d={d} auto={tab === "today"} />}
+    {(!weekendLive || peek) && <DevRoom s={s} d={d} auto={false} />}
     {wipe > 0 && <div key={wipe} className="wipe" aria-hidden="true"><b>RACE WEEK</b></div>}
     <CeremonyOverlay s={s} d={d} />
     </ProfileHost>

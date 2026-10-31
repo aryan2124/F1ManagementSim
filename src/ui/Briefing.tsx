@@ -1,4 +1,3 @@
-import { SetPicker } from "./SetPicker";
 import type { TyreSet } from "../sim/tyreSets";
 import { useMusic } from "../audio/useMusic";
 import { useMemo, useState } from "react";
@@ -10,8 +9,8 @@ import { raceWeather } from "../game/setup";
 import { makeWeather } from "../sim/weather";
 import { makeProfile, TeamRadar, intensityWord } from "../sim/radar";
 import { BRAINS, DEFAULT_BRAIN } from "../sim/strategy";
-import { StrategyBoard } from "./StrategyBoard";
 import { NO_ORDERS, type StandingOrders } from "../sim/standing";
+import { PitWall } from "./PitWall";
 
 const hex = (c: number) => `#${c.toString(16).padStart(6, "0")}`;
 
@@ -53,6 +52,7 @@ export function Briefing({
   extraRules?: string[];
 }) {
   useMusic("garage");
+  const [view, setView] = useState<"grid" | "wall">("grid");
   const [gamble, setGamble] = useState<"safe" | "undercut" | "long">("safe");
   const [startSets, setStartSets] = useState<Record<string, string>>({});
   const [orders, setOrders] = useState<Record<string, StandingOrders>>(() => Object.fromEntries(weekend.humanIds.map((id) => [id, NO_ORDERS])));
@@ -76,6 +76,37 @@ export function Briefing({
   const mins = (x: number) => Math.max(1, Math.round(x / 60));
   const rivals = weekend.entries.filter((e) => !e.human).map((e) => e.team).filter((t, i, a) => a.findIndex((x) => x.id === t.id) === i);
   const segName = (q: QualiRow) => (q.dnq ? "107%" : q.out === 0 ? "Q3" : `Q${q.out}`);
+
+  if (view === "wall") {
+    const humans = weekend.humanIds.map((id) => byId.get(id)!).filter(Boolean);
+    const rainStrip = Array.from({ length: 12 }, (_, i) => (radar ? radar.rain(0, (i / 11) * laps * 85) : 0));
+    return (
+      <PitWall
+        entries={humans.map((e) => ({ id: e.id, code: e.driver.code, name: e.driver.name, number: e.driver.number, color: e.team.color }))}
+        pos={Object.fromEntries(quali.map((q) => [q.carId, q.position]))}
+        laps={laps}
+        life={life}
+        tyres={tyres}
+        setTyres={setTyres}
+        orders={orders}
+        setOrders={setOrders}
+        gamble={gamble}
+        setGamble={setGamble}
+        locks={locks}
+        sets={sets ? Object.fromEntries(weekend.humanIds.map((id) => [id, sets[weekend.entries.find((x) => x.id === id)?.team.id ?? ""] ?? sets[id] ?? {}])) : undefined}
+        setLists={setLists ? Object.fromEntries(weekend.humanIds.map((id) => [id, setLists[id] ?? setLists[weekend.entries.find((x) => x.id === id)?.team.id ?? ""] ?? []])) : undefined}
+        startSets={startSets}
+        setStartSets={setStartSets}
+        rain={rainStrip}
+        rainWords={radar ? `rain now: ${intensityWord(rainNow)}` : "dry weekend"}
+        pitLane={pitLane}
+        rules={extraRules ?? []}
+        rivals={rivals.map((t) => ({ id: t.id, short: t.short, color: t.color, style: (BRAINS[t.id] ?? DEFAULT_BRAIN).style, blurb: (BRAINS[t.id] ?? DEFAULT_BRAIN).blurb }))}
+        onBack={() => setView("grid")}
+        onGo={() => onStart(tyres, startSets, orders, gamble)}
+      />
+    );
+  }
 
   return (
     <div className="screen briefing">
@@ -118,24 +149,6 @@ export function Briefing({
         </section>
 
 
-        <section className="panel gamble">
-          <h3>PRE-RACE CALL</h3>
-          <p className="dim small">One call for the whole race. Each has a price. None is always best.</p>
-          <div className="gamble-cards">
-            {([
-              { k: "safe", name: "PLAY IT STRAIGHT", gain: "No surprises", risk: "Nothing gained" },
-              { k: "undercut", name: "UNDERCUT READY", gain: "Pit stops 0.35 s faster", risk: "1 stop in 5 goes wrong (+0.8 s). Tyres wear 6% faster" },
-              { k: "long", name: "LONG RUN", gain: "Tyres wear 8% slower", risk: "Pit stops 0.4 s slower" },
-            ] as const).map((g) => (
-              <button key={g.k} className={`gcard clickable ${gamble === g.k ? "sel" : ""}`} onClick={() => setGamble(g.k)}>
-                <b>{g.name}</b>
-                <span className="gain">{g.gain}</span>
-                <span className="cost">{g.risk}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-
         <section className="panel versus">
           <h3>VERSUS</h3>
           {weekend.humanIds.map((id) => {
@@ -155,119 +168,21 @@ export function Briefing({
         </section>
 
         <section className="panel">
-          <h3>YOUR STRATEGY</h3>
-          <p className="dim">
-            Tyre life at standard pace here, roughly: <b>Soft {Math.round(life.S)} laps</b>, <b>Medium {Math.round(life.M)}</b>, <b>Hard {Math.round(life.H)}</b>. Push harder and they die sooner. A stop costs about 21 seconds.
-          </p>
+          <h3>THE FORECAST <small className="dim">(your radar, not the truth)</small></h3>
           <div className="forecast">
-            <h4>FORECAST (YOUR RADAR, NOT THE TRUTH)</h4>
             {radar ? (
               <p>
                 Now: <b>{intensityWord(rainNow)}</b>. In 15 min: <b>{intensityWord(rain15)}</b>. In 30 min: <b>{intensityWord(rain30)}</b>.{" "}
                 {eta && eta.kind === "arrives" && <>Rain looks due in about {mins(eta.sec)} min.</>}
                 {eta && eta.kind === "clears" && <>It should ease in about {mins(eta.sec)} min.</>}
-                {eta && eta.kind === "steady" && <>Nothing big on the picture.</>}{(rain15 > 0.25 || rain30 > 0.25) && rainNow < 0.15 && <> <b>Tyre bet:</b> Intermediates pay off if the rain really arrives, and cost you time if it does not.</>} Other teams read the same sky differently. Watch the sectors and the rivals' tyres.
+                {eta && eta.kind === "steady" && <>Nothing big on the picture.</>}
               </p>
             ) : (
               <p className="dim">Weather is switched off. Dry all weekend.</p>
             )}
           </div>
-          {weekend.humanIds.map((id) => {
-            const e = byId.get(id)!;
-            const q = quali.find((x) => x.carId === id)!;
-            const wetTyre = tyres[id] === "I" || tyres[id] === "W";
-            const l = wetTyre ? Infinity : life[tyres[id] as "S" | "M" | "H"];
-            const needsStop = l * 1.05 < laps;
-            return (
-              <div className="strat" key={id} style={{ ["--team" as string]: hex(e.team.color) }}>
-                <div className="strat-head">
-                  <i className="chip" />
-                  <b>
-                    #{e.driver.number} {e.driver.name}
-                  </b>
-                  <span className="dim">{pitLane ? "starts from the pit lane (setup changed after parc ferme)" : `starts P${q.position}`}</span>
-                </div>
-                <div className="seg wide">
-                  {(["S", "M", "H", "I", "W"] as Compound[]).map((c) => (
-                    <button key={c} className={tyres[id] === c ? "on" : ""} disabled={!!locks?.[id] && locks[id] !== c} onClick={() => setTyres({ ...tyres, [id]: c })}>
-                      <CompoundBadge c={c} /> {COMPOUNDS[c].name.toUpperCase()}
-                      {sets && (c === "S" || c === "M" || c === "H") ? <small> ({(sets[weekend.entries.find((x) => x.id === id)?.team.id ?? ""] ?? sets[id])?.[c] ?? 0} fresh)</small> : null}
-                    </button>
-                  ))}
-                </div>
-                {setLists && (() => {
-                  const list = setLists[id] ?? setLists[weekend.entries.find((x) => x.id === id)?.team.id ?? ""] ?? [];
-                  if (!list.length) return null;
-                  const lock = locks?.[id];
-                  const mine = Object.values(startSets);
-                  return (
-                    <div className="ctl col">
-                      <span>START SET</span>
-                      <SetPicker
-                        sets={list.filter((x) => (!lock || x.compound === lock) && !(x.runs > 0 && x.wear >= 0.8) && !mine.includes(x.id) || startSets[id] === x.id)}
-                        value={startSets[id] ?? ""}
-                        onChange={(sid) => {
-                          const x = list.find((y) => y.id === sid);
-                          const next = { ...startSets };
-                          if (x) { next[id] = x.id; setTyres({ ...tyres, [id]: x.compound }); } else delete next[id];
-                          setStartSets(next);
-                        }}
-                      />
-                    </div>
-                  );
-                })()}
-                {locks?.[id] && <p className="hint">Qualifying tyre lock: the fastest Q3 lap was on {COMPOUNDS[locks[id]].name}s, so that is the start tyre.</p>}
-                {sets && (() => {
-                  const inv = sets[weekend.entries.find((x) => x.id === id)?.team.id ?? ""] ?? sets[id];
-                  const c = tyres[id];
-                  return inv && (c === "S" || c === "M" || c === "H") && (inv[c] ?? 0) <= 0 ? <p className="hint warn">No fresh {COMPOUNDS[c].name} sets left after qualifying. This one starts used and worn.</p> : null;
-                })()}
-                {!wetTyre && (
-                  <button className="tiny wide" title="The strategist reads the tyre life and picks a stance and a stop lap for you" onClick={() => {
-                    const l = life[tyres[id] as "S" | "M" | "H"];
-                    setOrders({ ...orders, [id]: { ...(orders[id] ?? NO_ORDERS), stance: l < laps * 0.5 ? "tyres" : "balanced", stopLap: Math.max(2, Math.min(laps - 3, Math.round(l * 0.9))), delegated: false } });
-                  }}>STRATEGIST'S PROPOSAL</button>
-                )}
-                {!wetTyre && (() => {
-                  const o = orders[id] ?? NO_ORDERS;
-                  const k = o.stance === "tyres" ? 0.7 : o.stance === "attack" ? 1.45 : 1;
-                  const lasts = Math.round(life[tyres[id] as "S" | "M" | "H"] / k);
-                  return <p className="hint plan-preview">PLAN: start on {COMPOUNDS[tyres[id]].name}s, {o.stopLap === null ? "stop when the pit wall says" : `stop on lap ${o.stopLap}`}. Tyres last about {lasts} laps at this pace{lasts < laps && o.stopLap !== null && o.stopLap > lasts ? ", which is too late: they will be gone before the stop" : ""}.</p>;
-                })()}
-                <p className="hint">
-                  {wetTyre
-                    ? "Wet tyres are a gamble on a dry grid: they overheat and fall apart on a drying track. Using them frees you from the two compound rule."
-                    : `${needsStop ? `This set will not last ${laps} laps.` : `This set could go the distance.`} You still must use two different dry compounds, so a stop is compulsory.`}
-                </p>
-                <StrategyBoard life={wetTyre ? undefined : life[tyres[id] as "S" | "M" | "H"]} orders={orders[id] ?? NO_ORDERS} onChange={(o) => setOrders({ ...orders, [id]: o })} laps={laps} copyFrom={(() => { const other = weekend.humanIds.find((x) => x !== id); return other ? { label: byId.get(other)?.driver.code ?? "TEAM-MATE", orders: orders[other] ?? NO_ORDERS } : undefined; })()} />
-              </div>
-            );
-          })}
-          <div className="rulebook">
-            <h4>RULES IN FORCE</h4>
-            <ul>
-              <li>Two different dry compounds, or a disqualification. Run the inters or wets at any point and the rule is waived.</li>
-              <li>Heavy rain: safety car start, or a red flag and a standing restart.</li>
-              <li>Jump starts, track limits and contact earn time penalties.</li>
-              <li>Safety car and virtual safety car. Pit lane limited to 80 km/h.</li>
-              <li>Classified if you complete 90% of the winner's laps.</li>
-              <li>Points: 25, 18, 15, 12, 10, 8, 6, 4, 2, 1.</li>
-              {(extraRules ?? []).map((r, i) => <li key={i}>{r}</li>)}
-            </ul>
-          </div>
-          <div className="rulebook">
-            <h4>THE OTHER PIT WALLS</h4>
-            <ul className="brains">
-              {rivals.map((t) => (
-                <li key={t.id}>
-                  <b style={{ color: hex(t.color) }}>{t.short}</b> <span className="dim">{(BRAINS[t.id] ?? DEFAULT_BRAIN).style}</span> {(BRAINS[t.id] ?? DEFAULT_BRAIN).blurb}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <button className="btn primary big" onClick={() => onStart(tyres, startSets, orders, gamble)}>
-            GO TO THE GRID
-          </button>
+          <p>Tyres last about <b>Soft {Math.round(life.S)}</b>, <b>Medium {Math.round(life.M)}</b>, <b>Hard {Math.round(life.H)}</b> laps at standard pace. The race is {laps} laps.</p>
+          <button className="btn primary big" onClick={() => setView("wall")}>TO THE PIT WALL</button>
         </section>
       </div>
     </div>
