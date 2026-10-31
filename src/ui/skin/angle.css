@@ -199,3 +199,4 @@ body.fx-wash { animation: tier-wash 0.7s ease-out; }
 .warnchips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px}
 .wc{font-size:10px;padding:2px 6px;border:1px solid;animation:dcard-in .2s}
 .wc.bad{color:#ff6b75;border-color:#e63946;background:rgba(230,57,70,.15)}.wc.warn{color:#f9c74f;border-color:#f9c74f;background:rgba(249,199,79,.12)}
+.deleg{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 8px}

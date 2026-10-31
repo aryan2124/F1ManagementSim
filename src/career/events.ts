@@ -226,6 +226,47 @@ const AREAS_ARR: Area[] = ["aero", "chassis", "power", "cooling", "tyres"];
 const EVENTS: Ev[] = [
   ...RND_EVENTS,
   {
+    id: "ambition",
+    big: false,
+    cooldown: 150,
+    weight: (s) => (driversOf(s, s.teamId).some((d) => d.podiums >= 2 && d.morale > 0.55 && d.starts > 8) && driversOf(s, s.teamId).length > 1 ? 1.6 : 0),
+    build: (s) => {
+      const pair = driversOf(s, s.teamId);
+      const d = [...pair].filter((x) => x.podiums >= 2 && x.morale > 0.55 && x.starts > 8).sort((a, b) => b.podiums - a.podiums)[0];
+      if (!d) return null;
+      const mate = pair.find((x) => x.id !== d.id);
+      return {
+        title: `${d.spec.name} wants more`,
+        body: `${d.spec.name} has ${d.podiums} podiums for you and knows it. He wants his place in the team to match.`,
+        options: [
+          { id: "lead", label: "Make him the lead driver", lines: [`${d.spec.name} morale +10%`, mate ? `${mate.spec.name} morale -8%` : "no one else upset"] },
+          { id: "goal", label: "Set him a podium goal", lines: ["Morale +4%", "No one else affected"] },
+          { id: "wait", label: "Tell him to wait", lines: ["Morale -5%", "Trust unchanged"] },
+        ],
+        data: { driverId: d.id },
+        deadline: s.day + 10,
+        defaultOption: "goal",
+        urgency: 2,
+      };
+    },
+    resolve: (s, opt, data) => {
+      const d = s.drivers[String(data.driverId)];
+      if (!d || d.teamId !== s.teamId) return;
+      const mate = driversOf(s, s.teamId).find((x) => x.id !== d.id);
+      if (opt === "lead") {
+        d.morale = clamp(d.morale + 0.1, 0, 1);
+        if (mate) mate.morale = clamp(mate.morale - 0.08, 0, 1);
+        recap(s, `${d.spec.name} is now the lead driver.`);
+      } else if (opt === "goal") {
+        d.morale = clamp(d.morale + 0.04, 0, 1);
+        recap(s, `${d.spec.name} has a podium to chase.`);
+      } else {
+        d.morale = clamp(d.morale - 0.05, 0, 1);
+        recap(s, `${d.spec.name} was told to wait.`);
+      }
+    },
+  },
+  {
     id: "rivalOffer",
     big: true,
     cooldown: 220,

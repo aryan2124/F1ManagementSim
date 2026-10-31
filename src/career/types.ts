@@ -773,6 +773,8 @@ export interface CareerState {
   stopReason: string;
   summerDone: boolean;
   /** The manager's weekly focus (Today screen). */
+  /** Departments the team handles on its own (their non-urgent decisions take the default). */
+  delegate?: Partial<Record<"rnd" | "people" | "money" | "academy", boolean>>;
   focus?: { kind: import("./focus").FocusKind; since: number };
   /** Regulation eras. */
   era: EraState;
@@ -949,6 +951,7 @@ export type Action =
   | { type: "holdPart"; id: number; hold: boolean }
   | { type: "upgradeFacility"; which: keyof Omit<Facilities, "building"> }
   | { type: "delegate"; area: keyof Delegation; level: Level }
+  | { type: "setDelegate"; dept: import("./focus").Dept; on: boolean }
   | { type: "pepTalk"; tone: import("./focus").PepTone }
   | { type: "setFocus"; kind: import("./focus").FocusKind }
   | { type: "rndPlan"; focus?: RndPlan["focus"]; stance?: RndPlan["stance"] }

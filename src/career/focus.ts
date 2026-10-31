@@ -69,3 +69,25 @@ export function pepTalk(s: CareerState, tone: PepTone): string {
   }
   return PEP[tone].says;
 }
+
+export type Dept = "rnd" | "people" | "money" | "academy";
+export const DEPT_KINDS: Record<Dept, string[]> = {
+  rnd: ["projectReady", "ideaBatch", "partReveal", "rndDirection", "devCrisis", "devEvent"],
+  people: ["contractExpiring", "contractOffer", "staffExpiring", "staffPoach", "talk", "rumour"],
+  money: ["sponsorOffer", "sponsorReview", "sponsorPick", "capWarning", "facility"],
+  academy: ["academy", "academyEnd"],
+};
+export const DEPT_LABEL: Record<Dept, string> = { rnd: "CAR", people: "PEOPLE", money: "MONEY", academy: "ACADEMY" };
+
+export function setDelegate(s: CareerState, dept: Dept, on: boolean): string {
+  s.delegate = { ...(s.delegate ?? {}), [dept]: on };
+  return on ? `Your team handles ${DEPT_LABEL[dept].toLowerCase()} decisions. Urgent ones still come to you.` : `${DEPT_LABEL[dept]} decisions come to you again.`;
+}
+
+/** Is this card one the team has been told to handle? Urgent ones always come to the player. */
+export function delegated(s: CareerState, kind: string, urgency: number): boolean {
+  if (urgency >= 3) return false;
+  const d = s.delegate;
+  if (!d) return false;
+  return (Object.keys(DEPT_KINDS) as Dept[]).some((k) => d[k] && DEPT_KINDS[k].includes(kind));
+}

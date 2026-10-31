@@ -166,7 +166,7 @@ export function Briefing({
                 Now: <b>{intensityWord(rainNow)}</b>. In 15 min: <b>{intensityWord(rain15)}</b>. In 30 min: <b>{intensityWord(rain30)}</b>.{" "}
                 {eta && eta.kind === "arrives" && <>Rain looks due in about {mins(eta.sec)} min.</>}
                 {eta && eta.kind === "clears" && <>It should ease in about {mins(eta.sec)} min.</>}
-                {eta && eta.kind === "steady" && <>Nothing big on the picture.</>} Other teams read the same sky differently. Watch the sectors and the rivals' tyres.
+                {eta && eta.kind === "steady" && <>Nothing big on the picture.</>}{(rain15 > 0.25 || rain30 > 0.25) && rainNow < 0.15 && <> <b>Tyre bet:</b> Intermediates pay off if the rain really arrives, and cost you time if it does not.</>} Other teams read the same sky differently. Watch the sectors and the rivals' tyres.
               </p>
             ) : (
               <p className="dim">Weather is switched off. Dry all weekend.</p>
@@ -221,6 +221,12 @@ export function Briefing({
                   const inv = sets[weekend.entries.find((x) => x.id === id)?.team.id ?? ""] ?? sets[id];
                   const c = tyres[id];
                   return inv && (c === "S" || c === "M" || c === "H") && (inv[c] ?? 0) <= 0 ? <p className="hint warn">No fresh {COMPOUNDS[c].name} sets left after qualifying. This one starts used and worn.</p> : null;
+                })()}
+                {!wetTyre && (() => {
+                  const o = orders[id] ?? NO_ORDERS;
+                  const k = o.stance === "tyres" ? 0.7 : o.stance === "attack" ? 1.45 : 1;
+                  const lasts = Math.round(life[tyres[id] as "S" | "M" | "H"] / k);
+                  return <p className="hint plan-preview">PLAN: start on {COMPOUNDS[tyres[id]].name}s, {o.stopLap === null ? "stop when the pit wall says" : `stop on lap ${o.stopLap}`}. Tyres last about {lasts} laps at this pace{lasts < laps && o.stopLap !== null && o.stopLap > lasts ? ", which is too late: they will be gone before the stop" : ""}.</p>;
                 })()}
                 <p className="hint">
                   {wetTyre

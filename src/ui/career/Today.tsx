@@ -1,6 +1,6 @@
 import { PLink } from "./Profile";
 import { useEffect, useState, type ReactNode } from "react";
-import { FOCUS, type FocusKind } from "../../career/focus";
+import { FOCUS, DEPT_LABEL, type Dept, type FocusKind } from "../../career/focus";
 import type { CareerState } from "../../career/types";
 import { circuitMeta } from "../../game/circuits";
 import { daysTo, factoryClosed, inSummerBreak, launchDay, summerEnd, winterEnd } from "../../career/calendar";
@@ -84,6 +84,7 @@ function Chapter({ s, go }: { s: Props["s"]; go: (t: Tab) => void }) {
     return (
       <section className="panel c-chapter">
         <h3>THE {h.year} SEASON IS OVER</h3>
+        <p className="c-verdict">{(() => { const t = me.objectives[0]?.target; return t === undefined ? "" : h.playerPos <= t ? "A season the board will be pleased with." : h.playerPos <= t + 2 ? "Close, but short of what the board asked." : "A hard year. Expect questions."; })()}</p>
         <p>
           <b>{h.champion}</b> is champion. You finished <b>{ordinal(h.playerPos)}</b> in the constructors' with {h.playerPoints} points. Owner's second goal ({goal.text}): <b>{goal.done === null ? "not judged" : goal.done ? "met" : "missed"}</b>.
         </p>
@@ -177,6 +178,28 @@ function GoalsPanel({ s }: { s: Props["s"] }) {
   );
 }
 
+/** C12: the days before a race get their own checklist, so the week builds. */
+function RaceWeek({ s, go }: { s: Props["s"]; go: (t: Tab) => void }) {
+  const me = s.teams[s.teamId];
+  const next = s.calendar[s.round];
+  if (!next) return null;
+  const n = daysTo(s.day, next.day);
+  if (n < 0 || n > 6 || s.weekend) return null;
+  const ready = me.projects.filter((p) => p.status === "ready" && !p.hold).length;
+  const mine = Object.values(s.drivers).filter((x) => x.teamId === s.teamId && !x.retired);
+  const word = (m: number) => (m > 0.7 ? "happy" : m > 0.5 ? "fine" : m > 0.3 ? "annoyed" : "furious");
+  return (
+    <section className="panel c-raceweek">
+      <h3>RACE WEEK: {n === 0 ? "TODAY" : `${n} DAY${n === 1 ? "" : "S"} TO GO`}</h3>
+      <ul className="c-tasks">
+        <li className={ready ? "done" : "todo"}><button className="linkish" onClick={() => go("car")}>Parts</button> {ready ? `${ready} new part${ready > 1 ? "s" : ""} will be fitted` : "nothing new to fit"}</li>
+        <li className="todo"><button className="linkish" onClick={() => go("people")}>Drivers</button> {mine.map((x) => `${x.spec.code} ${word(x.morale)}`).join(", ")}</li>
+        <li className="todo">Friday: practice. Saturday: qualifying. Sunday: the race.</li>
+      </ul>
+    </section>
+  );
+}
+
 const STAGE_BUTTON: Record<string, string> = { practice: "GO TO PRACTICE", sq: "GO TO SPRINT QUALIFYING", sprint: "GO TO THE SPRINT", quali: "GO TO QUALIFYING", race: "GO TO THE RACE" };
 /** The big button on a weekend day names the next thing to do, instead of CONTINUE. */
 export function weekendButton(s: CareerState): string {
@@ -261,6 +284,7 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
 
       {!inWeekend && !closedYearNow(s) && <FocusRow s={s} d={d} busy={decisions.length > 0} />}
 
+      <RaceWeek s={s} go={go} />
       <FactoryBox s={s} go={go} />
       <DayStrip s={s} />
       <Chapter s={s} go={go} />
@@ -268,6 +292,12 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
       <div className="c-cols">
         <section className="panel">
           <h3>DECISIONS ({decisions.length})</h3>
+          <div className="deleg" title="Departments you hand over decide the small things themselves. Urgent ones still stop the clock for you.">
+            <span className="dim small">LET THE TEAM HANDLE:</span>
+            {(Object.keys(DEPT_LABEL) as Dept[]).map((k) => (
+              <button key={k} className={`tiny ${s.delegate?.[k] ? "on" : ""}`} onClick={() => d({ type: "setDelegate", dept: k, on: !s.delegate?.[k] })}>{DEPT_LABEL[k]} {s.delegate?.[k] ? "ON" : "OFF"}</button>
+            ))}
+          </div>
           {decisions.length === 0 && <p className="dim">Nothing needs you. The factory is working.</p>}
           {decisions.map((c, i) => <CardView key={c.id} c={c} d={d} keys={i === 0} />)}
           {s.recap.length > 0 && (

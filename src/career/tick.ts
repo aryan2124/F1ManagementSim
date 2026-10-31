@@ -1,4 +1,4 @@
-import { focusWeekly } from "./focus";
+import { focusWeekly, delegated } from "./focus";
 import { socialWeekly } from "./social";
 import { boardMove } from "./board";
 import { CFG } from "./config";
@@ -54,6 +54,13 @@ function takeDefault(s: CareerState, c: Card) {
 }
 
 function expireCards(s: CareerState) {
+  // C8: departments the player has delegated take their default on non-urgent decisions
+  for (const c of [...s.cards]) {
+    if (!c.notice && !c.mail && c.options.length > 1 && delegated(s, c.kind, c.urgency)) {
+      recap(s, `Your team handled: ${c.title}.`);
+      resolveCard(s, c.id, c.defaultOption ?? c.options[0].id, true);
+    }
+  }
   for (const c of [...s.cards]) {
     if (c.deadline !== undefined && s.day > c.deadline) {
       if (c.options.length === 1) s.cards = s.cards.filter((x) => x.id !== c.id);
