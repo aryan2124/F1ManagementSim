@@ -8,6 +8,7 @@ import { bestCompoundFor, wetLoss } from "./weather";
 import { sampleTrack } from "./track";
 import { evidence, readUndercut, stopKind } from "./situation";
 import { iqFacets, stintBias, type IQFacets } from "./iq";
+import { NO_ORDERS, mergeOrders, type StandingOrders } from "./standing";
 
 /**
  * Everything said on the radio.
@@ -22,6 +23,21 @@ import { iqFacets, stintBias, type IQFacets } from "./iq";
  */
 
 export type PromptKind = "cover" | "undercut" | "tyres" | "weather" | "letme" | "fav" | "safetycar" | "redflag" | "damage";
+
+/** One call the pit wall made for the player, judged after the race. */
+export interface CallRec {
+  tick: number;
+  lap: number;
+  carId: string;
+  kind: "standing" | "cover" | "undercut" | "tyres" | "pit";
+  /** What was decided, in words. */
+  text: string;
+  rival?: string;
+  verdict?: "good" | "bad" | "even";
+  /** Seconds won or lost where the game can measure it. */
+  secs?: number;
+  note?: string;
+}
 
 export interface PromptOption {
   id: string;
@@ -110,6 +126,11 @@ export class RadioSystem {
   private chatter = new Map<string, number>();
   private lastEng = new Map<string, number>();
   private pendingFatigue = new Set<string>();
+  /** The player's standing orders per car (see sim/standing.ts), and the safety car each car last made a decision about. */
+  readonly standing = new Map<string, StandingOrders>();
+  private scHandled = new Map<string, number>();
+  /** Every call the pit wall made for the player, for the report card after the race. */
+  readonly calls: CallRec[] = [];
   /** Things that will be said later: a driver taking his time to answer, an engineer waiting for a straight. */
   private later: { at: number; born: number; car?: CarState; fn: () => void }[] = [];
   /** Radio moments worth repeating after the race (swearing, refusals, a driver telling the pit wall to stop), for the social feed. */
@@ -117,6 +138,7 @@ export class RadioSystem {
 
   constructor(private sim: RaceSim) {
     this.rng = new Rng(sim.cfg.seed ^ 0x5ad10);
+    for (const [id, o] of Object.entries(sim.cfg.standing ?? {})) this.standing.set(id, mergeOrders(NO_ORDERS, o));
     for (const c of sim.cars) {
       const p = this.psy(c);
       const given = sim.cfg.moods?.[c.id];
@@ -273,6 +295,7 @@ export class RadioSystem {
       }
     }
     this.rivalChatter();
+    this.runStanding();
     this.strategyTalk();
     for (const id of [...this.pendingFatigue]) {
       this.pendingFatigue.delete(id);
@@ -474,6 +497,40 @@ export class RadioSystem {
     return rd.why === "small" && rd.value > rd.gap * 0.6 && this.rng.chance((1 - this.iq(car).strategy) * 0.5);
   }
 
+  /** Set or change the standing orders for a car. */
+  setStanding(carId: string, patch: Partial<StandingOrders>) {
+    const car = this.sim.car(carId);
+    if (!car?.entry.human) return;
+    this.standing.set(carId, mergeOrders(this.standing.get(carId) ?? NO_ORDERS, patch));
+  }
+
+  /** Carry out the standing orders. Called every second. */
+  private runStanding() {
+    const sim = this.sim;
+    for (const car of sim.cars) {
+      const o = this.standing.get(car.id);
+      if (!o || !car.entry.human || car.status !== "racing" || car.pitRequest || sim.inc.red.active) continue;
+      const remaining = sim.cfg.laps - car.lap;
+      if (remaining <= 2 || (sim.weather && car.wetD > 0.2)) continue;
+      let why: string | null = null;
+      let comp: Compound | null = null;
+      if (o.stopLap && car.stops === 0 && car.lap + 1 >= o.stopLap) {
+        why = `Plan: box around lap ${o.stopLap}`;
+        comp = o.stopCompound;
+      } else if (o.tyreLimit !== null && car.tyre.wear >= o.tyreLimit) {
+        why = `Tyres are at ${Math.round(car.tyre.wear * 100)} percent, your limit`;
+      } else if (o.scBox && sim.neutral.active && this.scHandled.get(car.id) !== sim.neutral.id) {
+        this.scHandled.set(car.id, sim.neutral.id);
+        if (car.tyre.wear >= o.scWear) why = `Safety car and tyres over ${Math.round(o.scWear * 100)} percent`;
+      }
+      if (!why) continue;
+      car.pitRequest = comp ?? sim.chooseCompoundDry(car);
+      this.settleTyrePrompts(car);
+      this.eng(car, ENG.standing, { why, comp: compName(car.pitRequest) });
+      this.calls.push({ tick: sim.tick, lap: car.lap + 1, carId: car.id, kind: "standing", text: why });
+    }
+  }
+
   /** The player called a stop. A sharp driver says so when the tyres are barely used. The call stands either way. */
   onPitCall(car: CarState) {
     const sim = this.sim;
@@ -524,6 +581,11 @@ export class RadioSystem {
         if (kind !== "normal") {
           // a stop in the first laps, or with damage, is never an undercut. The engineer says so and nobody asks.
           this.eng(y, ENG.earlyStop, { rival: x.entry.driver.code, lap: rec.lap, why: kind === "damage" ? "damage or a puncture" : "a gamble for a safety car or clear air" });
+        } else if (rd.real && this.standing.get(y.id)?.cover) {
+          const pick = this.sim.chooseCompoundDry(y);
+          y.pitRequest = pick;
+          this.eng(y, ENG.standingCover, { rival: x.entry.driver.code, comp: compName(pick) });
+          this.calls.push({ tick: t, lap: y.lap + 1, carId: y.id, kind: "cover", text: `Covered ${x.entry.driver.code} on a standing order`, rival: x.entry.driver.code });
         } else if (rd.real) {
           if (this.canPrompt(y, 300)) {
             const text = fill(this.pick(TALK.coverWarn[this.psy(y).voice]), this.vars(y, { rival: x.entry.driver.code }));
@@ -547,6 +609,7 @@ export class RadioSystem {
       u.outAt ??= t;
       if (t - u.outAt < 120) return true;
       this.settleUndercut(x, y);
+      this.judge(x, y);
       return false;
     });
     // stacked stops: the second car waits and says so
@@ -604,6 +667,20 @@ export class RadioSystem {
   }
 
   private stackSeen = 0;
+
+  /** Decide whether the player's call on this pair of cars worked, once both have stopped and the order has settled. */
+  private judge(x: CarState, y: CarState) {
+    const xAhead = x.position < y.position;
+    for (const [h, other] of [[x, y], [y, x]] as const) {
+      if (!h.entry.human) continue;
+      const c = [...this.calls].reverse().find((k) => k.carId === h.id && k.rival === other.entry.driver.code && !k.verdict);
+      if (!c) continue;
+      const ahead = h === x ? xAhead : !xAhead;
+      const stayed = /Stayed out/.test(c.text);
+      c.verdict = ahead ? "good" : "bad";
+      c.note = ahead ? (stayed ? `Held ${other.entry.driver.code} off` : `Ended up ahead of ${other.entry.driver.code}`) : (stayed ? `Lost the place to ${other.entry.driver.code}` : `Still behind ${other.entry.driver.code}`);
+    }
+  }
 
   private settleUndercut(x: CarState, y: CarState) {
     const sim = this.sim;
@@ -746,6 +823,8 @@ export class RadioSystem {
 
     switch (pr.kind) {
       case "cover": {
+        const rc = pr.other ? sim.car(pr.other)?.entry.driver.code : undefined;
+        this.calls.push({ tick: sim.tick, lap: car.lap + 1, carId: car.id, kind: "cover", text: option === "box" ? `Covered ${rc ?? "the rival"}` : `Stayed out against ${rc ?? "the rival"}`, rival: rc });
         if (option === "box") {
           car.pitRequest = chosen ?? sim.chooseCompoundDry(car);
           this.eng(car, ENG.pit, { comp: compName(car.pitRequest) });
@@ -760,6 +839,8 @@ export class RadioSystem {
         break;
       }
       case "undercut": {
+        const rc = pr.other ? sim.car(pr.other)?.entry.driver.code : undefined;
+        this.calls.push({ tick: sim.tick, lap: car.lap + 1, carId: car.id, kind: "undercut", text: option === "box" ? `Went for the undercut on ${rc ?? "the rival"}` : `Stayed out behind ${rc ?? "the rival"}`, rival: rc });
         if (option === "box") {
           car.pitRequest = chosen ?? sim.chooseCompoundDry(car);
           this.eng(car, ENG.pit, { comp: compName(car.pitRequest) });
@@ -772,6 +853,7 @@ export class RadioSystem {
         break;
       }
       case "tyres": {
+        this.calls.push({ tick: sim.tick, lap: car.lap + 1, carId: car.id, kind: "tyres", text: option === "box" ? `Boxed when the driver called the tyres gone (data: ${Math.round(car.tyre.wear * 100)}% worn)` : option === "stay" ? `Kept him out at ${Math.round(car.tyre.wear * 100)}% worn` : "Told him to manage the tyres" });
         if (option === "box") {
           car.pitRequest = chosen ?? pr.compound ?? sim.chooseCompoundDry(car);
           this.eng(car, ENG.pit, { comp: compName(car.pitRequest) });

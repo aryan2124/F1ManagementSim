@@ -395,6 +395,9 @@ export class RaceSim {
       case "dummy":
         this.radio?.decoy(cmd.carId);
         break;
+      case "standing":
+        this.radio?.setStanding(cmd.carId, cmd.orders);
+        break;
       default:
         break;
     }
@@ -890,7 +893,7 @@ export class RaceSim {
         car.pitSetId = undefined;
         if (!car.compoundsUsed.includes(nc)) car.compoundsUsed.push(nc);
         car.stops++;
-        this.stopLog.push({ carId: car.id, lap: car.lap + 1, secs: car.stopSecs ?? 0, from: car.stopFrom ?? "M", to: nc, posBefore: car.position, ageBefore, wearBefore, hurt });
+        this.stopLog.push({ carId: car.id, lap: car.lap + 1, secs: car.stopSecs ?? 0, from: car.stopFrom ?? "M", to: nc, posBefore: car.position, ageBefore, wearBefore, hurt, underNeutral: this.neutral.active });
         if (this.cfg.rules?.refuelling) car.fuel = Math.min(1, car.fuel + this.fuelToAdd(car));
         if (car.pitSwap && this.cfg.rules?.batterySwap) {
           car.soc = 1;

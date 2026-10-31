@@ -7,6 +7,7 @@ import { buildDebrief, type DebriefCar } from "../game/debrief";
 import { COMPOUNDS, fmtLap } from "../sim/engine";
 import { CompoundBadge } from "./Briefing";
 import type { SetupReview } from "../career/weekend";
+import { strategyReport } from "../game/strategyReport";
 
 const hex = (c: number) => `#${c.toString(16).padStart(6, "0")}`;
 
@@ -97,6 +98,7 @@ function EngineerReplay({ db, n }: { db: ReturnType<typeof buildDebrief>; n: num
 export function Debrief({ session, review }: { session: RaceSession; review?: SetupReview | null }) {
   const sim = session.sim;
   const db = useMemo(() => buildDebrief(sim, session.humanIds), [sim, session]);
+  const report = useMemo(() => strategyReport(sim, session.humanIds), [sim, session]);
   const laps = db.field.laps;
   return (
     <div className="debrief">
@@ -126,6 +128,17 @@ export function Debrief({ session, review }: { session: RaceSession; review?: Se
           </section>
         ))}
       </div>
+      {report.lines.length > 0 && (
+        <section className="panel db-report">
+          <h3>YOUR STRATEGY REPORT CARD <span className={`db-grade g-${report.grade}`}>{report.grade}</span></h3>
+          {report.summary && <p className="dim small">{report.summary}</p>}
+          <ul className="db-calls">
+            {report.lines.map((l, i) => (
+              <li key={i} className={`t-${l.tone}`}><b>{l.car}</b> {l.text}</li>
+            ))}
+          </ul>
+        </section>
+      )}
       <section className="panel">
         <h3>KEY MOMENTS</h3>
         {db.moments.length === 0 ? <p className="dim">A quiet race for your cars.</p> : (

@@ -10,6 +10,8 @@ import { raceWeather } from "../game/setup";
 import { makeWeather } from "../sim/weather";
 import { makeProfile, TeamRadar, intensityWord } from "../sim/radar";
 import { BRAINS, DEFAULT_BRAIN } from "../sim/strategy";
+import { StrategyBoard } from "./StrategyBoard";
+import { NO_ORDERS, type StandingOrders } from "../sim/standing";
 
 const hex = (c: number) => `#${c.toString(16).padStart(6, "0")}`;
 
@@ -38,7 +40,7 @@ export function Briefing({
   title?: string;
   quali: QualiRow[];
   onBack: () => void;
-  onStart: (tyres: Record<string, Compound>, startSets?: Record<string, string>) => void;
+  onStart: (tyres: Record<string, Compound>, startSets?: Record<string, string>, standing?: Record<string, StandingOrders>) => void;
   /** Career: the physical sets each car can start on (keyed by driver, or by team when the pool rule is on). */
   setLists?: Record<string, TyreSet[]>;
   /** Career: start tyres fixed by the qualifying lock rule. */
@@ -52,6 +54,7 @@ export function Briefing({
 }) {
   useMusic("garage");
   const [startSets, setStartSets] = useState<Record<string, string>>({});
+  const [orders, setOrders] = useState<Record<string, StandingOrders>>(() => Object.fromEntries(weekend.humanIds.map((id) => [id, NO_ORDERS])));
   const [tyres, setTyres] = useState<Record<string, Compound>>(() => Object.fromEntries(weekend.humanIds.map((id) => [id, (locks?.[id] ?? "M") as Compound])));
   const byId = new Map(weekend.entries.map((e) => [e.id, e]));
   const finite = quali.map((q) => q.time).filter((x) => isFinite(x));
@@ -186,6 +189,7 @@ export function Briefing({
                     ? "Wet tyres are a gamble on a dry grid: they overheat and fall apart on a drying track. Using them frees you from the two compound rule."
                     : `${needsStop ? `This set will not last ${laps} laps.` : `This set could go the distance.`} You still must use two different dry compounds, so a stop is compulsory.`}
                 </p>
+                <StrategyBoard orders={orders[id] ?? NO_ORDERS} onChange={(o) => setOrders({ ...orders, [id]: o })} laps={laps} />
               </div>
             );
           })}
@@ -211,7 +215,7 @@ export function Briefing({
               ))}
             </ul>
           </div>
-          <button className="btn primary big" onClick={() => onStart(tyres, startSets)}>
+          <button className="btn primary big" onClick={() => onStart(tyres, startSets, orders)}>
             GO TO THE GRID
           </button>
         </section>

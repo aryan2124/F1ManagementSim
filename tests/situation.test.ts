@@ -88,3 +88,46 @@ describe("race IQ in the radio", () => {
     expect(rawSaid).toBe(0);
   }, 120000);
 });
+
+describe("standing orders and the report card", () => {
+  function raceOrders(standing: Record<string, unknown>, laps = 30, seed = 4) {
+    const { track } = loadCircuit("spa");
+    const entries = buildEntries("mer");
+    const { rows } = runQualifying({ seed, track, entries });
+    const sim = new RaceSim({ seed, laps, track, entries, grid: rows.map((q) => q.carId), standing } as never);
+    const mine = sim.cars.filter((c) => c.entry.human);
+    return { sim, mine };
+  }
+
+  it("a tyre limit and a planned stop are carried out by the pit wall without asking", () => {
+    const { sim, mine } = raceOrders({});
+    const a = mine[0];
+    sim.command({ type: "standing", carId: a.id, orders: { tyreLimit: 0.4 } });
+    a.tyre.wear = 0.45;
+    for (let i = 0; i < 40 && !a.pitRequest && a.stops === 0; i++) sim.step();
+    for (let i = 0; i < 20; i++) sim.step();
+    expect(a.pitRequest !== null || a.stops > 0 || a.status === "pit_in").toBe(true);
+    expect((sim.radio?.calls ?? []).some((c) => c.kind === "standing")).toBe(true);
+  });
+
+  it("orders do nothing for a car you did not give them to, and a cleared plan stays quiet", () => {
+    const { sim, mine } = raceOrders({});
+    mine[1].tyre.wear = 0.9;
+    sim.command({ type: "standing", carId: mine[0].id, orders: { tyreLimit: 0.4 } });
+    for (let i = 0; i < 60; i++) sim.step();
+    expect((sim.radio?.calls ?? []).filter((c) => c.carId === mine[1].id && c.kind === "standing").length).toBe(0);
+  });
+
+  it("the report card grades what happened with real numbers", async () => {
+    const { strategyReport } = await import("../src/game/strategyReport");
+    const { sim, mine } = raceOrders({});
+    for (let i = 0; i < 200; i++) sim.step();
+    sim.stopLog.push({ carId: mine[0].id, lap: 2, secs: 2.4, from: "M", to: "H", posBefore: 5, ageBefore: 2, wearBefore: 0.1 });
+    sim.stopLog.push({ carId: mine[0].id, lap: 15, secs: 2.3, from: "H", to: "M", posBefore: 5, ageBefore: 13, wearBefore: 0.7, underNeutral: true });
+    const rep = strategyReport(sim, sim.cars.filter((c) => c.entry.human).map((c) => c.id));
+    expect(rep.lines.some((l) => l.tone === "bad" && /unused/.test(l.text))).toBe(true);
+    expect(rep.lines.some((l) => l.tone === "good" && /safety car/i.test(l.text))).toBe(true);
+    expect(["A", "B", "C", "D"]).toContain(rep.grade);
+    expect(rep.lines.map((l) => l.text).join(" ")).not.toContain("—");
+  });
+});

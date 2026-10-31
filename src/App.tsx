@@ -22,6 +22,7 @@ import type { QualiRow } from "./sim/qualifying";
 import type { Compound } from "./sim/types";
 import { ConfirmHost } from "./ui/Confirm";
 import { scrollTop } from "./ui/hooks";
+import type { StandingOrders } from "./sim/standing";
 
 type Screen = "tutorial" | "home" | "weekend" | "netjoin" | "net" | "career" | "newcareer" | "menu" | "quali" | "briefing" | "race" | "results";
 
@@ -78,9 +79,9 @@ export default function App() {
     }
   };
 
-  const begin = (tyres: Record<string, Compound>) => {
+  const begin = (tyres: Record<string, Compound>, _sets?: Record<string, string>, standing?: Record<string, StandingOrders>) => {
     if (!weekend || !quali) return;
-    setSession(new RaceSession(raceConfigFrom(weekend, quali, tyres), weekend.humanIds));
+    setSession(new RaceSession({ ...raceConfigFrom(weekend, quali, tyres), standing }, weekend.humanIds));
     setScreen("race");
   };
 

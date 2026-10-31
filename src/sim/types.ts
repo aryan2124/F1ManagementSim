@@ -100,6 +100,8 @@ export interface EntrySpec {
 
 export interface RaceConfig {
   seed: number;
+  /** Standing orders the player set before the race, by car id (see sim/standing.ts). */
+  standing?: Record<string, Partial<import("./standing").StandingOrders>>;
   /** The season's year, used for age and experience (Race IQ). Defaults to 2026. */
   year?: number;
   laps: number;
@@ -176,6 +178,8 @@ export interface StopRec {
   ageBefore?: number;
   wearBefore?: number;
   hurt?: boolean;
+  /** The stop was made under a safety car or virtual safety car. */
+  underNeutral?: boolean;
 }
 
 export interface RaceRules {
@@ -427,7 +431,9 @@ export type Command =
   /** Send a decoy call on the open radio to mislead rivals. */
   | { type: "dummy"; carId: string }
   /** Online leagues: choose the starting tyre while the car is still on the grid before the lights. */
-  | { type: "startTyre"; carId: string; compound: Compound; setId?: string };
+  | { type: "startTyre"; carId: string; compound: Compound; setId?: string }
+  /** Set or change the standing orders for one of the player's cars (see sim/standing.ts). */
+  | { type: "standing"; carId: string; orders: Partial<import("./standing").StandingOrders> };
 
 export type TeamOrder = "hold" | "letby" | "free" | "pushnow" | "savetyres" | "stayout";
 

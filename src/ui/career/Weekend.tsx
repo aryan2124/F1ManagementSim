@@ -29,6 +29,7 @@ import { BenchGauge } from "./PartBench";
 import { AREA_LABEL } from "../../career/types";
 import "../pixel/themes.css";
 import { ask as confirmAsk } from "../Confirm";
+import type { StandingOrders } from "../../sim/standing";
 
 const PROGS = Object.keys(PROGRAMME_LABEL) as Programme[];
 const PROG_HELP: Record<Programme, { what: string; race: string; know: "setup" | "tyre" | "race" | "quali" | "part" }> = {
@@ -474,10 +475,10 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
         setLists={plan!.raceCfg?.tyreSetList}
         pitLane={!!ws.parcBroken}
         extraRules={rulesBrief(plan!.raceCfg?.rules, plan!.laps)}
-        onStart={(tyres: Record<string, Compound>, startSets?: Record<string, string>) => {
+        onStart={(tyres: Record<string, Compound>, startSets?: Record<string, string>, standing?: Record<string, StandingOrders>) => {
           const locked: Record<string, Compound> = {};
           if (plan!.locks) for (const id of plan!.humanIds) if (plan!.locks[id]) locked[id] = plan!.locks[id];
-          const cfg = { ...plan!.raceCfg!, startTyres: { ...plan!.aiTyres, ...tyres, ...locked }, startSets: { ...(plan!.raceCfg!.startSets ?? {}), ...(startSets ?? {}) } };
+          const cfg = { ...plan!.raceCfg!, startTyres: { ...plan!.aiTyres, ...tyres, ...locked }, startSets: { ...(plan!.raceCfg!.startSets ?? {}), ...(startSets ?? {}) }, standing: standing ?? plan!.raceCfg!.standing };
           setRs(new RaceSession(cfg, plan!.humanIds));
           lastKind.current = kind as SessionKind;
           setView("race");

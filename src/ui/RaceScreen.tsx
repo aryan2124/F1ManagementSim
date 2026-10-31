@@ -23,6 +23,9 @@ import { RadarPanel, WeatherChip } from "./WeatherPanel";
 import { DriverPortrait } from "./pixel/portraits";
 import { sessionTitle } from "./sessionTitle";
 import { scrollTop } from "./hooks";
+import { PitWindow } from "./PitWindow";
+import { StrategyBoard } from "./StrategyBoard";
+import { NO_ORDERS, describeOrders } from "../sim/standing";
 
 export { hex, SECTOR_COLORS };
 export { RadioFeed };
@@ -394,6 +397,7 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
   const inPit = car.status === "pit_in" || car.status === "pit_stop" || car.status === "pit_out";
   const canPit = car.status === "racing" && (car.lap + 1 < sim.cfg.laps || sim.inc.red.active) && !car.pitRequest;
   const [swap, setSwap] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
   const [pitSet, setPitSet] = useState("");
   const list = sim.setListFor(car);
   const pitAdv = list.length ? advisePit(list, Math.max(1, sim.cfg.laps - car.lap - 1), 1 / Math.max(10, sim.life.M), !!sim.weather && car.wetD > 0.3, car.setId) : undefined;
@@ -533,6 +537,9 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
               </div>
             </div>
           )}
+          <PitWindow sim={sim} car={car} />
+          <button className="tiny plan-toggle" onClick={() => setPlanOpen(!planOpen)}>{planOpen ? "HIDE THE PLAN" : "THE PLAN"}{sim.radio?.standing.get(car.id) && describeOrders(sim.radio.standing.get(car.id)!).length > 0 ? ` (${describeOrders(sim.radio.standing.get(car.id)!).length})` : ""}</button>
+          {planOpen && <StrategyBoard compact orders={sim.radio?.standing.get(car.id) ?? NO_ORDERS} laps={sim.cfg.laps} onChange={(o) => sim.command({ type: "standing", carId: car.id, orders: o })} />}
           <div className="ctl pit">
             <span>PIT</span>
             {inPit ? (
