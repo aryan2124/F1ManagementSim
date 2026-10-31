@@ -19,6 +19,7 @@ import type { RndPlan } from "../../career/types";
 import { NextCarPanel } from "./NextCar";
 import { DesignLab } from "./Lab";
 import { ConceptPanel, DesignPanel, GuidancePanel, RulebookPanel, TraitPanel } from "./Engineering";
+import { ask } from "../Confirm";
 
 const FAC = { tunnel: "Wind tunnel", sim: "Simulator", factory: "Factory", academy: "Academy" } as const;
 const DEL: { k: keyof Delegation; label: string }[] = [
@@ -117,7 +118,7 @@ export function Car({ s, d }: Props) {
                     {p.hold ? "FIT AT NEXT RACE" : "HOLD BACK FOR A TEST"}
                   </button>
                 )}
-                <button className="btn" onClick={() => { if (window.confirm(`Scrap "${p.name}"? The money is spent and the people who built it will remember.`)) d({ type: "scrapProject", id: p.id }); }}>SCRAP</button>
+                <button className="btn" onClick={() => ask("The money is spent and the people who built it will remember.", () => d({ type: "scrapProject", id: p.id }), { title: `SCRAP "${p.name.toUpperCase()}"?`, yes: "SCRAP IT" })}>SCRAP</button>
               </div>
             </div>
           ))}

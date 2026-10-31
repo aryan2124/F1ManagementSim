@@ -21,6 +21,7 @@ import { useUiTick } from "./hooks";
 import { TimingBar } from "./TimingBar";
 import { liveSectorColors } from "./sectorRows";
 import { RaceAudio } from "../audio/raceAudio";
+import { scrollTop } from "./hooks";
 
 const SPEED_LIST: { v: SpeedSetting; label: string }[] = [
   { v: 0, label: "||" },
@@ -49,6 +50,7 @@ function fmtTime(t: number) {
 type QTab = "radio" | "sectors" | "radar";
 
 export function QualiScreen(props: { session: QualiSession; meta: CircuitMeta; onDone: () => void; skip?: NetSkip; kind?: "quali" | "sq" }) {
+  useEffect(() => { scrollTop(); }, []);
   return (
     <QualiKindCtx.Provider value={props.kind ?? "quali"}>
       <QualiScreenInner {...props} />

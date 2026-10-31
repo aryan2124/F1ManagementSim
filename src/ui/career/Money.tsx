@@ -11,6 +11,7 @@ import { Bar, Tip, type Props } from "./common";
 import { SpendLog } from "./Car";
 import { boardParts } from "../../career/board";
 import { fmtDay } from "../../career/util";
+import { ask } from "../Confirm";
 
 const HELP: Record<keyof Budgets, string> = {
   drivers: "Both drivers' salaries for the year. Signing a driver whose pay would pass this is refused until you raise it. You cannot set it below what is already contracted.",
@@ -140,7 +141,7 @@ export function Money({ s, d }: Props) {
               <p className="small">Pays {fmtMoney(sp.retainer)} a year, and {fmtMoney(sp.bonusPerRace)} for each race where: {sp.objective.toLowerCase()}. Mood {Math.round(sp.mood * 100)}%.</p>
               {sp.demand > 0 && <p className="dim small">Their events cost practice runs and driver time.</p>}
               {sp.terms && <p className="small warn">{sp.terms.kind === "rename" ? `Title deal: the team runs as "${sp.terms.prefix} ${s.teams[s.teamId] ? teamLabel(s).replace(`${sp.terms.prefix} `, "") : ""}".` : "Livery deal: the car wears their colour."}</p>}
-              <button className="tiny" onClick={() => { if (window.confirm(`End the ${sp.name} deal now? Break fee ${fmtMoney(sp.breakFee ?? sp.retainer * 0.3)}.`)) d({ type: "endSponsor", id: sp.id }); }}>END DEAL ({fmtMoney(sp.breakFee ?? sp.retainer * 0.3)})</button>
+              <button className="tiny" onClick={() => ask(`Break fee ${fmtMoney(sp.breakFee ?? sp.retainer * 0.3)}.`, () => d({ type: "endSponsor", id: sp.id }), { title: `END THE ${sp.name.toUpperCase()} DEAL?`, yes: "END IT" })}>END DEAL ({fmtMoney(sp.breakFee ?? sp.retainer * 0.3)})</button>
             </div>
           ))}
           {me.sponsors.length === 0 && <p className="dim">No sponsors. Offers will arrive.</p>}
@@ -174,7 +175,7 @@ function LiverySection({ s, d }: Props) {
       {pv && (
         <div className="c-how">
           {pv.ok ? pv.lines.map((l, i) => <p key={i} className="small">{l}</p>) : <p className="small warn">{pv.why}</p>}
-          {pv.ok && <button className="btn primary" onClick={() => { if (window.confirm("Repaint the cars?")) { d({ type: "livery", color: target }); setPick(null); } }}>REPAINT THE CARS ({fmtMoney(pv.cost)})</button>}
+          {pv.ok && <button className="btn primary" onClick={() => ask(`It costs ${fmtMoney(pv.cost)}.`, () => { d({ type: "livery", color: target }); setPick(null); }, { title: "REPAINT THE CARS?", yes: "REPAINT" })}>REPAINT THE CARS ({fmtMoney(pv.cost)})</button>}
         </div>
       )}
     </section>

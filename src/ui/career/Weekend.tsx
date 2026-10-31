@@ -1,6 +1,7 @@
 import { donutDrivers } from "../../career/sendoff";
 import { useMusic } from "../../audio/useMusic";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { scrollTop } from "../hooks";
 import { loadCircuit } from "../../game/circuits";
 import type { Weekend } from "../../game/setup";
 import { RaceSession } from "../../game/session";
@@ -27,6 +28,7 @@ import { sessionTitle } from "../sessionTitle";
 import { BenchGauge } from "./PartBench";
 import { AREA_LABEL } from "../../career/types";
 import "../pixel/themes.css";
+import { ask as confirmAsk } from "../Confirm";
 
 const PROGS = Object.keys(PROGRAMME_LABEL) as Programme[];
 const PROG_HELP: Record<Programme, { what: string; race: string; know: "setup" | "tyre" | "race" | "quali" | "part" }> = {
@@ -38,7 +40,7 @@ const PROG_HELP: Record<Programme, { what: string; race: string; know: "setup" |
 };
 
 const skipWeekend = (d: Props["d"]) => {
-  if (window.confirm("Skip the whole weekend?\n\nThe game will simulate qualifying and the race for you, with the setup as it is now. You will not watch them, and you can't take it back.")) d({ type: "simWeekend" });
+  confirmAsk("The game will simulate qualifying and the race for you, with the setup as it is now. You will not watch them, and you can't take it back.", () => d({ type: "simWeekend" }), { title: "SKIP THE WHOLE WEEKEND?", yes: "SKIP IT" });
 };
 
 const DRIVER_WORD = (v: number) => (v >= 0.75 ? "at home in the car" : v >= 0.55 ? "settling in" : v >= 0.4 ? "not sure about it" : "uneasy");
@@ -96,7 +98,7 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
           </div>
           <p className="small"><b>The engineers recommend {rec.alloc.S} soft, {rec.alloc.M} medium, {rec.alloc.H} hard{rec.sure ? "" : " (a rough guess)"}.</b></p>
           <ul className="small dim">{rec.why.map((w, i) => <li key={i}>{w}</li>)}</ul>
-          <div className="row-btns">
+          <div className="row-btns sticky-actions">
             <button className="btn" onClick={() => setAllocS(rec.alloc)}>USE THEIR SPLIT</button>
             <button className="btn primary" disabled={allocSum !== allocTot} onClick={() => d({ type: "setAlloc", alloc })}>CONFIRM {alloc.S}/{alloc.M}/{alloc.H}</button>
           </div>
@@ -170,7 +172,7 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
               );
             })}
           </div>
-          <div className="row-btns">
+          <div className="row-btns sticky-actions">
             <button className={`btn${unsaved ? " primary" : ""}`} onClick={() => d({ type: "setSetup", setup })}>{unsaved ? "SAVE SETUP (CHANGED)" : "SAVE SETUP"}</button>
             {lastTimed && <button className="btn" onClick={() => setSetup({ ...lastTimed.setup })}>BACK TO LAST RUN</button>}
             {timed.length > 1 && <button className="btn" onClick={() => { const b = timed.reduce((x, y) => ((y.delta as number) < (x.delta as number) ? y : x)); setSetup({ ...b.setup }); }}>BACK TO QUICKEST RUN</button>}
@@ -215,7 +217,7 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
             <SetPicker sets={dry} value={setId} onChange={setSetId} />
             {!ws.setList && <p className="small dim">Your sets are unpacked when you confirm the split above or send the first car out.</p>}
           </div>
-          <div className="row-btns">
+          <div className="row-btns sticky-actions">
             <button className="btn primary big" disabled={ws.runsLeft <= 0} onClick={() => d({ type: "practiceRun", programme: prog, setup, driverId: driver, setId: picked?.id })}>
               SEND HIM OUT
             </button>
@@ -254,7 +256,7 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
                 <div className="c-item" key={bp.id}>
                   <b>{bp.name}</b> <span className="dim small">{AREA_LABEL[bp.area]}{bp.kind === "gamble" ? ", a gamble" : ""}</span>
                   <BenchGauge p={bp} />
-                  <div className="row-btns">
+                  <div className="row-btns sticky-actions">
                     <button className="tiny" onClick={() => d({ type: "holdPart", id: bp.id, hold: false })}>FIT AT NEXT RACE</button>
                     <button className="tiny" onClick={() => d({ type: "scrapProject", id: bp.id })}>SCRAP</button>
                   </div>
@@ -267,8 +269,8 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
             {ws.notes.slice(0, 12).map((n, i) => <li key={i} className={i < 3 ? "" : "dim"}>{n}</li>)}
             {ws.notes.length === 0 && <li className="dim">Nothing yet. Send a driver out.</li>}
           </ul>
-          <div className="row-btns">
-            <button className="btn primary" onClick={() => { if (unsaved && !window.confirm("You have moved sliders without saving. The car will keep the old saved setup. End practice anyway?")) return; d({ type: "endPractice" }); }}>END PRACTICE</button>
+          <div className="row-btns sticky-actions">
+            <button className="btn primary" onClick={() => { if (unsaved) confirmAsk("You have moved sliders without saving. The car will keep the old saved setup.", () => d({ type: "endPractice" }), { title: "END PRACTICE ANYWAY?", yes: "END PRACTICE" }); else d({ type: "endPractice" }); }}>END PRACTICE</button>
             {!net && <button className="btn" title="Let the game play qualifying and the race for you" onClick={() => skipWeekend(d)}>SKIP THE WEEKEND</button>}
           </div>
         </section>
@@ -291,7 +293,9 @@ export function PartsPanel({ s, d, forced }: Props & { forced?: boolean }) {
     const msg = c.places
       ? `Fit a new ${PART_NAME[part]} to ${name}?\n\nIt costs a ${c.places} place grid penalty:\n- ${c.reasons.join("\n- ")}`
       : `Fit a new ${PART_NAME[part]} to ${name}?\n\nNo penalty: still within the season allowance of ${ALLOWANCE[part]}.`;
-    if (c.places === 0 || window.confirm(msg)) d({ type: "swapPart", driverId: id, part });
+    const go = () => d({ type: "swapPart", driverId: id, part });
+    if (c.places === 0) confirmAsk(msg, go, { title: "FIT A NEW PART?", yes: "FIT IT" });
+    else confirmAsk(msg, go, { title: "TAKE THE PENALTY?", yes: "FIT IT" });
   };
   return (
     <section className={`panel c-parts ${rows.some((r) => r.dead.length) ? "dead" : ""}`}>
@@ -347,8 +351,8 @@ function ParcStrip({ s, d }: Props) {
               <div className="c-ends small dim"><span>{a.low}</span><span>{a.high}</span></div>
             </div>
           ))}
-          <div className="row-btns">
-            <button className="btn primary" onClick={() => { if (window.confirm("Change the setup and start both cars from the pit lane?")) { d({ type: "setSetup", setup, force: true }); setEdit(false); } }}>CONFIRM: PIT LANE START</button>
+          <div className="row-btns sticky-actions">
+            <button className="btn primary" onClick={() => confirmAsk("Change the setup and start both cars from the pit lane?", () => { d({ type: "setSetup", setup, force: true }); setEdit(false); }, { title: "PIT LANE START?", yes: "DO IT" })}>CONFIRM: PIT LANE START</button>
             <button className="btn" onClick={() => setEdit(false)}>CANCEL</button>
           </div>
         </>
@@ -379,6 +383,7 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
   const [view, setView] = useState<"play" | "brief" | "race" | "results">("play");
   const rows = useRef<QualiRow[] | null>(null);
   const lastKind = useRef<SessionKind>("race");
+  useEffect(() => { scrollTop(); }, [ws?.stage, ws?.round, view, !!qs, !!rs]);
   const stage = ws?.stage;
   const plan = useMemo(() => (ws && (stage === "sq" || stage === "quali" || stage === "sprint" || stage === "race") ? planSession(s, stage) : null), [stage, ws?.round, ws?.parcBroken]); // eslint-disable-line react-hooks/exhaustive-deps
   const wk: Weekend | null = useMemo(() => {
@@ -415,7 +420,7 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
           <section className="panel">
             <h3>{kind === "sq" ? "SPRINT QUALIFYING" : "QUALIFYING"}</h3>
             <p className="dim">{plan ? sessionTitle(plan.gp, kind === "sq" ? "sq" : "quali") : ""}. Setup is locked once this session ends.</p>
-            <div className="row-btns">
+            <div className="row-btns sticky-actions">
               <button className="btn primary big" disabled={deadAny} onClick={startQuali}>{deadAny ? "REPLACE THE FAILED UNIT FIRST" : "GO TO THE GARAGE"}</button>
               <button className="btn" onClick={() => skipWeekend(d)}>SKIP THE WEEKEND</button>
             </div>

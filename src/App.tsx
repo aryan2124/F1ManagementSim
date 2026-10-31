@@ -20,6 +20,8 @@ import { RaceSession } from "./game/session";
 import type { QualiSession } from "./game/qsession";
 import type { QualiRow } from "./sim/qualifying";
 import type { Compound } from "./sim/types";
+import { ConfirmHost } from "./ui/Confirm";
+import { scrollTop } from "./ui/hooks";
 
 type Screen = "tutorial" | "home" | "weekend" | "netjoin" | "net" | "career" | "newcareer" | "menu" | "quali" | "briefing" | "race" | "results";
 
@@ -87,9 +89,12 @@ export default function App() {
     setScreen("weekend");
   };
 
+  useEffect(() => { scrollTop(); }, [screen]);
+
   return (
     <div className="app">
       <Swirl />
+      <ConfirmHost />
       {screen === "home" && <Home onNew={() => setScreen("newcareer")} onLoad={(c) => { setCareer(c); setScreen("career"); }} onOnline={() => setScreen("netjoin")} onWeekend={() => setScreen("weekend")} onTutorial={() => startTutorial(null)} />}
       {screen === "weekend" && <Menu settings={settings} onChange={setSettings} onStart={enter} onBack={() => setScreen("home")} />}
       {screen === "netjoin" && <NetJoin code0={invited ?? undefined} onBack={() => setScreen("home")} onJoin={(code, name) => { setNetRoom({ code, name }); setScreen("net"); }} />}

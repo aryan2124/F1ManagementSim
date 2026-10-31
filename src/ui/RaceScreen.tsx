@@ -22,6 +22,7 @@ import { raceTrackFor } from "../audio/mood";
 import { RadarPanel, WeatherChip } from "./WeatherPanel";
 import { DriverPortrait } from "./pixel/portraits";
 import { sessionTitle } from "./sessionTitle";
+import { scrollTop } from "./hooks";
 
 export { hex, SECTOR_COLORS };
 export { RadioFeed };
@@ -35,6 +36,7 @@ export function fmtClock(t: number) {
 type BottomTab = "radio" | "sectors" | "radar";
 
 export function RaceScreen({ session, meta, onFinish, skip, donuts, kind }: { session: RaceSession; meta: CircuitMeta; onFinish: () => void; skip?: NetSkip; donuts?: (session: RaceSession) => string[]; kind?: "sprint" | "race" }) {
+  useEffect(() => { scrollTop(); }, []);
   useUiTick(120);
   const sim = session.sim;
   const [tab, setTab] = useState<BottomTab>("radio");

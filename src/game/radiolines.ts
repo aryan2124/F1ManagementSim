@@ -182,6 +182,8 @@ export const REPLY = {
 /** Engineer lines to the driver. Two or three variants each. */
 export const ENG = {
   pit: ["{call}, box this lap. {comp} tyres.", "Box, box. {comp} tyres, {call}.", "OK {call}, we are boxing. {comp} tyres ready."],
+  earlyStop: ["{rival} boxed on lap {lap}. Looks like {why}, not an undercut. We stay out.", "{rival} is in already, lap {lap}. That is {why}. No threat. Stay out."],
+  noThreat: ["{rival} has stopped, but his fresh tyres only gain about {gain} a lap. Not enough to jump you. Stay out.", "{rival} pitted. No threat, the gain is too small. We stay out."],
   stayOut: ["Stay out, stay out. We keep going.", "Copy, we stay out. Keep pushing.", "OK, stay out. We will revisit next lap."],
   hold: ["{call}, hold position please. Do not race {mate}.", "We hold position. No risk with {mate}."],
   letby: ["{call}, let {mate} through at the next opportunity.", "OK, we want {mate} ahead. Let him by."],

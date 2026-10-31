@@ -6,6 +6,7 @@ import { TalkPanel } from "./Talks";
 import { ymd } from "../../career/util";
 import { fmtMoney } from "../../career/util";
 import { Bar, Tip, type Props } from "./common";
+import { ask } from "../Confirm";
 
 const starText = (lo: number, hi: number) => (lo === hi ? `${lo} stars` : `${lo} to ${hi} stars`);
 
@@ -120,7 +121,7 @@ function Detail({ s, d, p, say, openTalks }: Props & { p: Prospect; say: (m: str
           <div className="c-acts">
             <button className="tiny" onClick={() => run(d({ type: "rookie", id: s.academy.rookieNominee === p.id ? null : p.id }))}>{s.academy.rookieNominee === p.id ? "NOT FOR THE ROOKIE WEEKEND" : "NOMINATE FOR A ROOKIE WEEKEND"}</button>
             {f1Eligible(s, p) && myDrivers.map((x, i) => (
-              <button key={x.spec.id} className="tiny" onClick={() => { if (window.confirm(`Replace ${x.spec.name} with ${p.name}? ${x.spec.name} will be released.`)) run(d({ type: "promote", id: p.id, slot: i as 0 | 1, salary: 1.5, years: 3 })); }}>
+              <button key={x.spec.id} className="tiny" onClick={() => ask(`${x.spec.name} will be released.`, () => run(d({ type: "promote", id: p.id, slot: i as 0 | 1, salary: 1.5, years: 3 })), { title: `REPLACE ${x.spec.name.toUpperCase()} WITH ${p.name.toUpperCase()}?`, yes: "REPLACE" })}>
                 PROMOTE INTO {x.spec.name.split(" ").pop()?.toUpperCase()}'S SEAT
               </button>
             ))}

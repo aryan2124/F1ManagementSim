@@ -12,6 +12,7 @@ import type { Trait } from "../../career/types";
 import { fmtMoney, fmtRange } from "../../career/util";
 import { hex, teamOf, type Dispatch } from "./common";
 import "./devroom.css";
+import { ask } from "../Confirm";
 
 const KINDS: Card["kind"][] = ["devCrisis", "staffNotice", "testDay", "projectReady", "ideaBatch", "rndDirection", "media"];
 export const isScene = (c: Card) => KINDS.includes(c.kind) && !c.notice;
@@ -321,10 +322,17 @@ function Pitches({ s, d, card, res, setAfter, skip, mute }: { s: CareerState; d:
     if (full) {
       const victim = running.find((p) => p.id === drop);
       if (!victim) return;
-      if (!window.confirm(`Scrap "${victim.name}" to make room? The money already spent is gone (half comes back if it is less than half built) and ${victim.lead ? s.staff[victim.lead]?.name ?? "the author" : "the author"} will remember.`)) return;
-      mute.current = true;
-      d({ type: "scrapProject", id: victim.id });
+      ask(`The money already spent is gone (half comes back if it is less than half built) and ${victim.lead ? s.staff[victim.lead]?.name ?? "the author" : "the author"} will remember.`, () => {
+        mute.current = true;
+        d({ type: "scrapProject", id: victim.id });
+        backNow();
+      }, { title: `SCRAP "${victim.name.toUpperCase()}" TO MAKE ROOM?`, yes: "SCRAP IT" });
+      return;
     }
+    backNow();
+  };
+  const backNow = () => {
+    if (!cur) return;
     const before = capRoom(t);
     const authors = new Set<string>();
     const others = ideas.filter((x) => x.i.id !== cur.i.id && x.i.lead && x.i.lead !== cur.i.lead).map((x) => s.staff[x.i.lead!]).filter((st): st is Staff => !!st && !authors.has(st.id) && !!authors.add(st.id)).map((st) => ({ st, react: (st.traits.includes("hothead") ? "fume" : st.traits.includes("perfectionist") ? "stung" : "sulk") as DevReact }));
@@ -437,13 +445,14 @@ function Verdict({ s, d, card, setAfter, skip }: { s: CareerState; d: Dispatch; 
   const fit = () => { d({ type: "card", id: card.id, option: "fit" }); sfx.play("upgrade"); setAfter({ kind: "fit", title: "ON THE CAR", line: "Good. The crew will have it on by the next race.", author: who, react: "proud" }); };
   const hold = () => { d({ type: "card", id: card.id, option: "hold" }); sfx.play("thunk"); setAfter({ kind: "hold", title: "IN THE CRATE", line: who ? (who.traits.includes("hothead") ? "A crate. We built it for the car, not for a shelf." : "Fine. It will be waiting.") : "It waits.", author: who, react: who?.traits.includes("hothead") ? "fume" : "shrug" }); };
   const scrap = () => {
-    if (!window.confirm(`Scrap "${p.name}"? The money is spent and ${who?.name ?? "the author"} will remember.`)) return;
-    const react = who ? scrapReact(who) : undefined;
-    d({ type: "scrapProject", id: p.id });
-    d({ type: "card", id: card.id, option: "hold" });
-    sfx.play("paper");
-    setTimeout(() => sfx.play("thunk"), 450);
-    setAfter({ kind: "scrap", title: "SCRAPPED", line: scrapLine(who, react), author: who, react });
+    ask(`The money is spent and ${who?.name ?? "the author"} will remember.`, () => {
+      const react = who ? scrapReact(who) : undefined;
+      d({ type: "scrapProject", id: p.id });
+      d({ type: "card", id: card.id, option: "hold" });
+      sfx.play("paper");
+      setTimeout(() => sfx.play("thunk"), 450);
+      setAfter({ kind: "scrap", title: "SCRAPPED", line: scrapLine(who, react), author: who, react });
+    }, { title: `SCRAP "${p.name.toUpperCase()}"?`, yes: "SCRAP IT" });
   };
   return (
     <Shell title={`PART READY: ${p.name.toUpperCase()}`} skip={skip}>

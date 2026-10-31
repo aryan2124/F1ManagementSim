@@ -882,12 +882,14 @@ export class RaceSim {
         const req = car.pitRequest ?? "M";
         const nc = this.cfg.rules?.oneCompound && (req === "S" || req === "M" || req === "H") ? "M" : req;
         this.stow(car);
+        const ageBefore = car.tyre.ageLaps, wearBefore = car.tyre.wear;
+        const hurt = car.damage.puncture || car.damage.flat > 0.05 || car.damage.aero > 0.1 || car.damage.floor > 0.1;
         car.tyre = { compound: nc, wear: 0, ageLaps: 0 };
         this.takeSet(car, nc, false, car.pitSetId);
         car.pitSetId = undefined;
         if (!car.compoundsUsed.includes(nc)) car.compoundsUsed.push(nc);
         car.stops++;
-        this.stopLog.push({ carId: car.id, lap: car.lap + 1, secs: car.stopSecs ?? 0, from: car.stopFrom ?? "M", to: nc, posBefore: car.position });
+        this.stopLog.push({ carId: car.id, lap: car.lap + 1, secs: car.stopSecs ?? 0, from: car.stopFrom ?? "M", to: nc, posBefore: car.position, ageBefore, wearBefore, hurt });
         if (this.cfg.rules?.refuelling) car.fuel = Math.min(1, car.fuel + this.fuelToAdd(car));
         if (car.pitSwap && this.cfg.rules?.batterySwap) {
           car.soc = 1;

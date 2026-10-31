@@ -168,6 +168,10 @@ export interface StopRec {
   from: Compound;
   to: Compound;
   posBefore: number;
+  /** The tyres that came off: laps run, wear, and whether the car was hurt (puncture, damage) when it stopped. */
+  ageBefore?: number;
+  wearBefore?: number;
+  hurt?: boolean;
 }
 
 export interface RaceRules {

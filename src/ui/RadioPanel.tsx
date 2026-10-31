@@ -181,6 +181,13 @@ function PromptRow({ session, p }: { session: RaceSession; p: Prompt }) {
           {p.note && <em className="pnote">{p.note}</em>}
         </span>
       </div>
+      {p.evidence && p.evidence.length > 0 && (
+        <div className="pevid">
+          {p.evidence.map((e) => (
+            <span key={e}>{e}</span>
+          ))}
+        </div>
+      )}
       <div className="popts">
         {picking ? (
           <>

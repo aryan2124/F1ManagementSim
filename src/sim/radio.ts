@@ -6,6 +6,7 @@ import type { CarState, Compound, Psyche, RadioChannel, RadioTruth, SimEvent, Te
 import { isWetCompound } from "./types";
 import { bestCompoundFor, wetLoss } from "./weather";
 import { sampleTrack } from "./track";
+import { evidence, readUndercut, stopKind } from "./situation";
 
 /**
  * Everything said on the radio.
@@ -43,6 +44,8 @@ export interface Prompt {
   other?: string;
   /** A follow-up shown inside the prompt, e.g. the driver's sector report after "what do you see". */
   note?: string;
+  /** The facts behind the call (tyre ages, gap, what the stop is worth), shown as chips so the player can judge it. */
+  evidence?: string[];
 }
 
 export interface Mood {
@@ -483,12 +486,23 @@ export class RadioSystem {
       if (!y || y.status === "dnf" || y.stops >= x.stops || snap.aheadGap > 3.6 || Math.abs(y.lap - x.lap) > 1) continue;
       this.pending.push({ x: x.id, y: y.id, yStops: y.stops, t });
       // the car in front has not stopped, and a car behind it just did
-      if (y.entry.human && y.status === "racing" && !y.pitRequest && this.canPrompt(y, 300)) {
-        const text = fill(this.pick(TALK.coverWarn[this.psy(y).voice]), this.vars(y, { rival: x.entry.driver.code }));
-        this.openPrompt(y, "cover", text, [
-          { id: "box", label: `Cover him (${compName(this.sim.chooseCompoundDry(y))})`, note: "Pit this lap" },
-          { id: "stay", label: "Stay out", note: "Gamble on track position" },
-        ], { compound: this.sim.chooseCompoundDry(y), other: x.id }, 300);
+      if (y.entry.human && y.status === "racing" && !y.pitRequest) {
+        const kind = stopKind(rec);
+        const rd = readUndercut(this.sim, x, y, rec.to, snap.aheadGap);
+        if (kind !== "normal") {
+          // a stop in the first laps, or with damage, is never an undercut. The engineer says so and nobody asks.
+          this.eng(y, ENG.earlyStop, { rival: x.entry.driver.code, lap: rec.lap, why: kind === "damage" ? "damage or a puncture" : "a gamble for a safety car or clear air" });
+        } else if (rd.real) {
+          if (this.canPrompt(y, 300)) {
+            const text = fill(this.pick(TALK.coverWarn[this.psy(y).voice]), this.vars(y, { rival: x.entry.driver.code }));
+            this.openPrompt(y, "cover", text, [
+              { id: "box", label: `Cover him (${compName(this.sim.chooseCompoundDry(y))})`, note: "Pit this lap" },
+              { id: "stay", label: "Stay out", note: "Gamble on track position" },
+            ], { compound: this.sim.chooseCompoundDry(y), other: x.id, evidence: evidence(rd) }, 300);
+          }
+        } else {
+          this.eng(y, ENG.noThreat, { rival: x.entry.driver.code, gain: Math.max(0, rd.perLap).toFixed(1) });
+        }
       }
     }
     // resolve undercuts once the car in front has stopped and rejoined
@@ -533,14 +547,15 @@ export class RadioSystem {
         const n = s && s.rival === ahead.id ? s.n + 1 : 1;
         this.stuck.set(car.id, { rival: ahead.id, n });
         const remaining = sim.cfg.laps - car.lap;
-        if (n > 350 && car.tyre.wear > 0.3 && remaining > 8 && !car.pitRequest && (this.lastTalk.get(car.id + "u") ?? 0) < t && this.canPrompt(car, 1500) && this.rng.chance(0.25 + 0.4 * p.talkative) && ahead.stops <= car.stops) {
+        if (n > 350 && car.tyre.wear > 0.3 && remaining > 8 && !car.pitRequest && (this.lastTalk.get(car.id + "u") ?? 0) < t && this.canPrompt(car, 1500) && this.rng.chance(0.25 + 0.4 * p.talkative) && ahead.stops <= car.stops && car.tyre.ageLaps >= 5 && readUndercut(sim, car, ahead, sim.chooseCompoundDry(car), car.gapAhead).real) {
+          const rd = readUndercut(sim, car, ahead, sim.chooseCompoundDry(car), car.gapAhead);
           this.stuck.set(car.id, { rival: ahead.id, n: 0 });
           this.lastTalk.set(car.id + "u", t + 2500);
           const text = fill(this.pick(TALK.undercutIdea[p.voice]), this.vars(car, { rival: ahead.entry.driver.code }));
           this.openPrompt(car, "undercut", text, [
             { id: "box", label: `Go for the undercut (${compName(sim.chooseCompoundDry(car))})`, note: "Pit this lap" },
             { id: "stay", label: "Stay out, be patient", note: "Driver keeps following" },
-          ], { compound: sim.chooseCompoundDry(car), other: ahead.id }, 450);
+          ], { compound: sim.chooseCompoundDry(car), other: ahead.id, evidence: evidence(rd) }, 450);
         }
       } else this.stuck.delete(car.id);
       // pressure from behind

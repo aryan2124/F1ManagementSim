@@ -4,6 +4,7 @@ import type { Tab } from "./common";
 import { planOf } from "../../career/rndplan";
 import { sfx } from "../../audio/sound";
 import "./coach.css";
+import { ask } from "../Confirm";
 
 /**
  * The tutorial coach: a small card that walks a new player through the real screens of a practice career.
@@ -180,7 +181,7 @@ export function Coach({ s, d, tab, go, inWeekend, running, hidden, onDone }: { s
           ) : (
             <button className="btn primary" onClick={() => goTo(idx + 1)}>NEXT</button>
           )}
-          {!step.last && <button className="tiny" onClick={() => { if (window.confirm("Leave the tutorial? You can replay it from the main menu.")) onDone(false); }}>LEAVE TUTORIAL</button>}
+          {!step.last && <button className="tiny" onClick={() => ask("You can replay it from the main menu.", () => onDone(false), { title: "LEAVE THE TUTORIAL?", yes: "LEAVE" })}>LEAVE TUTORIAL</button>}
         </div>
       </aside>
     </>
