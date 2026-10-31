@@ -102,6 +102,8 @@ export interface RaceConfig {
   seed: number;
   /** Standing orders the player set before the race, by car id (see sim/standing.ts). */
   standing?: Record<string, Partial<import("./standing").StandingOrders>>;
+  /** 0..1: how good the player's race engineer and strategist are. Sharper staff read the car better and make fewer slips on delegated calls. */
+  engineerSkill?: number;
   /** The season's year, used for age and experience (Race IQ). Defaults to 2026. */
   year?: number;
   laps: number;

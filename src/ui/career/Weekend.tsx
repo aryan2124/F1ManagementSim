@@ -1,3 +1,4 @@
+import type { CareerState } from "../../career/types";
 import { donutDrivers } from "../../career/sendoff";
 import { useMusic } from "../../audio/useMusic";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -474,7 +475,7 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
         sets={plan!.raceCfg?.tyreSets}
         setLists={plan!.raceCfg?.tyreSetList}
         pitLane={!!ws.parcBroken}
-        extraRules={rulesBrief(plan!.raceCfg?.rules, plan!.laps)}
+        extraRules={[...rulesBrief(plan!.raceCfg?.rules, plan!.laps), ...rivalLines(s, plan!.humanIds, plan!.raceCfg?.grid ?? [])]}
         onStart={(tyres: Record<string, Compound>, startSets?: Record<string, string>, standing?: Record<string, StandingOrders>) => {
           const locked: Record<string, Compound> = {};
           if (plan!.locks) for (const id of plan!.humanIds) if (plan!.locks[id]) locked[id] = plan!.locks[id];
@@ -526,4 +527,21 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
     );
   }
   return null;
+}
+
+/** Who your drivers have history with, and where they start: the world remembers every pass and every touch. */
+function rivalLines(s: CareerState, mine: string[], grid: string[]): string[] {
+  const out: string[] = [];
+  for (const r of s.rivalries) {
+    if (r.heat < 0.25) continue;
+    const me = mine.includes(r.a) ? r.a : mine.includes(r.b) ? r.b : null;
+    if (!me) continue;
+    const other = me === r.a ? r.b : r.a;
+    const od = s.drivers[other];
+    const md = s.drivers[me];
+    if (!od || !md) continue;
+    const gi = grid.indexOf(other);
+    out.push(`RIVAL: ${md.spec.name} and ${od.spec.name} have history${r.heat > 0.8 ? " (bitter)" : r.heat > 0.5 ? " (heated)" : ""}${gi >= 0 ? `. ${od.spec.code} starts P${gi + 1}` : ""}.`);
+  }
+  return out.slice(0, 3);
 }

@@ -1,7 +1,7 @@
 import type { RaceSim } from "./engine";
 import { engineerCall, engineerName } from "../game/crew";
 import { ENG, fill, REPLY, RIVAL, SAY, TALK, type Voice } from "../game/radiolines";
-import { Rng } from "./rng";
+import { Rng, hashSeed } from "./rng";
 import type { CarState, Compound, Psyche, RadioChannel, RadioTruth, SimEvent, TeamOrder } from "./types";
 import { isWetCompound } from "./types";
 import { bestCompoundFor, wetLoss } from "./weather";
@@ -104,6 +104,7 @@ export class RadioSystem {
   private nextId = 1;
   private active = new Map<string, Active>();
   private lastPrompt = new Map<string, number>();
+  private lastAnyPrompt = 0;
   private lastSay = new Map<string, number>();
   private prevReq = new Map<string, Compound | null>();
   private lastRival = 0;
@@ -374,6 +375,8 @@ export class RadioSystem {
     if (this.open().some((p) => p.carId === car.id)) return false;
     const last = this.lastPrompt.get(car.id) ?? -99999;
     if (sim.tick - last < gap) return false;
+    // fewer, better prompts: one question to the team at a time, with room to breathe unless it is urgent (a short gap means urgent)
+    if (gap >= 300 && sim.tick - this.lastAnyPrompt < 900 && this.lastAnyPrompt > 0) return false;
     return true;
   }
 
@@ -382,6 +385,7 @@ export class RadioSystem {
     const p: Prompt = { id: this.nextId++, carId: car.id, kind, tick: sim.tick, expires: sim.tick + life, text, options, answered: null, ...extra };
     this.prompts.push(p);
     this.lastPrompt.set(car.id, sim.tick);
+    if (kind !== "damage" && kind !== "redflag" && kind !== "safetycar") this.lastAnyPrompt = sim.tick;
     this.push("driver", car.id, `${car.entry.driver.code}: ${text}`, "honest", "prompt");
     return p;
   }
@@ -481,7 +485,13 @@ export class RadioSystem {
 
   /** What this driver can read of a race. See sim/iq.ts. */
   iq(car: CarState): IQFacets {
-    return iqFacets(car.entry.driver, this.sim.cfg.year ?? 2026);
+    const f = iqFacets(car.entry.driver, this.sim.cfg.year ?? 2026);
+    // a good race engineer lifts what a driver can read of the car; a poor one lets it slip (the player's own cars only)
+    const eng = this.sim.cfg.engineerSkill;
+    if (!car.entry.human || eng === undefined) return f;
+    const lift = (eng - 0.5) * 0.24;
+    const c = (v: number) => Math.min(1, Math.max(0, v + lift));
+    return { ...f, reading: c(f.reading), strategy: c(f.strategy) };
   }
 
   /** How worn the driver thinks his tyres are. A sharp driver is close to the data, a raw one can be well out, and holds that view all stint. */
@@ -505,10 +515,24 @@ export class RadioSystem {
   }
 
   /** Carry out the standing orders. Called every second. */
+  private stanceDone = new Map<string, string>();
+  /** Delegated calls are only as good as the strategist: weak staff box a little early or late, the same way all race. Orders you set yourself run exactly. */
+  private slip(car: CarState, o: StandingOrders): number {
+    const eng = this.sim.cfg.engineerSkill;
+    if (!o.delegated || eng === undefined) return 0;
+    const r = new Rng(hashSeed(`slip:${car.id}:${this.sim.cfg.seed}`));
+    return (r.next() - 0.5) * 2 * (1 - eng) * 0.12;
+  }
   private runStanding() {
     const sim = this.sim;
     for (const car of sim.cars) {
       const o = this.standing.get(car.id);
+      if (o && car.entry.human && car.status === "racing" && this.stanceDone.get(car.id) !== o.stance) {
+        this.stanceDone.set(car.id, o.stance);
+        if (o.stance === "tyres") car.push = 0;
+        else if (o.stance === "attack") car.push = 2;
+        else if (sim.tick > 0 && car.push !== 1) car.push = 1;
+      }
       if (!o || !car.entry.human || car.status !== "racing" || car.pitRequest || sim.inc.red.active) continue;
       const remaining = sim.cfg.laps - car.lap;
       if (remaining <= 2 || (sim.weather && car.wetD > 0.2)) continue;
@@ -517,7 +541,7 @@ export class RadioSystem {
       if (o.stopLap && car.stops === 0 && car.lap + 1 >= o.stopLap) {
         why = `Plan: box around lap ${o.stopLap}`;
         comp = o.stopCompound;
-      } else if (o.tyreLimit !== null && car.tyre.wear >= o.tyreLimit) {
+      } else if (o.tyreLimit !== null && car.tyre.wear >= o.tyreLimit + this.slip(car, o)) {
         why = `Tyres are at ${Math.round(car.tyre.wear * 100)} percent, your limit`;
       } else if (o.scBox && sim.neutral.active && this.scHandled.get(car.id) !== sim.neutral.id) {
         this.scHandled.set(car.id, sim.neutral.id);

@@ -582,7 +582,7 @@ export function ownerYearEnd(s: CareerState): string[] {
 
 // ---------------------------------------------------------------- rivalries, records, history
 
-export function afterRace(s: CareerState, order: string[], dnf: string[], skipWorld = false) {
+export function afterRace(s: CareerState, order: string[], dnf: string[], skipWorld = false, duels: { a: string; b: string; passes: number; contacts: number }[] = []) {
   riftAfterRace(s, order, dnf);
   if (skipWorld) return;
   // adjacent finishers near the front heat up
@@ -602,6 +602,8 @@ export function afterRace(s: CareerState, order: string[], dnf: string[], skipWo
       news(s, `${da?.spec.name} and ${db?.spec.name} are now a proper rivalry.`, { importance: 2, cause: "They keep finishing next to each other and trading places", tag: "rivalry" });
     }
   };
+  // wheel to wheel racing is remembered: every pass and every touch heats a rivalry
+  for (const d of duels) bump(d.a, d.b, Math.min(0.3, d.passes * 0.05 + d.contacts * 0.12));
   for (let i = 0; i < top.length - 1; i++) {
     const a = s.drivers[top[i]];
     const b = s.drivers[top[i + 1]];

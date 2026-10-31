@@ -16,6 +16,7 @@ import { PromptBar, RadioFeed } from "./RadioPanel";
 import { SectorsView } from "./SectorTable";
 import { liveSectorColors } from "./sectorRows";
 import { Director } from "../game/director";
+import { sfx } from "../audio/sound";
 import { RaceAudio } from "../audio/raceAudio";
 import { music, type TrackName } from "../audio/music";
 import { raceTrackFor } from "../audio/mood";
@@ -42,6 +43,23 @@ export function RaceScreen({ session, meta, onFinish, skip, donuts, kind }: { se
   useEffect(() => { scrollTop(); }, []);
   useUiTick(120);
   const sim = session.sim;
+  // a good call feels good: a short chime and a green flash on the radio, so right decisions are felt as well as read
+  const judged = useRef(0);
+  const [flash, setFlash] = useState<"good" | "bad" | null>(null);
+  useEffect(() => {
+    const calls = sim.radio?.calls ?? [];
+    let n = 0;
+    for (const c of calls) if (c.verdict === "good" || c.verdict === "bad") n++;
+    if (n > judged.current) {
+      const last = [...calls].reverse().find((c) => c.verdict === "good" || c.verdict === "bad");
+      judged.current = n;
+      if (last?.verdict) {
+        sfx.play(last.verdict === "good" ? "purple" : "deny");
+        setFlash(last.verdict === "even" ? null : last.verdict);
+        window.setTimeout(() => setFlash(null), 900);
+      }
+    }
+  });
   const [tab, setTab] = useState<BottomTab>("radio");
   const [secMode, setSecMode] = useState<"last" | "best">("last");
   const teamId = sim.car(session.humanIds[0]).entry.team.id;
@@ -142,7 +160,7 @@ export function RaceScreen({ session, meta, onFinish, skip, donuts, kind }: { se
   ];
 
   return (
-    <div className="screen race">
+    <div className={`screen race${flash ? " call-" + flash : ""}`}>
       <header className="racebar">
         <div className="logo-sm">
           BOX<span>BOX</span>

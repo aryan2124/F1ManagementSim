@@ -18,12 +18,14 @@ export interface StandingOrders {
   stopCompound: Compound | null;
   /** Hand the small calls to the strategist: these standing orders run without questions. */
   delegated: boolean;
+  /** How hard the car is driven from the lights: conserve (kind to tyres and fuel, slower), standard, or push (quicker, wears tyres and fuel faster, more risk). */
+  stance: "tyres" | "balanced" | "attack";
 }
 
-export const NO_ORDERS: StandingOrders = { scBox: false, scWear: 0.3, tyreLimit: null, cover: false, stopLap: null, stopCompound: null, delegated: false };
+export const NO_ORDERS: StandingOrders = { scBox: false, scWear: 0.3, tyreLimit: null, cover: false, stopLap: null, stopCompound: null, delegated: false, stance: "balanced" };
 
 /** What delegating to the strategist means: sensible orders for the whole race. */
-export const DELEGATED: StandingOrders = { scBox: true, scWear: 0.3, tyreLimit: 0.82, cover: true, stopLap: null, stopCompound: null, delegated: true };
+export const DELEGATED: StandingOrders = { scBox: true, scWear: 0.3, tyreLimit: 0.82, cover: true, stopLap: null, stopCompound: null, delegated: true, stance: "balanced" };
 
 export function mergeOrders(base: StandingOrders, patch: Partial<StandingOrders>): StandingOrders {
   const out = { ...base, ...patch };
@@ -36,6 +38,8 @@ export function mergeOrders(base: StandingOrders, patch: Partial<StandingOrders>
 /** The orders in words, for the radio and the report card. */
 export function describeOrders(o: StandingOrders): string[] {
   const out: string[] = [];
+  if (o.stance === "tyres") out.push("Drive to look after the tyres");
+  if (o.stance === "attack") out.push("Attack from the start");
   if (o.stopLap) out.push(`Box around lap ${o.stopLap}${o.stopCompound ? ` for ${o.stopCompound === "S" ? "Softs" : o.stopCompound === "M" ? "Mediums" : "Hards"}` : ""}`);
   if (o.tyreLimit !== null) out.push(`Box at ${Math.round(o.tyreLimit * 100)}% tyre wear`);
   if (o.scBox) out.push(`Safety car: box if tyres are over ${Math.round(o.scWear * 100)}% worn`);

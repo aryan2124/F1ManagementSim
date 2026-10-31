@@ -131,3 +131,24 @@ describe("standing orders and the report card", () => {
     expect(rep.lines.map((l) => l.text).join(" ")).not.toContain("—");
   });
 });
+
+describe("race stance and prompt cap", () => {
+  it("the stance sets how hard the car is driven, and the pace and tyre wear follow", () => {
+    const run = (stance: "tyres" | "attack") => {
+      const { track } = loadCircuit("spa");
+      const entries = buildEntries("mer");
+      const { rows } = runQualifying({ seed: 4, track, entries });
+      const sim = new RaceSim({ seed: 4, laps: 12, track, entries, grid: rows.map((q) => q.carId), standing: {} } as never);
+      const mine = sim.cars.find((c) => c.entry.human) ?? sim.cars[0];
+      mine.entry.human = true;
+      sim.command({ type: "standing", carId: mine.id, orders: { stance } });
+      for (let i = 0; i < 60 * 25; i++) sim.step();
+      return { push: mine.push, wear: mine.tyre.wear };
+    };
+    const a = run("attack");
+    const t = run("tyres");
+    expect(a.push).toBe(2);
+    expect(t.push).toBe(0);
+    expect(a.wear).toBeGreaterThan(t.wear);
+  }, 120000);
+});

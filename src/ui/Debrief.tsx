@@ -95,6 +95,39 @@ function EngineerReplay({ db, n }: { db: ReturnType<typeof buildDebrief>; n: num
   );
 }
 
+/** The three moments that decided the race, with the call that went with each: a clip list you can read in ten seconds. */
+function Highlights({ db, report }: { db: ReturnType<typeof buildDebrief>; report: ReturnType<typeof strategyReport> }) {
+  const picks = useMemo(() => {
+    const score = (m: { text: string; tone: string }) => (/crash|collid|contact|puncture|damage|retire|spin/i.test(m.text) ? 5 : m.tone === "good" ? 4 : m.tone === "bad" ? 4 : /safety|red flag|rain/i.test(m.text) ? 3 : /pits/i.test(m.text) ? 1 : 0.5);
+    const ranked = db.moments.map((m) => ({ m, v: score(m) })).sort((a, b) => b.v - a.v || a.m.lap - b.m.lap);
+    const out: typeof db.moments = [];
+    for (const r of ranked) {
+      if (out.length >= 3) break;
+      if (out.some((o) => Math.abs(o.lap - r.m.lap) < 3)) continue;
+      out.push(r.m);
+    }
+    return out.sort((a, b) => a.lap - b.lap);
+  }, [db.moments]);
+  if (!picks.length) return null;
+  return (
+    <section className="panel hl-panel">
+      <h3>THREE MOMENTS THAT MATTERED</h3>
+      <div className="hl-row">
+        {picks.map((m, i) => {
+          const call = report.lines.find((l) => Math.abs(l.lap - m.lap) <= 1);
+          return (
+            <div key={i} className={`hl-card m-${m.tone}`}>
+              <small>LAP {m.lap}</small>
+              <b>{m.text}</b>
+              {call && <p className="small">The call: {call.text.replace(/^Lap \d+: /, "")}</p>}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export function Debrief({ session, review }: { session: RaceSession; review?: SetupReview | null }) {
   const sim = session.sim;
   const db = useMemo(() => buildDebrief(sim, session.humanIds), [sim, session]);
@@ -102,6 +135,7 @@ export function Debrief({ session, review }: { session: RaceSession; review?: Se
   const laps = db.field.laps;
   return (
     <div className="debrief">
+      <Highlights db={db} report={report} />
       <EngineerReplay db={db} n={sim.cars.length} />
       <section className="panel">
         <h3>THE RACE IN ONE PICTURE</h3>

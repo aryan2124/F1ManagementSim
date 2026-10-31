@@ -1,3 +1,4 @@
+import { circuitMeta } from "../../game/circuits";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { setSwirl } from "../skin/Swirl";
 import { reduce, type Result } from "../../career/reducer";
@@ -62,7 +63,18 @@ export function CareerApp({ initial, onExit, net, tutorial }: { initial: CareerS
   useEffect(() => setOpt(null), [netRev]);
   const s: CareerState = net ? (opt ?? (net.view as CareerState | null) ?? local) : local;
   const [msg, setMsg] = useState("");
-  const [tab, setTab] = useState<Tab>("today");
+  const [tab, setTabRaw] = useState<Tab>(() => {
+    try {
+      const t = localStorage.getItem("bb.tab") as Tab | null;
+      return t && TABS.some((x) => x.k === t) ? t : "today";
+    } catch {
+      return "today";
+    }
+  });
+  const setTab = (t: Tab) => {
+    setTabRaw(t);
+    try { localStorage.setItem("bb.tab", t); } catch { /* private mode */ }
+  };
   const [inWeekend, setInWeekend] = useState(false);
   const [peek, setPeek] = useState(false);
   const [clock, setClock] = useState<Clock>({ running: false, speed: 2, stopped: "" });
@@ -98,7 +110,7 @@ export function CareerApp({ initial, onExit, net, tutorial }: { initial: CareerS
   useEffect(() => () => ambience.stop(), []);
   useEffect(() => {
     // practice stays in the garage; quali, the race, the classification and the debrief get the calm purple
-    if (inWeekend) setSwirl(s.weekend && s.weekend.stage !== "practice" ? "race" : "garage");
+    if (inWeekend) setSwirl(weekendSwirl(s));
     else setSwirl(trouble ? "crisis" : tab === "today" ? "hq" : tab);
   }, [tab, inWeekend, trouble, s.weekend?.stage]); // eslint-disable-line react-hooks/exhaustive-deps
   const first = useRef(true);
@@ -290,4 +302,15 @@ export function CareerApp({ initial, onExit, net, tutorial }: { initial: CareerS
     {coach}
     </>
   );
+}
+
+/** The table follows the weekend: gold for qualifying, blue when the forecast is wet, violet for a night race. The colour carries information. */
+function weekendSwirl(s: import("../../career/types").CareerState): import("../skin/Swirl").SwirlTheme {
+  const ws = s.weekend;
+  if (!ws || ws.stage === "practice") return "garage";
+  if (ws.weatherCard?.kind === "wet") return "rain";
+  if (ws.stage === "quali" || ws.stage === "sq") return "quali";
+  const th = circuitMeta(ws.circuitId).theme;
+  if (th === "cityNight" || th === "desertNight") return "night";
+  return "race";
 }

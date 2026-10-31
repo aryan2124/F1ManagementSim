@@ -970,7 +970,7 @@ export type Action =
   | { type: "setSetup"; setup: SetupVec; force?: boolean }
   | { type: "setTeller"; teller: import("./threads").Teller }
   | { type: "setTweak"; driverId: string; tweak: SetupVec }
-  | { type: "recordSession"; kind: SessionKind; order: string[]; points: Record<string, number>; grid?: string[]; dnf: string[]; moods?: Record<string, { morale: number; trust: number; grievance: number; strat?: number }>; locks?: Record<string, "S" | "M" | "H">; used?: Record<string, Partial<Record<"S" | "M" | "H", number>>>; sets?: Record<string, import("../sim/tyreSets").TyreSet[]>; failed?: Record<string, PartKind>; fastest?: string; pit?: { stops: number; slow: number; best?: number }; radio?: { carId: string; tag: "bleep" | "refused" | "fatigue" | "over"; text: string }[] }
+  | { type: "recordSession"; kind: SessionKind; order: string[]; points: Record<string, number>; grid?: string[]; dnf: string[]; moods?: Record<string, { morale: number; trust: number; grievance: number; strat?: number }>; locks?: Record<string, "S" | "M" | "H">; used?: Record<string, Partial<Record<"S" | "M" | "H", number>>>; sets?: Record<string, import("../sim/tyreSets").TyreSet[]>; failed?: Record<string, PartKind>; fastest?: string; pit?: { stops: number; slow: number; best?: number }; radio?: { carId: string; tag: "bleep" | "refused" | "fatigue" | "over"; text: string }[]; duels?: { a: string; b: string; passes: number; contacts: number }[] }
   | { type: "endPractice" }
   | { type: "simWeekend" }
   | { type: "tutorialEra" }

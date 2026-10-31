@@ -357,7 +357,7 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       return r.ok ? good(r.message) : fail(r.message);
     }
     case "recordSession":
-      recordSession(s, a.kind, a.order, a.points, a.grid, a.dnf, a.moods, { locks: a.locks, used: a.used, sets: a.sets, failed: a.failed, fastest: a.fastest, pit: a.pit, radio: a.radio });
+      recordSession(s, a.kind, a.order, a.points, a.grid, a.dnf, a.moods, { locks: a.locks, used: a.used, sets: a.sets, failed: a.failed, fastest: a.fastest, pit: a.pit, radio: a.radio, duels: a.duels });
       syncWeekendDay(s);
       return good();
     case "simWeekend": {

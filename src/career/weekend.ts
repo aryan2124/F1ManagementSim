@@ -747,6 +747,7 @@ export function planSession(s: CareerState, kind: SessionKind, allAi = false): S
   plan.raceCfg = {
     seed: settings.seed,
     year: s.year,
+    engineerSkill: engineerSkill(s) / 100,
     laps,
     track,
     entries,
@@ -797,7 +798,7 @@ function recordStandings(s: CareerState, kind: SessionKind, order: string[], poi
 /** Store a finished session. A finished Grand Prix closes the weekend and pays out. */
 const BASE_SETS = { normal: { S: 4, M: 5, H: 4 }, sprint: { S: 4, M: 4, H: 4 } } as const;
 
-export function recordSession(s: CareerState, kind: SessionKind, order: string[], points: Record<string, number>, grid: string[] | undefined, dnf: string[], moods?: Record<string, { morale: number; trust: number; grievance: number; strat?: number }>, extra?: { sets?: Record<string, TyreSet[]>; locks?: Record<string, "S" | "M" | "H">; used?: Record<string, Partial<Record<"S" | "M" | "H", number>>>; skipWorld?: boolean; failed?: Record<string, "pu" | "gb">; fastest?: string; pit?: { stops: number; slow: number; best?: number }; radio?: RadioQuote[] }) {
+export function recordSession(s: CareerState, kind: SessionKind, order: string[], points: Record<string, number>, grid: string[] | undefined, dnf: string[], moods?: Record<string, { morale: number; trust: number; grievance: number; strat?: number }>, extra?: { sets?: Record<string, TyreSet[]>; locks?: Record<string, "S" | "M" | "H">; used?: Record<string, Partial<Record<"S" | "M" | "H", number>>>; skipWorld?: boolean; failed?: Record<string, "pu" | "gb">; fastest?: string; pit?: { stops: number; slow: number; best?: number }; radio?: RadioQuote[]; duels?: { a: string; b: string; passes: number; contacts: number }[] }) {
   const ws = s.weekend;
   if (!ws) return;
   if (kind === "quali" || (kind === "sq" && !ws.sprint)) {
@@ -853,7 +854,7 @@ export function recordSession(s: CareerState, kind: SessionKind, order: string[]
   }
   if (kind === "race") {
     if (!extra?.skipWorld) recordStandings(s, kind, order, points);
-    finishRace(s, ws, res, !!extra?.skipWorld, extra?.radio);
+    finishRace(s, ws, res, !!extra?.skipWorld, extra?.radio, extra?.duels);
     ws.stage = "done";
     // whatever died is replaced at the factory; the penalty waits for the next race
     if (ws.dead) {
@@ -863,6 +864,23 @@ export function recordSession(s: CareerState, kind: SessionKind, order: string[]
     afterRaceService(s, driversOf(s, s.teamId).map((d) => d.id));
     if (!extra?.skipWorld) checkClinch(s, ws.round + 1);
   }
+}
+
+/** Who raced whom on track: passes and contact between one of the player's cars and a car from another team. The world remembers it. */
+function duelsOf(sim: RaceSim, mineIds: string[]) {
+  const m = new Map<string, { a: string; b: string; passes: number; contacts: number }>();
+  for (const e of sim.keyEvents) {
+    if ((e.kind !== "overtake" && e.kind !== "contact") || !e.carId || !e.otherId) continue;
+    const mine = mineIds.includes(e.carId) ? e.carId : mineIds.includes(e.otherId) ? e.otherId : null;
+    const other = mine === e.carId ? e.otherId : e.carId;
+    if (!mine || mineIds.includes(other)) continue;
+    const k = mine + "|" + other;
+    const r = m.get(k) ?? { a: mine, b: other, passes: 0, contacts: 0 };
+    if (e.kind === "overtake") r.passes++;
+    else r.contacts++;
+    m.set(k, r);
+  }
+  return [...m.values()];
 }
 
 /** Fastest lap car and the player's pit stop numbers, from a finished race sim. */
@@ -875,6 +893,7 @@ export function raceExtras(sim: RaceSim, mineIds: string[]) {
     fastest: sim.bestLapCar || undefined,
     pit: { stops: stops.length, slow: secs.filter((x) => x > 4.6).length, best: secs.length ? Math.min(...secs) : undefined },
     radio: (sim.radio?.quotes ?? []).filter((q) => mineIds.includes(q.carId)).map((q) => ({ ...q })),
+    duels: duelsOf(sim, mineIds),
   };
 }
 
@@ -901,7 +920,7 @@ function sprintMoney(s: CareerState, order: string[]) {
   void order;
 }
 
-function finishRace(s: CareerState, ws: WeekendState, res: SessionResult, skipWorld = false, radio?: RadioQuote[]) {
+function finishRace(s: CareerState, ws: WeekendState, res: SessionResult, skipWorld = false, radio?: RadioQuote[], duels?: { a: string; b: string; passes: number; contacts: number }[]) {
   const race = s.calendar[ws.round];
   const { meta } = loadCircuit(race.circuitId);
   const winner = s.drivers[res.order[0]];
@@ -920,7 +939,7 @@ function finishRace(s: CareerState, ws: WeekendState, res: SessionResult, skipWo
   });
   if (skipWorld) raceBonuses(s, results, ws.sprint);
   else raceMoney(s, results, ws.sprint);
-  afterRace(s, res.order, res.dnf, skipWorld);
+  afterRace(s, res.order, res.dnf, skipWorld, duels);
   graduateWin(s, winner?.id);
   if (!skipWorld) playoffCheck(s, ws.round);
   const podium = res.order.slice(0, 3).map((id) => s.drivers[id]?.spec.name ?? id);

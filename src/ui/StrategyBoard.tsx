@@ -22,6 +22,14 @@ export function StrategyBoard({ orders, onChange, laps, compact, copyFrom }: { o
         </div>
       </div>
       <div className="sb-row">
+        <span>HOW HARD TO DRIVE</span>
+        <div className="seg">
+          <button className={orders.stance === "tyres" ? "on" : ""} onClick={() => set({ stance: "tyres" })} title="Slower, but tyres and fuel last. Good when overtaking is hard or the tyres wear fast.">LOOK AFTER TYRES</button>
+          <button className={orders.stance === "balanced" ? "on" : ""} onClick={() => set({ stance: "balanced" })} title="The standard pace.">BALANCED</button>
+          <button className={orders.stance === "attack" ? "on" : ""} onClick={() => set({ stance: "attack" })} title="Quicker from the lights, but tyres and fuel go faster and mistakes get likelier. You will need an earlier stop.">ATTACK</button>
+        </div>
+      </div>
+      <div className="sb-row">
         <span>PLANNED STOP</span>
         <div className="seg">
           <button onClick={() => set({ stopLap: orders.stopLap === null ? null : step(orders.stopLap, -1, 2, laps - 2, Math.round(laps * 0.4)) })} disabled={orders.stopLap === null}>-</button>
