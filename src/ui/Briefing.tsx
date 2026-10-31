@@ -187,8 +187,8 @@ export function Briefing({
           <p>Tyres last about <b>Soft {Math.round(life.S)}</b>, <b>Medium {Math.round(life.M)}</b>, <b>Hard {Math.round(life.H)}</b> laps at standard pace. The race is {laps} laps.</p>
           <button className="btn primary big" onClick={() => setView("wall")}>TO THE PIT WALL</button>
         </section>
-        {extras && <div className="brief-extras">{extras}</div>}
       </div>
+      {extras}
     </div>
   );
 }

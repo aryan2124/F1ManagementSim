@@ -85,7 +85,6 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
   return (
     <div className={`theme-garage c-garage${net ? "" : " screen"}`}>
       <ScreenBanner theme="garage" />
-      <div className="pr-left">
       <PartsPanel s={s} d={d} />
       <section className="panel found">
         <h3>SETUP FOUND</h3>
@@ -122,8 +121,6 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
           })}
         </section>
       )}
-      </div>
-      <div className="pr-right">
       <section className="panel">
         <h3>THE GARAGE: PRACTICE {ws.sprint ? "(SPRINT WEEKEND: ONE SESSION)" : `(${ws.sessionsLeft} SESSION${ws.sessionsLeft === 1 ? "" : "S"} LEFT)`}</h3>
         <div className="c-pips" title="Runs left in this session">
@@ -285,7 +282,6 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
             {!net && <button className="btn" title="Let the game play qualifying and the race for you" onClick={() => skipWeekend(d)}>SKIP THE WEEKEND</button>}
           </div>
         </section>
-      </div>
       </div>
     </div>
   );

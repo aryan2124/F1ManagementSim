@@ -6,7 +6,6 @@ import "./styles.css";
 import "./ui/pixel/themes.css";
 import "./ui/skin/skin.css";
 import "./ui/skin/angle.css";
-import "./ui/skin/fit.css";
 import App from "./App";
 import { ArtPreview } from "./render/ArtPreview";
 import { DonutPreview, PodiumPreview } from "./render/PodiumPreview";

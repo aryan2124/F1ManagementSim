@@ -1849,8 +1849,8 @@ body.no-swirl .swirl {
 }
 .app .btn.primary:disabled,
 .app .btn.go:disabled {
-  background: #5a4d7e;
-  color: #b9afdc;
+  background: #4a3f6e;
+  color: #e4def7;
   filter: none;
   opacity: 1;
   box-shadow:

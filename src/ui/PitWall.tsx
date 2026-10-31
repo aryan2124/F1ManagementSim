@@ -139,8 +139,6 @@ export function PitWall(props: {
       </div>
       {props.pitLane && <p className="pw-warn">Starts from the pit lane: the setup was changed after parc ferme.</p>}
 
-      <div className="pw-body">
-      <div className="pw-left">
       <section className="pw-sec">
         <h3>1. START TYRE</h3>
         <div className="pw-tyres">
@@ -175,8 +173,6 @@ export function PitWall(props: {
         </div>
       </section>
 
-      </div>
-      <div className="pw-right">
       <section className="pw-sec">
         <h3>3. HOW HARD TO DRIVE</h3>
         <div className="pw-cards">
@@ -218,9 +214,6 @@ export function PitWall(props: {
           />
         </details>
       )}
-
-      </div>
-      </div>
 
       <footer className="pw-go">
         <p>{entries.map((x) => `${x.code}: ${tyres[x.id]}, ${plan(x.id)}, ${(orders[x.id] ?? NO_ORDERS).stance}`).join("   |   ")}  ({props.rainWords})</p>

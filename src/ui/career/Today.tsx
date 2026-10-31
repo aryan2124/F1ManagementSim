@@ -71,8 +71,6 @@ function FactoryBox({ s, go }: { s: Props["s"]; go: (t: Tab) => void }) {
   );
 }
 
-void FactoryBox;
-
 function Chapter({ s, go }: { s: Props["s"]; go: (t: Tab) => void }) {
   const me = s.teams[s.teamId];
   const closedYear = s.history.some((h) => h.year === s.year);
@@ -300,13 +298,10 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
     window.addEventListener("keydown", on);
     return () => window.removeEventListener("keydown", on);
   }, [inWeekend, clock.running, decisions[0]?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-  const topNow = nowCards[0]?.id;
-  useEffect(() => { document.querySelector(".c-today > .c-main")?.scrollTo({ top: 0 }); }, [topNow, inWeekend]);
   const myIdx = topTeams.findIndex(([id]) => id === s.teamId);
   const shownTeams = fullTable ? topTeams : topTeams.slice(Math.max(0, Math.min(myIdx - 2, topTeams.length - 5)), Math.max(0, Math.min(myIdx - 2, topTeams.length - 5)) + 5);
   return (
     <div className="c-today">
-      <div className="c-main">
       {nowCards.length > 0 && !inWeekend && (
         <section className="panel c-now">
           <h3>DECIDE NOW</h3>
@@ -348,9 +343,11 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
       {!inWeekend && !closedYearNow(s) && <Headline s={s} />}
       <WeekendIntro s={s} />
       <RaceWeek s={s} go={go} />
+      <FactoryBox s={s} go={go} />
       <DayStrip s={s} />
       <Chapter s={s} go={go} />
 
+      <div className="c-cols">
         <section className="panel">
           <h3>DECISIONS ({decisions.length})</h3>
           <div className="deleg" title="Departments you hand over decide the small things themselves. Urgent ones still stop the clock for you.">
@@ -371,8 +368,7 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
           {urgent && !inWeekend && <p className="dim small">Urgent decisions stop the clock until you answer.</p>}
         </section>
 
-      </div>
-      <aside className="c-side">
+        <aside>
           <GoalsPanel s={s} />
           <section className="panel">
             <h3>NOTICES {notices.length > 0 && <button className="tiny" onClick={() => notices.forEach((n) => d({ type: "dismiss", id: n.id }))}>CLEAR ALL</button>}</h3>
@@ -406,7 +402,8 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
               ))}
             </ol>
           </section>
-      </aside>
+        </aside>
+      </div>
 
       <div className="c-dock">
         {dock ? dock : clock.running ? (
