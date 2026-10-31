@@ -77,7 +77,7 @@ export function TimingBar({ session }: { session: QualiSession }) {
   // Times only appear after each sector line is crossed, never as a live guess at the lap.
   const cutPos = sim.segment < 3 ? sim.keepers[seg] : 0;
   const cutCar = cutPos ? sim.order[cutPos - 1] : undefined;
-  const bubble = !!cutCar && car.position >= cutPos - 2 && car.id !== cutCar.id;
+  const bubble = !!cutCar && car.position >= cutPos - 2 && car.id !== cutCar.id && isFinite(cutCar.best[seg]);
   const ref = bubble && cutCar ? cutCar : leader && leader.id !== car.id ? leader : undefined;
   const refName = ref ? (bubble ? `P${cutPos} CUT LINE (${ref.entry.driver.code})` : `POLE (${ref.entry.driver.code})`) : "";
   const cmpCell = (i: number, mine: number, done: boolean) => {
