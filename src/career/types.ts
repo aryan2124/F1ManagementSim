@@ -770,6 +770,8 @@ export interface CareerState {
   /** Mark that stops the clock the next time. */
   stopReason: string;
   summerDone: boolean;
+  /** The manager's weekly focus (Today screen). */
+  focus?: { kind: import("./focus").FocusKind; since: number };
   /** Regulation eras. */
   era: EraState;
   /** The junior world and the player's academy. */
@@ -945,6 +947,7 @@ export type Action =
   | { type: "holdPart"; id: number; hold: boolean }
   | { type: "upgradeFacility"; which: keyof Omit<Facilities, "building"> }
   | { type: "delegate"; area: keyof Delegation; level: Level }
+  | { type: "setFocus"; kind: import("./focus").FocusKind }
   | { type: "rndPlan"; focus?: RndPlan["focus"]; stance?: RndPlan["stance"] }
   | { type: "sign"; driverId: string; slot: 0 | 1; offer: Offer }
   | { type: "talkOpen"; kind: "driver" | "junior"; targetId: string }

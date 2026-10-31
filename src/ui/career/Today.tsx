@@ -1,5 +1,6 @@
 import { PLink } from "./Profile";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { FOCUS, type FocusKind } from "../../career/focus";
 import type { CareerState } from "../../career/types";
 import { circuitMeta } from "../../game/circuits";
 import { daysTo, factoryClosed, inSummerBreak, launchDay, summerEnd, winterEnd } from "../../career/calendar";
@@ -119,6 +120,45 @@ function Chapter({ s, go }: { s: Props["s"]; go: (t: Tab) => void }) {
   return null;
 }
 
+/** One line about who matters this week. */
+function closedYearNow(s: CareerState): boolean {
+  return s.history.some((h) => h.year === s.year);
+}
+
+function threatLine(s: CareerState): string {
+  const ranked = Object.entries(s.standings.teams).sort((a, b) => b[1] - a[1]);
+  const i = ranked.findIndex(([id]) => id === s.teamId);
+  const mine = ranked[i]?.[1] ?? 0;
+  if (ranked.every(([, p]) => p === 0)) return "Nobody has scored yet. Everything is still to play for.";
+  const above = ranked[i - 1];
+  const below = ranked[i + 1];
+  if (i === 0 && below) return `You lead. ${teamLabel(s, below[0])} are ${mine - below[1]} points behind.`;
+  if (above && below && above[1] - mine <= mine - below[1]) return `${teamLabel(s, above[0])} are ${above[1] - mine} points ahead. Catch them.`;
+  if (below) return `${teamLabel(s, below[0])} are ${mine - below[1]} points behind you. Hold them off.`;
+  return above ? `${teamLabel(s, above[0])} are ${above[1] - mine} points ahead.` : "";
+}
+
+function FocusRow({ s, d }: { s: Props["s"]; d: Props["d"] }) {
+  const cur = s.focus?.kind;
+  return (
+    <section className="panel c-focus">
+      <h3>THIS WEEK'S FOCUS</h3>
+      <div className="focus-cards">
+        {(Object.keys(FOCUS) as FocusKind[]).map((k, i) => (
+          <button key={k} className={`focus-card clickable ${cur === k ? "sel" : ""}`} onClick={() => d({ type: "setFocus", kind: k })} title={`Press ${i + 1}`}>
+            <b>{i + 1}. {FOCUS[k].label}</b>
+            <span className="gain">{FOCUS[k].gain}</span>
+            <span className="cost">{FOCUS[k].cost}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const WD_LONG = 7;
+void WD_LONG;
+
 const STAGE_BUTTON: Record<string, string> = { practice: "GO TO PRACTICE", sq: "GO TO SPRINT QUALIFYING", sprint: "GO TO THE SPRINT", quali: "GO TO QUALIFYING", race: "GO TO THE RACE" };
 /** The big button on a weekend day names the next thing to do, instead of CONTINUE. */
 export function weekendButton(s: CareerState): string {
@@ -145,6 +185,25 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
   const topDrivers = Object.entries(s.standings.drivers).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const topTeams = Object.entries(s.standings.teams).sort((a, b) => b[1] - a[1]);
   const urgent = decisions.some((c) => c.urgency === 3);
+  const [more, setMore] = useState(false);
+  const [fullTable, setFullTable] = useState(false);
+  // notices clear themselves after five days
+  useEffect(() => {
+    for (const n of notices) if (n.created < s.day - 5) d({ type: "dismiss", id: n.id });
+  }, [s.day]); // eslint-disable-line react-hooks/exhaustive-deps
+  // number keys choose the weekly focus
+  useEffect(() => {
+    const ks: FocusKind[] = ["car", "drivers", "money", "academy"];
+    const on = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement)?.tagName === "INPUT" || e.ctrlKey || e.metaKey) return;
+      const i = Number(e.key) - 1;
+      if (i >= 0 && i < 4 && !inWeekend && !clock.running) d({ type: "setFocus", kind: ks[i] });
+    };
+    window.addEventListener("keydown", on);
+    return () => window.removeEventListener("keydown", on);
+  }, [inWeekend, clock.running]); // eslint-disable-line react-hooks/exhaustive-deps
+  const myIdx = topTeams.findIndex(([id]) => id === s.teamId);
+  const shownTeams = fullTable ? topTeams : topTeams.slice(Math.max(0, Math.min(myIdx - 2, topTeams.length - 5)), Math.max(0, Math.min(myIdx - 2, topTeams.length - 5)) + 5);
   return (
     <div className="c-today">
       <section className="panel c-head hero-head">
@@ -160,6 +219,7 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
           ) : (
             <p className="dim">The season is over.</p>
           )}
+          <p className="hh-threat">{threatLine(s)}</p>
           {eraNote(s) && <p className="dim small">Regulations: {eraNote(s)}</p>}
           {Object.entries(s.gridDrops ?? {}).filter(([, l]) => l.length).map(([id, l]) => (
             <p key={id} className="small warn">Grid penalty at the next race: {s.drivers[id]?.spec.name ?? id}, {l.reduce((a, x) => a + x.places, 0)} places ({l.map((x) => x.why).join("; ")}).</p>
@@ -167,13 +227,18 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
         </div>
         <div className="tiles hh-tiles">
           <div className="stat-tile" style={{ ["--tile" as string]: me.cash < 0 ? "var(--c-bad)" : "var(--c-gold)", ["--i" as string]: 0 }}><span>CASH <Tip text="Real money in the bank. Prize money, sponsors and fees come in; salaries and upkeep go out each month." /></span><b><Num v={me.cash}>{fmtMoney(me.cash)}</Num></b><u><DeptIcon kind="cash" size={22} /></u></div>
-          <div className="stat-tile" style={{ ["--tile" as string]: capRoom(me) < 0 ? "var(--c-bad)" : "var(--c-cap)", ["--i" as string]: 1 }}><span>CAP ROOM <Tip text="How much more you can spend on new car parts this season under the cost cap. Each project uses some when you start it. It resets at the new financial year." /></span><b><Num v={capRoom(me)}>{fmtMoney(capRoom(me))}</Num></b><u><DeptIcon kind="cap" size={22} /></u></div>
-          <div className="stat-tile" style={{ ["--tile" as string]: "var(--c-time)", ["--i" as string]: 2 }}><span>TUNNEL <Tip text={`Wind tunnel hours left. Projects that need the tunnel use some every day. The allowance refills on ${fmtDay(nextAllowanceReset(s))}.`} /></span><b><Num v={Math.round(me.tunnelLeft)}>{Math.round(me.tunnelLeft)}h</Num></b><u><DeptIcon kind="tunnel" size={22} /></u></div>
           <div className="stat-tile" style={{ ["--tile" as string]: me.board < 28 ? "var(--c-bad)" : "var(--c-good)", ["--i" as string]: 3 }}><span>BOARD <Tip text="How much the board trusts you, 0 to 100. Below about 15 you can be sacked, unless yours is the weakest car on the grid." /></span><b><Num v={Math.round(me.board)}>{Math.round(me.board)}</Num></b><Bar v={me.board} max={100} color={me.board < 28 ? "var(--c-bad)" : "var(--c-good)"} /><u><DeptIcon kind="board" size={22} /></u></div>
-          <div className="stat-tile" style={{ ["--tile" as string]: s.brand.fans < 25 ? "var(--c-bad)" : "var(--c-tech)", ["--i" as string]: 4 }}><span>FANS <Tip text={`How much supporters love the team, 0 to 100. Results move it slowly. Changing the livery or name for a sponsor hurts it, most for historic teams. Fans pay through merchandise and make sponsors offer more. Below about 22 the board worries.`} /></span><b><Num v={Math.round(s.brand.fans)}>{Math.round(s.brand.fans)}</Num></b><Bar v={s.brand.fans} max={100} color="var(--c-tech)" /><u><DeptIcon kind="fans" size={22} /></u></div>
           <div className="stat-tile" style={{ ["--tile" as string]: "var(--c-go)", ["--i" as string]: 5 }}><span>STANDING</span><b><Num v={rank} good="down">P{rank}</Num></b><u><DeptIcon kind="car" size={22} /></u></div>
         </div>
+        <button className="tiny c-morebtn" onClick={() => setMore((m) => !m)}>{more ? "LESS" : "MORE NUMBERS"}</button>
+        {more && <div className="tiles hh-tiles c-drawer">
+          <div className="stat-tile" style={{ ["--tile" as string]: capRoom(me) < 0 ? "var(--c-bad)" : "var(--c-cap)", ["--i" as string]: 1 }}><span>CAP ROOM <Tip text="How much more you can spend on new car parts this season under the cost cap. Each project uses some when you start it. It resets at the new financial year." /></span><b><Num v={capRoom(me)}>{fmtMoney(capRoom(me))}</Num></b><u><DeptIcon kind="cap" size={22} /></u></div>
+          <div className="stat-tile" style={{ ["--tile" as string]: "var(--c-time)", ["--i" as string]: 2 }}><span>TUNNEL <Tip text={`Wind tunnel hours left. Projects that need the tunnel use some every day. The allowance refills on ${fmtDay(nextAllowanceReset(s))}.`} /></span><b><Num v={Math.round(me.tunnelLeft)}>{Math.round(me.tunnelLeft)}h</Num></b><u><DeptIcon kind="tunnel" size={22} /></u></div>
+          <div className="stat-tile" style={{ ["--tile" as string]: s.brand.fans < 25 ? "var(--c-bad)" : "var(--c-tech)", ["--i" as string]: 4 }}><span>FANS <Tip text={`How much supporters love the team, 0 to 100. Results move it slowly. Changing the livery or name for a sponsor hurts it, most for historic teams. Fans pay through merchandise and make sponsors offer more. Below about 22 the board worries.`} /></span><b><Num v={Math.round(s.brand.fans)}>{Math.round(s.brand.fans)}</Num></b><Bar v={s.brand.fans} max={100} color="var(--c-tech)" /><u><DeptIcon kind="fans" size={22} /></u></div>
+        </div>}
       </section>
+
+      {!inWeekend && !closedYearNow(s) && <FocusRow s={s} d={d} />}
 
       <FactoryBox s={s} go={go} />
       <DayStrip s={s} />
@@ -203,20 +268,21 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
           <section className="panel">
             <h3>PADDOCK NEWS</h3>
             <ul className="c-ticker">
-              {s.ticker.slice(0, 5).map((t, i) => (
-                <li key={i} className={`i${t.importance}`}><span className="dim">{fmtDay(t.day)}</span> {t.text}</li>
+              {s.ticker.slice(0, 4).map((t, i) => (
+                <li key={i} className={`i${t.importance} headline`}><b>{t.text}</b><span className="dim">{fmtDay(t.day)}</span></li>
               ))}
             </ul>
           </section>
           <section className="panel">
             <h3>CONSTRUCTORS</h3>
             <ol className="c-table">
-              {topTeams.slice(0, 11).map(([id, p]) => (
+              {shownTeams.map(([id, p]) => (
                 <li key={id} className={id === s.teamId ? "mine" : ""} style={{ ["--team" as string]: hex(teamColour(s, id)) }}>
                   <i className="chip" /> <PLink kind="team" id={id}>{teamLabel(s, id)}</PLink> <b>{p}</b>
                 </li>
               ))}
             </ol>
+            <button className="tiny wide" onClick={() => setFullTable((f) => !f)}>{fullTable ? "SHOW LESS" : "FULL TABLE"}</button>
             <h3>DRIVERS</h3>
             <ol className="c-table">
               {topDrivers.map(([id, p]) => (
@@ -245,6 +311,7 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
           <>
             {clock.stopped && <span className="dim c-stopped">Stopped: {clock.stopped}</span>}
             <button className="btn" onClick={() => d({ type: "day" })}>ONE DAY</button>
+            {!!next && toNext !== null && toNext > 3 && <button className="btn" title="Runs at top speed and stops for anything that needs you" onClick={() => { setSpeed(4); play(); }}>SKIP TO RACE WEEK</button>}
             <button className={`btn primary big ${s.cards.some((c) => !c.notice && !c.mail) ? "" : "pulse"}`} onClick={play}>CONTINUE (SPACE)</button>
           </>
         )}

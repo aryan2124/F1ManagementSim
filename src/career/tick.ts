@@ -1,3 +1,4 @@
+import { focusWeekly } from "./focus";
 import { socialWeekly } from "./social";
 import { boardMove } from "./board";
 import { CFG } from "./config";
@@ -392,6 +393,7 @@ export function weeklyPlayer(s: CareerState, first: boolean) {
     driverRumours(s, first);
   }
   nextCarWeekly(s);
+  if (!closed) focusWeekly(s);
   devEventsWeekly(s);
   passiveRead(s, s.teamId);
   generateIdeas(s, s.teamId);

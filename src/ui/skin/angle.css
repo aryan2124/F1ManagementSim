@@ -135,3 +135,19 @@ body.fx-wash { animation: tier-wash 0.7s ease-out; }
 .pitbox.go{border-color:#57cc99;animation:pit-pulse .25s infinite alternate}
 .pitbox.go .pbar i{background:#57cc99}
 @keyframes pit-pulse{to{box-shadow:0 0 18px #57cc99}}
+
+.hh-threat{margin:6px 0;color:var(--c-gold,#f9c74f);font-size:var(--fs-2,13px)}
+.c-morebtn{margin-top:6px;align-self:flex-end}
+.c-drawer{margin-top:6px}
+.focus-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-2,8px)}
+.focus-card{display:flex;flex-direction:column;gap:4px;text-align:left;padding:10px;min-height:92px;font:inherit}
+.focus-card .gain{color:#57cc99;font-size:12px}.focus-card .cost{color:#f08a8a;font-size:12px}
+.focus-card.sel{outline:2px solid var(--team-accent,#f9c74f)}
+.c-ticker li.headline{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}
+.c-ticker li.headline b{font-size:13px}.c-ticker li.i3 b{color:#f9c74f}
+@media(max-width:900px){.focus-cards{grid-template-columns:repeat(2,1fr)}}
+.focus-card{background:#1a2238;color:#e8ecf5;border:2px solid #3a4666;cursor:pointer;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));transition:transform var(--t-press,100ms),background var(--t-hover,120ms)}
+.focus-card:hover{background:#243050}
+.focus-card:active{transform:scale(.97)}
+.focus-card b{color:#f9c74f;font-size:13px}
+.focus-card.sel{background:#2a3558;outline:none;border-color:var(--team-accent,#f9c74f)}
