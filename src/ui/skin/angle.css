@@ -175,3 +175,15 @@ body.fx-wash { animation: tier-wash 0.7s ease-out; }
 .gcard.sel{background:#2a3558;border-color:var(--team-accent,#f9c74f)}
 .vs-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed #3a4666}
 .vs-me{font-size:16px}.vs-side{font-size:12px;opacity:.85}
+.briefing .brief-grid .gamble,.briefing .brief-grid .versus{grid-column:1/-1}
+.briefing .gamble-cards{grid-template-columns:repeat(3,1fr)}
+.briefing .gcard{min-height:84px}
+.briefing .gcard b{font-size:15px}.briefing .gcard .gain,.briefing .gcard .cost{font-size:13px}
+.tower li{position:relative}
+.tower li .arr{position:absolute;left:1px;top:50%;transform:translateY(-50%);width:auto}
+.promptbar .dcard{display:flex;flex-direction:column;gap:6px;position:relative}
+.promptbar .dcard .ptop{display:flex;flex-direction:row;align-items:flex-start;gap:8px;justify-content:flex-start}
+.promptbar .dcard .ptext{flex:1;min-width:0;margin:0;font-size:12px}
+.promptbar .dcard .popts{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px}
+.promptbar .dcard .popts button{flex:1 1 120px}
+.promptbar .dcard .pevid{flex-direction:row}
