@@ -42,7 +42,7 @@ export function Briefing({
   title?: string;
   quali: QualiRow[];
   onBack: () => void;
-  onStart: (tyres: Record<string, Compound>, startSets?: Record<string, string>, standing?: Record<string, StandingOrders>, gamble?: "safe" | "undercut" | "long") => void;
+  onStart: (tyres: Record<string, Compound>, startSets?: Record<string, string>, standing?: Record<string, StandingOrders>, gambles?: Record<string, "safe" | "undercut" | "long">) => void;
   /** Career: the physical sets each car can start on (keyed by driver, or by team when the pool rule is on). */
   setLists?: Record<string, TyreSet[]>;
   /** Career: start tyres fixed by the qualifying lock rule. */
@@ -56,7 +56,7 @@ export function Briefing({
 }) {
   useMusic("garage");
   const [view, setView] = useState<"grid" | "wall">("grid");
-  const [gamble, setGamble] = useState<"safe" | "undercut" | "long">("safe");
+  const [gambles, setGambles] = useState<Record<string, "safe" | "undercut" | "long">>(() => Object.fromEntries(weekend.humanIds.map((id) => [id, "safe" as const])));
   const [startSets, setStartSets] = useState<Record<string, string>>({});
   const [orders, setOrders] = useState<Record<string, StandingOrders>>(() => Object.fromEntries(weekend.humanIds.map((id) => [id, NO_ORDERS])));
   const [tyres, setTyres] = useState<Record<string, Compound>>(() => Object.fromEntries(weekend.humanIds.map((id) => [id, (locks?.[id] ?? "M") as Compound])));
@@ -93,8 +93,8 @@ export function Briefing({
         setTyres={setTyres}
         orders={orders}
         setOrders={setOrders}
-        gamble={gamble}
-        setGamble={setGamble}
+        gambles={gambles}
+        setGambles={setGambles}
         locks={locks}
         sets={sets ? Object.fromEntries(weekend.humanIds.map((id) => [id, sets[weekend.entries.find((x) => x.id === id)?.team.id ?? ""] ?? sets[id] ?? {}])) : undefined}
         setLists={setLists ? Object.fromEntries(weekend.humanIds.map((id) => [id, setLists[id] ?? setLists[weekend.entries.find((x) => x.id === id)?.team.id ?? ""] ?? []])) : undefined}
@@ -106,7 +106,7 @@ export function Briefing({
         rules={extraRules ?? []}
         rivals={rivals.map((t) => ({ id: t.id, short: t.short, color: t.color, style: (BRAINS[t.id] ?? DEFAULT_BRAIN).style, blurb: (BRAINS[t.id] ?? DEFAULT_BRAIN).blurb }))}
         onBack={() => setView("grid")}
-        onGo={() => onStart(tyres, startSets, orders, gamble)}
+        onGo={() => onStart(tyres, startSets, orders, gambles)}
       />
     );
   }

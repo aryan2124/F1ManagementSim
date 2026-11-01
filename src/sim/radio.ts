@@ -538,9 +538,10 @@ export class RadioSystem {
       if (remaining <= 2 || (sim.weather && car.wetD > 0.2)) continue;
       let why: string | null = null;
       let comp: Compound | null = null;
-      if (o.stopLap && car.stops === 0 && car.lap + 1 >= o.stopLap) {
-        why = `Plan: box around lap ${o.stopLap}`;
-        comp = o.stopCompound;
+      const planned = o.stopLap ? [{ lap: o.stopLap, compound: o.stopCompound }, ...(o.later ?? [])][car.stops] : undefined;
+      if (planned && car.lap + 1 >= planned.lap) {
+        why = `Plan: box around lap ${planned.lap}`;
+        comp = planned.compound;
       } else if (o.tyreLimit !== null && car.tyre.wear >= o.tyreLimit + this.slip(car, o)) {
         why = `Tyres are at ${Math.round(car.tyre.wear * 100)} percent, your limit`;
       } else if (o.scBox && sim.neutral.active && this.scHandled.get(car.id) !== sim.neutral.id) {

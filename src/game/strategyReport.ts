@@ -78,12 +78,14 @@ export function strategyReport(sim: RaceSim, humanIds: string[]): StrategyReport
   const ran = new Set(calls.filter((c) => humanIds.includes(c.carId) && c.kind === "standing").map((c) => c.text)).size;
   let summary = ran ? `Your standing orders made ${ran} call${ran > 1 ? "s" : ""} for you.` : "";
   // D3: the pre-race call is judged too
-  const g = sim.cfg.gamble;
-  if (g && g !== "safe") {
-    const mine = sim.stopLog.filter((x) => humanIds.includes(x.carId));
+  for (const id of humanIds) {
+    const g = sim.cfg.gambles?.[id] ?? sim.cfg.gamble;
+    if (!g || g === "safe") continue;
+    const mine = sim.stopLog.filter((x) => x.carId === id);
     const avg = mine.length ? mine.reduce((a, x) => a + x.secs, 0) / mine.length : 0;
     const name = g === "undercut" ? "Undercut ready" : "Long run";
-    summary += `${summary ? " " : ""}Pre-race call, ${name}: ${mine.length ? `${mine.length} stop${mine.length > 1 ? "s" : ""}, average ${avg.toFixed(1)} s in the box.` : "you never stopped, so the quick crew was not needed."}`;
+    const who = humanIds.length > 1 ? `${sim.car(id).entry.driver.code}, ` : "";
+    summary += `${summary ? " " : ""}Pre-race call, ${who}${name}: ${mine.length ? `${mine.length} stop${mine.length > 1 ? "s" : ""}, average ${avg.toFixed(1)} s in the box.` : "no stops, so the quick crew was not needed."}`;
   }
   return { grade, score, lines, summary };
 }

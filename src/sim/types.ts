@@ -106,6 +106,8 @@ export interface RaceConfig {
   engineerSkill?: number;
   /** The pre-race gamble the player picked: safe, undercut (fast but fragile stops) or long (gentle tyres, slower stops). */
   gamble?: "safe" | "undercut" | "long";
+  /** The pre-race call per human car. A car with no entry here uses `gamble`. */
+  gambles?: Record<string, "safe" | "undercut" | "long">;
   /** The season's year, used for age and experience (Race IQ). Defaults to 2026. */
   year?: number;
   laps: number;
@@ -167,6 +169,8 @@ export interface LapRec {
   /** True for an in or out lap, or a lap under a neutralisation: the time says little about pace. */
   slow: boolean;
   gap: number;
+  /** The three sector times of the lap. */
+  sectors?: [number, number, number];
 }
 
 /** One pit stop, kept for the post-race debrief. */
@@ -276,6 +280,9 @@ export interface CarState {
   /** Overtake failed while alongside: slow down, keep the lateral offset until clear. */
   yielding: boolean;
   cooldownUntil: number;
+  /** Blue flag shown to this (lapped) car until this tick: it lifts to let the leader by. */
+  blueUntil?: number;
+  blueLap?: number;
   lateral: number; // metres from racing line, positive = left of direction of travel; for rendering
   /** Seconds behind car ahead, measured via timing loops. */
   gapAhead: number;
@@ -392,6 +399,7 @@ export type SimEventKind =
   | "chequered"
   | "yellow"
   | "yellow_clear"
+  | "blue_flag"
   | "spin"
   | "lockup"
   | "off_track"

@@ -313,7 +313,7 @@ describe("engines, gearboxes, parc ferme and grid drops (items 14, 15)", () => {
     const settings: WeekendSettings = { teamId: "mer", circuitId: "monza", distance: "full", seed: 5 };
     const count = (wear: { pu: number; gb: number } | undefined) => {
       let fails = 0;
-      for (let seed = 1; seed <= 6; seed++) {
+      for (let seed = 1; seed <= 14; seed++) {
         const w = createWeekend({ ...settings, seed });
         const cfg = raceConfigFrom(w, simulateQualifying(w), {});
         cfg.laps = 20;

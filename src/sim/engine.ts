@@ -742,6 +742,8 @@ export class RaceSim {
     if (this.cfg.rules?.refuelling && car.fuel <= 0.001 && car.status === "racing") target *= 0.3; // out of fuel
     if (sc) target = Math.min(target, SC_SPEED);
     if (vsc) target = Math.min(target, profV * VSC_FACTOR);
+    // under a blue flag the lapped car eases off, and a fast car right behind it is not held up as a rival would be
+    if (car.blueUntil && car.blueUntil > this.tick && car.status === "racing") target *= 0.9;
     const redNow = this.inc.red.active;
     const neutral = sc || vsc || redNow;
     if (redNow && car.status === "racing") target = Math.min(target, 55);
@@ -775,6 +777,17 @@ export class RaceSim {
             target = Math.min(target, Math.max(0, Math.sqrt((bF2 / bL2) * ah2.v * ah2.v + 2 * bF2 * room2)));
           }
         }
+      }
+
+      // a lapped car ahead is shown the blue flag and lifts so the faster car can get by
+      if (!neutral && car.status === "racing" && ah.status === "racing" && ah.s < car.s - L * 0.5 && gapM < 70) {
+        if (!(ah.blueUntil && ah.blueUntil > this.tick)) {
+          if (ah.blueLap !== ah.lap) {
+            ah.blueLap = ah.lap;
+            this.emit("blue_flag", ah.id, car.id, `Blue flag for ${ah.entry.driver.code}: ${e.driver.code} is coming through.`);
+          }
+        }
+        ah.blueUntil = this.tick + 40;
       }
 
       // try to start an overtake
@@ -869,7 +882,7 @@ export class RaceSim {
         const fixed = this.cfg.rules?.fixedStop;
         let crewT = fixed !== undefined ? fixed + (car.damage.aero > 0.05 ? 4 : 0) : 2.0 + (1 - e.team.pitCrew) * 1.6 + this.rng.range(0, 0.7) + (this.rng.chance(e.team.pitFumble ?? 0.04) ? 3 : 0) + (car.damage.aero > 0.05 ? 4 : 0);
         if (fixed === undefined && e.human) {
-          const g = this.cfg.gamble;
+          const g = this.cfg.gambles?.[car.id] ?? this.cfg.gamble;
           if (g === "undercut") crewT = this.rng.chance(0.2) ? crewT + 0.8 : Math.max(1.8, crewT - 0.35);
           else if (g === "long") crewT += 0.4;
         }
@@ -961,7 +974,7 @@ export class RaceSim {
         rate *= wetWearFactor(car.tyre.compound, wetHere);
         if (!isWetCompound(car.tyre.compound)) rate *= Math.min(1.25, Math.max(0.85, 1 + 0.012 * (this.wx.trackC - 38)));
       }
-      if (e.human) rate *= this.cfg.gamble === "undercut" ? 1.06 : this.cfg.gamble === "long" ? 0.92 : 1;
+      if (e.human) { const g = this.cfg.gambles?.[car.id] ?? this.cfg.gamble; rate *= g === "undercut" ? 1.06 : g === "long" ? 0.92 : 1; }
       if (sc) rate *= 0.35;
       else if (vsc) rate *= 0.5;
       car.tyre.wear += rate * DT;
@@ -1065,7 +1078,7 @@ export class RaceSim {
     {
       let rec = this.lapLog.get(car.id);
       if (!rec) this.lapLog.set(car.id, (rec = []));
-      rec.push({ lap: lapNo, pos: car.position, time: lapTime, compound: car.tyre.compound, slow: car.status !== "racing" || this.neutral.active || lapNo === 1, gap: car.gapLeader });
+      rec.push({ lap: lapNo, pos: car.position, time: lapTime, compound: car.tyre.compound, slow: car.status !== "racing" || this.neutral.active || lapNo === 1, gap: car.gapLeader, sectors: [...car.sectors.last] as [number, number, number] });
     }
     if (this.cfg.rules?.lapLed && this.leader()?.id === car.id) this.ledLaps.set(car.id, (this.ledLaps.get(car.id) ?? 0) + 1);
     if (this.cfg.rules?.scheduledSC && !this.scheduledDone && lapNo >= Math.max(3, Math.floor(this.cfg.laps * 0.42)) && lapNo < this.cfg.laps - 3 && this.leader()?.id === car.id) {

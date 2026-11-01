@@ -58,3 +58,48 @@
 .app .carcard .mood .ctl{grid-template-columns:84px minmax(0,1fr) 96px;column-gap:10px}
 .app .carcard .mood .ctl > span{white-space:nowrap;overflow:visible}
 .app .carcard .mood .ctl em{white-space:nowrap;font-size:14px}
+
+/* simulate menu: regulation toggles */
+.app .regs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.app .regs button.on{background:#f9a03f;color:#1a1208;border-color:#f9a03f}
+.app .regnotes{margin:6px 0 10px;padding-left:18px}
+
+.app .regs button.tiny.on{background:#f9a03f !important;color:#1a1208 !important;border-color:#ffd08a !important;text-shadow:none !important}
+.app .tl-stops{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:10px 0}
+.app .tl-stops small{flex:1 1 100%}
+
+/* timing tower: the penalty sits inside the gap cell so it can never push the row wider than the panel */
+.app .tower li{grid-template-columns:26px 8px 52px 36px minmax(0,1fr) 22px}
+.app .tower li .gap{display:flex;justify-content:flex-end;align-items:baseline;gap:5px;min-width:0;overflow:hidden}
+.app .tower li .gap .pen{font-size:11px;line-height:1;flex:none}
+
+/* full stats popup opened from a timing tower row */
+.ds-root.app{position:fixed;inset:0;z-index:300;pointer-events:none;background:none;min-height:0}
+.ds-back{position:fixed;inset:0;background:rgba(6,8,20,.72);display:flex;align-items:center;justify-content:center;padding:20px;pointer-events:auto}
+.ds-box{background:#141a33;border:2px solid #f9a03f;box-shadow:0 0 0 3px #0a0e22,0 20px 60px rgba(0,0,0,.6);width:min(980px,100%);max-height:calc(100vh - 40px);overflow:auto;padding:16px 18px;color:#ece7ff}
+.ds-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-left:6px solid var(--team);padding-left:12px;margin-bottom:12px}
+.ds-head h3{margin:0;font-size:26px;line-height:1.1}.ds-head h3 small{font-size:14px;color:#a9b2d8;margin-left:8px}
+.ds-box h4{margin:16px 0 6px;font-size:18px;color:#f9c74f}.ds-box h4 small{font-size:12px;color:#a9b2d8}
+.ds-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.ds-card{background:#1d2547;border:1px solid #34407a;padding:8px 10px}
+.ds-card span{display:block;font-size:11px;color:#a9b2d8;white-space:nowrap}
+.ds-card b{font-size:22px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.ds-stints{display:flex;gap:3px;height:54px}
+.ds-stint{min-width:70px;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#10141f;border:1px solid rgba(0,0,0,.4)}
+.ds-stint b{font-size:14px}.ds-stint small{font-size:12px}
+.ds-table{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
+.ds-table th{text-align:left;font-size:11px;color:#a9b2d8;padding:4px 8px;position:sticky;top:0;background:#141a33}
+.ds-table td{padding:4px 8px;border-top:1px solid #232c57;white-space:nowrap}
+.ds-table td .badge,.ds-table td svg{vertical-align:middle}
+.ds-laps{max-height:320px;overflow:auto;border:1px solid #232c57}
+.ds-laps tr{cursor:pointer}.ds-laps tr:hover{background:#1d2547}
+.ds-laps tr.sel{background:#2b3570;outline:1px solid #f9a03f}
+.ds-laps tr.slow td{color:#8790b8}
+.ds-laps tr.bestlap td:nth-child(2){color:#c28bff;font-weight:bold}
+.ds-table td.pb{color:#57cc99}
+.ds-sel{background:#1d2547;border:1px solid #f9a03f;padding:10px 12px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center}
+.ds-sel b{font-size:20px}
+.ds-secs{display:flex;gap:10px;flex:1 1 100%}
+.ds-secs div{flex:1;background:#141a33;border:1px solid #34407a;padding:6px 10px}
+.ds-secs div.pb{border-color:#57cc99}
+.ds-secs span{display:block;font-size:11px;color:#a9b2d8}.ds-secs b{font-size:22px}.ds-secs small{display:block;font-size:12px;color:#a9b2d8}

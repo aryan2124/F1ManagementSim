@@ -481,10 +481,10 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
         setLists={plan!.raceCfg?.tyreSetList}
         pitLane={!!ws.parcBroken}
         extraRules={[...rulesBrief(plan!.raceCfg?.rules, plan!.laps), ...rivalLines(s, plan!.humanIds, plan!.raceCfg?.grid ?? [])]}
-        onStart={(tyres: Record<string, Compound>, startSets?: Record<string, string>, standing?: Record<string, StandingOrders>, gamble?: "safe" | "undercut" | "long") => {
+        onStart={(tyres: Record<string, Compound>, startSets?: Record<string, string>, standing?: Record<string, StandingOrders>, gambles?: Record<string, "safe" | "undercut" | "long">) => {
           const locked: Record<string, Compound> = {};
           if (plan!.locks) for (const id of plan!.humanIds) if (plan!.locks[id]) locked[id] = plan!.locks[id];
-          const cfg = { ...plan!.raceCfg!, gamble, startTyres: { ...plan!.aiTyres, ...tyres, ...locked }, startSets: { ...(plan!.raceCfg!.startSets ?? {}), ...(startSets ?? {}) }, standing: standing ?? plan!.raceCfg!.standing };
+          const cfg = { ...plan!.raceCfg!, gambles, startTyres: { ...plan!.aiTyres, ...tyres, ...locked }, startSets: { ...(plan!.raceCfg!.startSets ?? {}), ...(startSets ?? {}) }, standing: standing ?? plan!.raceCfg!.standing };
           setRs(new RaceSession(cfg, plan!.humanIds));
           lastKind.current = kind as SessionKind;
           setView("race");

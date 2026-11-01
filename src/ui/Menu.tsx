@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { TEAMS, DRIVERS } from "../game/data";
 import { CALENDAR_2026, CIRCUITS, circuitMeta, scheduledLaps } from "../game/circuits";
 import { CIRCUIT_GEO } from "../game/circuitGeo.generated";
-import { DISTANCES, type WeekendSettings } from "../game/setup";
+import { DISTANCES, REG_OPTIONS, type WeekendSettings } from "../game/setup";
 import { fillTier, TIER_LABEL, TIER_SEATS, type Tier } from "../game/people";
 import { LeaguePanel } from "./LeaguePanel";
 
@@ -157,6 +157,27 @@ export function Menu({
                 </>
               );
             })()}
+          </section>
+
+          <section className="panel">
+            <h3>REGULATIONS</h3>
+            <p className="small dim">{settings.regs?.length ? `${settings.regs.length} rule${settings.regs.length === 1 ? "" : "s"} switched on for this weekend.` : "Optional: switch rules on to test how they change the race. Standard rules now."}</p>
+            <div className="regs">
+              {REG_OPTIONS.map((r) => {
+                const on = !!settings.regs?.includes(r.id);
+                return (
+                  <button key={r.id} className={`tiny ${on ? "on" : ""}`} aria-pressed={on} title={r.note} onClick={() => onChange({ ...settings, regs: on ? (settings.regs ?? []).filter((x) => x !== r.id) : [...(settings.regs ?? []), r.id] })}>
+                    {r.label}
+                  </button>
+                );
+              })}
+            </div>
+            {settings.regs?.length ? (
+              <>
+                <ul className="small dim regnotes">{REG_OPTIONS.filter((r) => settings.regs?.includes(r.id)).map((r) => <li key={r.id}><b>{r.label}:</b> {r.note}</li>)}</ul>
+                <button className="tiny" onClick={() => onChange({ ...settings, regs: undefined })}>BACK TO STANDARD RULES</button>
+              </>
+            ) : null}
           </section>
 
           <section className="panel">

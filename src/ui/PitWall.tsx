@@ -30,47 +30,90 @@ const CALLS: { k: Gamble; name: string; gain: string; cost: string }[] = [
   { k: "long", name: "LONG RUN", gain: "Tyres wear 8% slower", cost: "Pit stops 0.4 s slower" },
 ];
 
-function Timeline({ laps, life, lifeOf, start, orders, onStop, color, rain }: { laps: number; life: number; lifeOf: (c: Compound) => number; start: Compound; orders: StandingOrders; onStop: (lap: number | null) => void; color: string; rain: number[] }) {
+/** The planned stop laps and tyres of a plan, with the pit wall's defaults filled in where the player has not chosen. */
+export function planOf(orders: StandingOrders, start: Compound, laps: number, lasts: number) {
+  const first = orders.stopLap ?? Math.min(laps - 3, Math.max(3, Math.round(lasts * 0.9)));
+  const stops = [first, ...(orders.later ?? []).map((l) => l.lap)];
+  const comps: Compound[] = [start];
+  const chosen: (Compound | null)[] = [null, orders.stopCompound, ...(orders.later ?? []).map((l) => l.compound)];
+  for (let i = 1; i <= stops.length; i++) {
+    const prev = comps[i - 1];
+    comps.push(chosen[i] ?? (i === 1 ? (start === "H" ? "M" : "H") : prev === "H" ? "M" : prev === "M" ? "S" : "M"));
+  }
+  return { stops, comps, chosen };
+}
+
+function Timeline({ laps, life, lifeOf, start, orders, onChange, color, rain }: { laps: number; life: number; lifeOf: (c: Compound) => number; start: Compound; orders: StandingOrders; onChange: (o: StandingOrders) => void; color: string; rain: number[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const k = orders.stance === "tyres" ? 0.7 : orders.stance === "attack" ? 1.45 : 1;
   const wet = start === "I" || start === "W";
   const lasts = wet ? laps : Math.max(3, Math.round(life / k));
-  const stop = orders.stopLap ?? Math.min(laps - 3, Math.max(3, Math.round(lasts * 0.9)));
-  const second: Compound = orders.stopCompound ?? (start === "H" ? "M" : "H");
+  const { stops, comps } = planOf(orders, start, laps, lasts);
   const pct = (lap: number) => `${(lap / laps) * 100}%`;
-  const place = (clientX: number) => {
+  const bounds = [0, ...stops, laps];
+  const setStops = (next: number[]) => onChange({ ...orders, stopLap: next[0], later: next.slice(1).map((lap, i) => ({ lap, compound: orders.later?.[i]?.compound ?? null })), delegated: false });
+  const move = (idx: number, clientX: number) => {
     const r = ref.current!.getBoundingClientRect();
     const lap = Math.round(((clientX - r.left) / r.width) * laps);
-    onStop(Math.min(laps - 2, Math.max(2, lap)));
+    const lo = idx === 0 ? 2 : stops[idx - 1] + 2;
+    const hi = idx === stops.length - 1 ? laps - 2 : stops[idx + 1] - 2;
+    const next = [...stops];
+    next[idx] = Math.min(Math.max(lo, hi), Math.max(Math.min(lo, hi), lap));
+    setStops(next);
   };
-  const down = (e: React.PointerEvent) => {
+  const down = (idx: number) => (e: React.PointerEvent) => {
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    const mv = (ev: PointerEvent) => place(ev.clientX);
+    const mv = (ev: PointerEvent) => move(idx, ev.clientX);
     const up = () => { window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); };
     window.addEventListener("pointermove", mv);
     window.addEventListener("pointerup", up);
   };
-  const over = stop > lasts;
-  const stint2 = laps - stop;
-  const life2 = Math.round(lifeOf(second) / k);
+  const stint = (i: number) => bounds[i + 1] - bounds[i];
+  const lifeOfStint = (i: number) => (wet ? laps : Math.max(3, Math.round(lifeOf(comps[i]) / k)));
+  const over = stops.map((_, i) => stint(i) > lifeOfStint(i));
+  const dead: { from: number; len: number }[] = [];
+  for (let i = 0; i < comps.length && !wet; i++) if (stint(i) > lifeOfStint(i)) dead.push({ from: bounds[i] + lifeOfStint(i), len: stint(i) - lifeOfStint(i) });
+  const add = () => {
+    let bi = 0;
+    for (let i = 1; i < comps.length; i++) if (stint(i) > stint(bi)) bi = i;
+    if (stint(bi) < 4) return;
+    const lap = Math.round(bounds[bi] + stint(bi) / 2);
+    const next = [...stops, lap].sort((x, y) => x - y);
+    const at = next.indexOf(lap);
+    // keep the tyre choices of the stops that were already planned
+    const chosen: (Compound | null)[] = [orders.stopCompound, ...(orders.later ?? []).map((l) => l.compound)];
+    while (chosen.length < stops.length) chosen.push(null);
+    chosen.splice(at, 0, null);
+    onChange({ ...orders, stopLap: next[0], stopCompound: chosen[0] ?? null, later: next.slice(1).map((l, i) => ({ lap: l, compound: chosen[i + 1] ?? null })), delegated: false });
+  };
+  const remove = () => {
+    if (!(orders.later ?? []).length) return;
+    onChange({ ...orders, later: (orders.later ?? []).slice(0, -1), delegated: false });
+  };
+  const words = comps.map((c) => COMPOUNDS[c].name);
   return (
     <div className="tl">
-      <div className="tl-bar" ref={ref} onPointerDown={(e) => { if (!(e.target as HTMLElement).classList.contains("tl-knob")) place(e.clientX); }}>
-        <div className="tl-seg" style={{ left: 0, width: pct(stop), background: hex(COMPOUNDS[start].color) }}><b>{COMPOUNDS[start].name.toUpperCase()}</b><small>{stop} laps</small></div>
-        <div className="tl-seg" style={{ left: pct(stop), width: pct(laps - stop), background: hex(COMPOUNDS[second].color) }}><b>{COMPOUNDS[second].name.toUpperCase()}</b><small>{stint2} laps</small></div>
-        {!wet && stop > lasts && <div className="tl-dead" style={{ left: pct(lasts), width: pct(stop - lasts) }} title="Tyres are gone from here"><span>TYRES GONE</span></div>}
-        {!wet && stint2 > life2 && <div className="tl-dead" style={{ left: pct(stop + life2), width: pct(stint2 - life2) }} title="Tyres are gone from here"><span>TYRES GONE</span></div>}
-        <div className="tl-knob" style={{ left: pct(stop), borderColor: color }} onPointerDown={down}><span>BOX LAP {stop}</span></div>
+      <div className="tl-bar" ref={ref} onPointerDown={(e) => { if (stops.length && !(e.target as HTMLElement).classList.contains("tl-knob")) { const r = ref.current!.getBoundingClientRect(); const lap = ((e.clientX - r.left) / r.width) * laps; let bi = 0; for (let i = 1; i < stops.length; i++) if (Math.abs(stops[i] - lap) < Math.abs(stops[bi] - lap)) bi = i; move(bi, e.clientX); } }}>
+        {comps.map((c, i) => (
+          <div key={i} className="tl-seg" style={{ left: pct(bounds[i]), width: pct(stint(i)), background: hex(COMPOUNDS[c].color) }}><b>{COMPOUNDS[c].name.toUpperCase()}</b><small>{stint(i)} laps</small></div>
+        ))}
+        {dead.map((d, i) => <div key={i} className="tl-dead" style={{ left: pct(d.from), width: pct(d.len) }} title="Tyres are gone from here"><span>TYRES GONE</span></div>)}
+        {stops.map((lap, i) => <div key={i} className="tl-knob" style={{ left: pct(lap), borderColor: color }} onPointerDown={down(i)}><span>BOX LAP {lap}</span></div>)}
       </div>
       <div className="tl-rain" title="Chance of rain on your radar, along the race">
         {rain.map((r, i) => <i key={i} style={{ opacity: 0.12 + r * 0.88 }} />)}
         <small>RAIN ALONG THE RACE: {Math.max(...rain) < 0.15 ? "none expected" : Math.max(...rain) < 0.45 ? "a chance" : "likely"}</small>
       </div>
-      <div className={`tl-sum ${over ? "bad" : ""}`}>
+      <div className="tl-stops">
+        <span className="dim">{stops.length} STOP{stops.length === 1 ? "" : "S"}</span>
+        <button className="tiny" onClick={add} disabled={stops.length >= 6}>+ ADD A STOP</button>
+        <button className="tiny" onClick={remove} disabled={!(orders.later ?? []).length}>- REMOVE LAST STOP</button>
+        <small className="dim">Plan as many stops as you like. Two different dry compounds are still required.</small>
+      </div>
+      <div className={`tl-sum ${over.some(Boolean) ? "bad" : ""}`}>
         {orders.stopLap === null ? "No stop set yet: the pit wall will call it. " : ""}
-        Start on {COMPOUNDS[start].name}, box on lap {stop}, finish on {COMPOUNDS[second].name}.{" "}
-        {over ? `The first set lasts about ${lasts} laps, so it is gone ${stop - lasts} laps before the stop.` : `The first set has about ${lasts - stop} laps in hand.`}
-        {stint2 > life2 && !wet ? ` The second stint of ${stint2} laps is longer than that set lasts (${life2}).` : ""}
+        {`Start on ${words[0]}${words.slice(1).map((w) => `, then ${w}`).join("")}. ${stops.map((lap, i) => `Stop ${i + 1} on lap ${lap}.`).join(" ")} `}
+        {over.some(Boolean) ? comps.map((c, i) => (over[i] ? `Stint ${i + 1} on ${COMPOUNDS[c].name} is ${stint(i)} laps but the set lasts about ${lifeOfStint(i)}.` : "")).filter(Boolean).join(" ") : "Every stint is within what its tyre lasts."}
       </div>
     </div>
   );
@@ -85,8 +128,8 @@ export function PitWall(props: {
   setTyres: (t: Record<string, Compound>) => void;
   orders: Record<string, StandingOrders>;
   setOrders: (o: Record<string, StandingOrders>) => void;
-  gamble: Gamble;
-  setGamble: (g: Gamble) => void;
+  gambles: Record<string, Gamble>;
+  setGambles: (g: Record<string, Gamble>) => void;
   locks?: Record<string, Compound>;
   sets?: Record<string, Partial<Record<Compound, number>>>;
   setLists?: Record<string, TyreSet[]>;
@@ -117,11 +160,14 @@ export function PitWall(props: {
   const list = props.setLists?.[e.id] ?? [];
   const proposal = () => {
     const l = life[t as "S" | "M" | "H"] ?? laps;
-    setO({ ...o, stance: l < laps * 0.5 ? "tyres" : "balanced", stopLap: Math.max(2, Math.min(laps - 3, Math.round(l * 0.9))), delegated: false });
+    const usable = Math.max(3, l * 0.9);
+    const n = Math.max(1, Math.min(4, Math.ceil(laps / usable) - 1));
+    const laps_ = Array.from({ length: n }, (_, i) => Math.max(2 + i * 2, Math.min(laps - 2 - (n - 1 - i) * 2, Math.round((laps * (i + 1)) / (n + 1)))));
+    setO({ ...o, stance: l < laps * 0.5 ? "tyres" : "balanced", stopLap: laps_[0], stopCompound: null, later: laps_.slice(1).map((lap) => ({ lap, compound: null })), delegated: false });
   };
   const plan = (id: string) => {
     const oo = orders[id] ?? NO_ORDERS;
-    return oo.stopLap === null ? "stop: pit wall decides" : `box lap ${oo.stopLap}`;
+    return oo.stopLap === null ? "stop: pit wall decides" : `box lap ${[oo.stopLap, ...(oo.later ?? []).map((l) => l.lap)].join(", ")}`;
   };
   return (
     <div className="screen pitwall theme-garage">
@@ -160,14 +206,21 @@ export function PitWall(props: {
       </section>
 
       <section className="pw-sec">
-        <h3>2. THE PLAN <small>drag the box marker to move the stop</small></h3>
-        <Timeline laps={laps} life={lifeOf(t)} lifeOf={lifeOf} start={t} orders={o} onStop={(lap) => setO({ ...o, stopLap: lap, delegated: false })} color={hex(e.color)} rain={props.rain} />
+        <h3>2. THE PLAN <small>drag a marker to move a stop</small></h3>
+        <Timeline laps={laps} life={lifeOf(t)} lifeOf={lifeOf} start={t} orders={o} onChange={setO} color={hex(e.color)} rain={props.rain} />
         <div className="pw-row">
-          <div className="seg">
-            <span className="dim">SECOND TYRE</span>
-            <button className={o.stopCompound === null ? "on" : ""} onClick={() => setO({ ...o, stopCompound: null })}>AUTO</button>
-            {(["S", "M", "H"] as Compound[]).map((c) => <button key={c} className={o.stopCompound === c ? "on" : ""} onClick={() => setO({ ...o, stopCompound: c })}><CompoundBadge c={c} size={22} /></button>)}
-          </div>
+          {(() => {
+            const lastsNow = Math.max(3, Math.round(lifeOf(t) / (o.stance === "tyres" ? 0.7 : o.stance === "attack" ? 1.45 : 1)));
+            const pl = planOf(o, t, laps, lastsNow);
+            const setComp = (i: number, c: Compound | null) => (i === 1 ? setO({ ...o, stopCompound: c, delegated: false }) : setO({ ...o, later: (o.later ?? []).map((l, j) => (j === i - 2 ? { ...l, compound: c } : l)), delegated: false }));
+            return pl.stops.map((_, n) => (
+              <div className="seg" key={n}>
+                <span className="dim">{pl.stops.length > 1 ? `TYRE AFTER STOP ${n + 1}` : "SECOND TYRE"}</span>
+                <button className={pl.chosen[n + 1] === null ? "on" : ""} onClick={() => setComp(n + 1, null)}>AUTO</button>
+                {(["S", "M", "H"] as Compound[]).map((c) => <button key={c} className={pl.chosen[n + 1] === c ? "on" : ""} onClick={() => setComp(n + 1, c)}><CompoundBadge c={c} size={22} /></button>)}
+              </div>
+            ));
+          })()}
           <button className="btn" onClick={proposal}>ASK THE STRATEGIST</button>
           <button className="btn" onClick={() => setO(NO_ORDERS)}>CLEAR</button>
         </div>
@@ -185,10 +238,10 @@ export function PitWall(props: {
       </section>
 
       <section className="pw-sec">
-        <h3>4. PRE-RACE CALL <small>one call for the whole race</small></h3>
+        <h3>4. PRE-RACE CALL <small>for {e.code} only, one call for the whole race</small></h3>
         <div className="pw-cards">
           {CALLS.map((g) => (
-            <button key={g.k} className={`pw-card ${props.gamble === g.k ? "on" : ""}`} onClick={() => props.setGamble(g.k)}>
+            <button key={g.k} className={`pw-card ${(props.gambles[e.id] ?? "safe") === g.k ? "on" : ""}`} onClick={() => props.setGambles({ ...props.gambles, [e.id]: g.k })}>
               <b>{g.name}</b><span className="gain">{g.gain}</span><span className="cost">{g.cost}</span>
             </button>
           ))}

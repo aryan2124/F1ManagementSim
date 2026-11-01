@@ -16,6 +16,8 @@ export interface StandingOrders {
   stopLap: number | null;
   /** The compound for the planned stop. Null: the pit wall picks. */
   stopCompound: Compound | null;
+  /** Further planned stops after the first (the second stop, the third...). Each is lap and compound (null: the pit wall picks). */
+  later?: { lap: number; compound: Compound | null }[];
   /** Hand the small calls to the strategist: these standing orders run without questions. */
   delegated: boolean;
   /** How hard the car is driven from the lights: conserve (kind to tyres and fuel, slower), standard, or push (quicker, wears tyres and fuel faster, more risk). */
@@ -40,7 +42,9 @@ export function describeOrders(o: StandingOrders): string[] {
   const out: string[] = [];
   if (o.stance === "tyres") out.push("Drive to look after the tyres");
   if (o.stance === "attack") out.push("Attack from the start");
-  if (o.stopLap) out.push(`Box around lap ${o.stopLap}${o.stopCompound ? ` for ${o.stopCompound === "S" ? "Softs" : o.stopCompound === "M" ? "Mediums" : "Hards"}` : ""}`);
+  const cn = (c: Compound | null) => (c ? ` for ${c === "S" ? "Softs" : c === "M" ? "Mediums" : "Hards"}` : "");
+  if (o.stopLap) out.push(`Box around lap ${o.stopLap}${cn(o.stopCompound)}`);
+  for (const l of o.later ?? []) out.push(`Then box around lap ${l.lap}${cn(l.compound)}`);
   if (o.tyreLimit !== null) out.push(`Box at ${Math.round(o.tyreLimit * 100)}% tyre wear`);
   if (o.scBox) out.push(`Safety car: box if tyres are over ${Math.round(o.scWear * 100)}% worn`);
   if (o.cover) out.push("Cover a real undercut threat");

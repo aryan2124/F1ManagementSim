@@ -1,5 +1,6 @@
 import { SetPicker } from "./SetPicker";
 import { advisePit, bestSet } from "../sim/tyreSets";
+import { DriverStats } from "./DriverStats";
 import { SkipPrompt, type NetSkip } from "./SkipPrompt";
 import { useEffect, useRef, useState } from "react";
 import { Roll } from "./skin/Roll";
@@ -322,7 +323,7 @@ function FinishCeremony({ session }: { session: RaceSession }) {
     <div className="ceremony">
       {session.humanIds.map((id) => {
         const c = session.sim.car(id);
-        const pts = c.status === "dnf" ? 0 : F1_POINTS[c.position - 1] ?? 0;
+        const pts = c.status === "dnf" ? 0 : (session.sim.cfg.pointsTable ?? F1_POINTS)[c.position - 1] ?? 0;
         return (
           <div key={id} className="cer-row" style={{ ["--team" as string]: hex(c.entry.team.color) }}>
             <i className="chip" />
@@ -494,6 +495,7 @@ function RaceOverlay({ session, onFinish, donuts }: { session: RaceSession; onFi
 function TimingTower({ session }: { session: RaceSession }) {
   const sim = session.sim;
   const [exact, setExact] = useState(false);
+  const [statsId, setStatsId] = useState<string | null>(null);
   const L = sim.track.length;
   const leader = sim.order[0];
   // A3: remember each car's last position so a row can flash and slide when it changes
@@ -524,7 +526,8 @@ function TimingTower({ session }: { session: RaceSession }) {
               key={c.id}
               className={`${(moved.current.get(c.id)?.until ?? 0) > now ? (moved.current.get(c.id)!.dir > 0 ? "gain" : "lose") : ""} ${c.entry.human ? "mine" : ""} ${session.followId === c.id ? "follow" : ""} ${c.status === "dnf" ? "out" : ""}`}
               style={{ ["--team" as string]: hex(c.entry.team.color) }}
-              onClick={() => (session.followId = c.id)}
+              onClick={() => { session.followId = c.id; setStatsId(c.id); }}
+              title="Click for full stats"
             >
               <span className="p">{c.position}</span>
               <b className="arr">{(moved.current.get(c.id)?.until ?? 0) > now ? (moved.current.get(c.id)!.dir > 0 ? "▲" : "▼") : ""}</b>
@@ -535,13 +538,13 @@ function TimingTower({ session }: { session: RaceSession }) {
                   <u key={i} style={{ background: SECTOR_COLORS[cols[i]] }} />
                 ))}
               </span>
-              <span className="gap">{gap}</span>
-              <em className="pen">{c.penalty > 0 ? `+${c.penalty}s` : ""}</em>
+              <span className="gap">{gap}{c.penalty > 0 && <em className="pen" title={`${c.penalty} second penalty, added to the finishing time`}>+{c.penalty}s</em>}</span>
               <CompoundBadge c={c.tyre.compound} size={14} />
             </li>
           );
         })}
       </ol>
+      {statsId && <DriverStats sim={sim} carId={statsId} onClose={() => setStatsId(null)} />}
       <div className="seg tower-mode" title="GAP shows the distance to the leader. EXACT shows each driver's last lap time to the thousandth.">
         <button className={!exact ? "on" : ""} onClick={() => setExact(false)}>GAP TO LEADER</button>
         <button className={exact ? "on" : ""} onClick={() => setExact(true)}>EXACT LAP</button>

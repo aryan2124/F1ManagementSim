@@ -80,9 +80,9 @@ export default function App() {
     }
   };
 
-  const begin = (tyres: Record<string, Compound>, _sets?: Record<string, string>, standing?: Record<string, StandingOrders>) => {
+  const begin = (tyres: Record<string, Compound>, _sets?: Record<string, string>, standing?: Record<string, StandingOrders>, gambles?: Record<string, "safe" | "undercut" | "long">) => {
     if (!weekend || !quali) return;
-    setSession(new RaceSession({ ...raceConfigFrom(weekend, quali, tyres), standing }, weekend.humanIds));
+    setSession(new RaceSession({ ...raceConfigFrom(weekend, quali, tyres), standing, gambles }, weekend.humanIds));
     setScreen("race");
   };
 

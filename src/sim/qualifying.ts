@@ -583,8 +583,10 @@ export class QualiSim {
       go = elapsed >= car.plan.first;
       // a car with plenty of speed in hand waits for a clear track in Q1
     } else if (car.runsDone < 3) {
-      const inDanger = !isFinite(car.best[q]) || (this.segment < 3 && rank > keepers - 2);
-      const wants = this.segment === 3 ? car.plan.second || inDanger : inDanger || (car.plan.second && this.segment === 2 && rank > 5);
+      // a team only risks a second run (and a second set of tyres) when its own read says the time is not safe. The read is a little off, different per team.
+      const margin = this.marginToCut(car, q, keepers);
+      const inDanger = !isFinite(car.best[q]) || (this.segment < 3 && (rank > keepers - 2 || margin < 0.12));
+      const wants = this.segment === 3 ? car.plan.second || inDanger : inDanger || (car.plan.second && this.segment === 2 && rank > 5 && margin < 0.5);
       if (wants) {
         const early = inDanger && this.clock > need + 330 && this.segment < 3; // time for a calm second attempt
         go = early || this.clock <= need + car.plan.margin + 12;
@@ -617,6 +619,16 @@ export class QualiSim {
       return dry[0];
     }
     return car.sets.S > 0 ? "S" : car.sets.M > 0 ? "M" : "H";
+  }
+
+  /** How many seconds quicker than the last car through this car looks to its own pit wall (negative: it would be out). Noisy, and different for every team. */
+  private marginToCut(car: QCar, q: number, keepers: number): number {
+    const times = this.cars.filter((o) => (o.eliminatedIn === 0 || o.eliminatedIn >= this.segment) && isFinite(o.best[q])).map((o) => o.best[q]).sort((x, y) => x - y);
+    if (!isFinite(car.best[q])) return -9;
+    // fewer than the needed number of cars have a time yet: nobody is on the cut, so the margin is whatever the field could still do
+    const ref = times.length >= keepers ? times[keepers - 1] : car.best[q] + 0.3;
+    const h = ((car.entry.team.id.charCodeAt(0) * 31 + car.entry.team.id.length * 17 + car.runsDone * 7) % 21) / 20 - 0.5;
+    return ref - car.best[q] + h * 0.3;
   }
 
   private rankIn(car: QCar, q: number): number {

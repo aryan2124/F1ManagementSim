@@ -36,6 +36,7 @@ export const ICONS: Record<string, string> = {
   rule: "RUL",
   yellow: "YEL",
   yellow_clear: "GRN",
+  blue_flag: "BLU",
   spin: "SPN",
   lockup: "LCK",
   off_track: "OFF",
