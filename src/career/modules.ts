@@ -124,7 +124,7 @@ export const MODULES: ModuleDef[] = [
     change: "New setting: a wing zone plan. Unknown: how often the actuators fail under heavy use.",
     headline: ["aero", "spectacle"], support: ["aero", "spectacle"], intent: "More overtaking, lower drag on straights",
     unknowns: ["Actuator failure rate under heavy use", "Lap time the zone plan is worth"], scale: "Number of zones per lap",
-    flags: (k) => ({ extraAxes: [{ id: "wingzones", label: "Wing zone plan", low: "Few zones: stable, slower on the straights", high: "Many zones: quick in a straight line, riskier", target: "aero" }], areaMult: { aero: 1 + 0.15 * k } }),
+    flags: (k) => ({ extraAxes: [{ id: "wingzones", label: "Wing zone plan", low: "Few zones: stable, slower on the straights", high: "Many zones: quick in a straight line, riskier", target: "aero" }], areaMult: { aero: 1 + 0.15 * k }, tyreSev: 1 + 0.03 * k }),
   }),
   M({
     id: "groundEffect", name: "Ground effect revival", category: "Aero", kind: "setting", live: "career",
@@ -133,7 +133,7 @@ export const MODULES: ModuleDef[] = [
     headline: ["aero", "spectacle"], support: ["aero"], intent: "Cars follow each other more closely",
     unknowns: ["Width of the stiffness window", "Bouncing sensitivity"], scale: "How much of the downforce comes from the floor",
     conflicts: ["specFloor"],
-    flags: (k) => ({ extraAxes: [{ id: "rideheight", label: "Ride height", low: "Low: more downforce, more bouncing", high: "High: safer, less grip", target: "aero" }], areaMult: { chassis: 1 + 0.25 * k } }),
+    flags: (k) => ({ extraAxes: [{ id: "rideheight", label: "Ride height", low: "Low: more downforce, more bouncing", high: "High: safer, less grip", target: "aero" }], areaMult: { chassis: 1 + 0.25 * k }, tyreSev: 1 + 0.06 * k }),
   }),
   M({
     id: "specFloor", name: "Spec floor", category: "Aero", kind: "control", live: "career",
@@ -142,7 +142,7 @@ export const MODULES: ModuleDef[] = [
     headline: ["equaliser"], support: ["equaliser", "safety"], intent: "Cheaper, closer racing",
     unknowns: ["How much floor work was worth", "Where the gains move to"], scale: "How hard aero gains are cut",
     conflicts: ["groundEffect"],
-    flags: (k) => ({ areaMult: { aero: 1 - 0.5 * k, cooling: 1 + 0.2 * k } }),
+    flags: (k) => ({ areaMult: { aero: 1 - 0.5 * k, cooling: 1 + 0.2 * k }, tyreSev: 1 - 0.04 * k }),
   }),
   M({
     id: "shrunkCars", name: "Shrunk cars", category: "Aero", kind: "numbers", live: "sim",
@@ -158,7 +158,7 @@ export const MODULES: ModuleDef[] = [
     change: "New setting: battery deployment, set for each lap.",
     headline: ["power"], support: ["power", "spectacle"], intent: "Electric power matters more",
     unknowns: ["Battery heating", "Value of end-of-straight deployment"], scale: "Electric share of power",
-    flags: () => ({ extraAxes: [{ id: "deploy", label: "Battery deployment", low: "Save it for the end of the straight", high: "Spend it early out of corners", target: "power" }] }),
+    flags: (k) => ({ extraAxes: [{ id: "deploy", label: "Battery deployment", low: "Save it for the end of the straight", high: "Spend it early out of corners", target: "power" }], tyreSev: 1 + 0.05 * k }),
   }),
   M({
     id: "fuelFlow", name: "Fuel flow budget", category: "Power", kind: "setting", live: "career",
@@ -208,7 +208,7 @@ export const MODULES: ModuleDef[] = [
     change: "New setting: out lap and warm-up plans, with a risk of early mistakes.",
     headline: ["spectacle", "safety"], support: ["spectacle", "safety"], intent: "Drivers matter more at the start of a stint",
     unknowns: ["Grip lost on cold rubber", "Which tyre warms fastest"], scale: "How cold the tyres start",
-    flags: () => ({ extraAxes: [{ id: "warmup", label: "Warm-up plan", low: "Gentle out lap, safe", high: "Hard weaving out lap, risky", target: "consistency" }] }),
+    flags: (k) => ({ extraAxes: [{ id: "warmup", label: "Warm-up plan", low: "Gentle out lap, safe", high: "Hard weaving out lap, risky", target: "consistency" }], tyreSev: 1 + 0.04 * k }),
   }),
   M({
     id: "twoHeat", name: "Two heat Grand Prix", category: "Race format", kind: "setting", live: "sim",
@@ -313,7 +313,7 @@ export const MODULES: ModuleDef[] = [
     change: "A new development focus and less driver influence.",
     headline: ["safety", "spectacle"], support: ["safety"], intent: "Smooth, safe cars",
     unknowns: ["Gain from active systems", "Driver feel left"], scale: "How much the aids help",
-    flags: (k) => ({ driverWeight: 1 - 0.4 * k }),
+    flags: (k) => ({ driverWeight: 1 - 0.4 * k, tyreSev: 1 - 0.06 * k }),
   }),
   // ---- 25 to 50
   M({
@@ -411,7 +411,7 @@ export const MODULES: ModuleDef[] = [
     change: "New decision: fuel load per stint, the old light car trade-off.",
     headline: ["spectacle", "power"], support: ["spectacle"], intent: "Strategy variety",
     unknowns: ["Flow rate", "Weight penalty per kilo"], scale: "Flow rate cap",
-    flags: () => ({ refuelling: true }),
+    flags: (k) => ({ refuelling: true, tyreSev: 1 - 0.08 * k }),
   }),
   M({
     id: "fixedStop", name: "Fixed stop time", category: "Pit lane", kind: "control", live: "sim",

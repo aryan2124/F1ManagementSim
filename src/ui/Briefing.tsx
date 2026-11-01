@@ -7,6 +7,8 @@ import type { QualiRow } from "../sim/qualifying";
 import type { Compound } from "../sim/types";
 import { raceWeather } from "../game/setup";
 import { makeWeather } from "../sim/weather";
+import { planStops } from "../sim/stratmodel";
+import { hashSeed } from "../sim/rng";
 import { makeProfile, TeamRadar, intensityWord } from "../sim/radar";
 import { BRAINS, DEFAULT_BRAIN } from "../sim/strategy";
 import { NO_ORDERS, type StandingOrders } from "../sim/standing";
@@ -32,6 +34,7 @@ export function Briefing({
   setLists,
   pitLane,
   extraRules,
+  severity,
   title,
   extras,
 }: {
@@ -53,6 +56,8 @@ export function Briefing({
   pitLane?: boolean;
   /** Career: extra rule lines for this race. */
   extraRules?: string[];
+  /** The severity the race will actually run with (rules and heat applied); falls back to the circuit's. */
+  severity?: number;
 }) {
   useMusic("garage");
   const [view, setView] = useState<"grid" | "wall">("grid");
@@ -64,7 +69,7 @@ export function Briefing({
   const finite = quali.map((q) => q.time).filter((x) => isFinite(x));
   const pole = finite.length ? Math.min(...finite) : NaN;
   const laps = weekend.laps;
-  const life = tyreLifeFor(laps, weekend.meta.tyreSeverity);
+  const life = tyreLifeFor(laps, severity ?? weekend.meta.tyreSeverity);
   const spec = raceWeather(weekend.settings);
   const radar = useMemo(() => {
     if (spec.mode === "off") return null;
@@ -89,6 +94,12 @@ export function Briefing({
         pos={Object.fromEntries(quali.map((q) => [q.carId, q.position]))}
         laps={laps}
         life={life}
+        advise={(id) => {
+          const brain = BRAINS[weekend.settings.teamId] ?? DEFAULT_BRAIN;
+          const w = spec.mode === "off" ? null : makeWeather(spec, laps * 120);
+          const trackC = w ? w.now().trackC : 38;
+          return planStops({ laps, life, trackC }, brain.skill, hashSeed(`ask:${id}:${weekend.settings.seed}`), 0);
+        }}
         tyres={tyres}
         setTyres={setTyres}
         orders={orders}

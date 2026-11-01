@@ -2,6 +2,8 @@ import type { RaceSim } from "./engine";
 import { COMPOUNDS } from "./engine";
 import { pitLossOf } from "./situation";
 import { makeProfile, TeamRadar } from "./radar";
+import { hashSeed } from "./rng";
+import { planStops } from "./stratmodel";
 import type { CarState, Compound } from "./types";
 import { isWetCompound } from "./types";
 import { bestCompoundFor } from "./weather";
@@ -116,17 +118,20 @@ export class Strategist {
     for (const car of sim.cars) {
       if (car.entry.human) continue;
       const b = this.brain(car.entry.team.id);
-      const per = Math.max(3, (lifeM + lifeH) / 2) * 0.92;
-      let stops = Math.max(laps <= 12 ? 0 : 1, Math.ceil(laps / per) - 1);
+      // the pit wall works out how hard today is on tyres (track, rules, heat) and reads it with the error of its own skill
+      const trackC = sim.weather ? sim.weather.now().trackC : 38;
+      const plan = planStops({ laps, life: { S: sim.life.S, M: lifeM, H: lifeH }, trackC }, this.brain(car.entry.team.id).skill, hashSeed(`stops:${car.id}:${sim.cfg.seed}`), b.stopBias);
+      let stops = plan.stops;
       if (laps > 12) {
-        if (sim.rng.chance(0.18 + 0.2 * Math.max(0, b.stopBias))) stops++;
-        if (stops > 1 && sim.rng.chance(0.25 * Math.max(0, -b.stopBias))) stops--;
+        // a bold wall sometimes adds a stop for fresh tyres, a cautious one sometimes skips one
+        if (sim.rng.chance(0.1 + 0.15 * Math.max(0, b.stopBias))) stops++;
+        if (stops > 1 && sim.rng.chance(0.15 * Math.max(0, -b.stopBias))) stops--;
       }
-      car.aiStops = clamp(stops, laps <= 12 ? 0 : 1, 3);
+      car.aiStops = clamp(stops, laps <= 12 ? 0 : 1, 4);
       // when to stop: aggressive walls go early, cautious ones late
       car.aiPlan = clamp(0.62 + (sim.rng.next() - 0.5) * 0.16 - 0.1 * (b.boldness - 0.5) - 0.05 * b.stopBias, 0.45, 0.85);
       const m = this.m(car);
-      m.nextStop = Math.round(laps * (car.aiStops > 1 ? 0.33 : 0.5) * (1 + (car.aiPlan - 0.62)));
+      m.nextStop = Math.round((laps / (car.aiStops + 1)) * (1 + (car.aiPlan - 0.62)));
     }
   }
 

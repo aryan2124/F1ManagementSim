@@ -480,6 +480,7 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
         sets={plan!.raceCfg?.tyreSets}
         setLists={plan!.raceCfg?.tyreSetList}
         pitLane={!!ws.parcBroken}
+        severity={plan!.raceCfg?.tyreSeverity}
         extraRules={[...rulesBrief(plan!.raceCfg?.rules, plan!.laps), ...rivalLines(s, plan!.humanIds, plan!.raceCfg?.grid ?? [])]}
         onStart={(tyres: Record<string, Compound>, startSets?: Record<string, string>, standing?: Record<string, StandingOrders>, gambles?: Record<string, "safe" | "undercut" | "long">) => {
           const locked: Record<string, Compound> = {};

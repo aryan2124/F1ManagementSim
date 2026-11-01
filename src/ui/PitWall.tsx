@@ -124,6 +124,8 @@ export function PitWall(props: {
   pos: Record<string, number>;
   laps: number;
   life: { S: number; M: number; H: number };
+  /** The team strategist's own plan for this car, read with its skill. */
+  advise?: (id: string) => { stops: number; laps: number[]; compounds: ("S" | "M" | "H")[] };
   tyres: Record<string, Compound>;
   setTyres: (t: Record<string, Compound>) => void;
   orders: Record<string, StandingOrders>;
@@ -160,6 +162,12 @@ export function PitWall(props: {
   const list = props.setLists?.[e.id] ?? [];
   const proposal = () => {
     const l = life[t as "S" | "M" | "H"] ?? laps;
+    const adv = props.advise?.(e.id);
+    if (adv && adv.stops > 0) {
+      const comps = adv.compounds;
+      setO({ ...o, stance: l < laps * 0.5 ? "tyres" : "balanced", stopLap: adv.laps[0], stopCompound: comps[1] ?? null, later: adv.laps.slice(1).map((lap, i) => ({ lap, compound: comps[i + 2] ?? null })), delegated: false });
+      return;
+    }
     const usable = Math.max(3, l * 0.9);
     const n = Math.max(1, Math.min(4, Math.ceil(laps / usable) - 1));
     const laps_ = Array.from({ length: n }, (_, i) => Math.max(2 + i * 2, Math.min(laps - 2 - (n - 1 - i) * 2, Math.round((laps * (i + 1)) / (n + 1)))));

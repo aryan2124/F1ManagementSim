@@ -62,6 +62,13 @@ export const FUEL_RESERVE = 0.012;
 /** Share of the race distance each compound lasts at standard pace on an average circuit. */
 export const LIFE_SHARE: Record<Compound, number> = { S: 0.4, M: 0.62, H: 0.9, I: 0.7, W: 0.9 };
 
+/** How much faster a compound wears at this track temperature than at 38 C. Softs suffer most in the heat and hards least; the cold slows all of them. */
+export function tempWearMul(c: Compound, trackC: number): number {
+  const m = Math.min(1.3, Math.max(0.82, 1 + 0.012 * (trackC - 38)));
+  const k = c === "S" ? 1.5 : c === "M" ? 1.0 : c === "H" ? 0.6 : 0;
+  return 1 + k * (m - 1);
+}
+
 export function tyreLifeFor(laps: number, severity = 1): Record<Compound, number> {
   const f = (c: Compound, floor: number) => Math.max(floor, (LIFE_SHARE[c] * laps) / severity);
   return { S: f("S", 3), M: f("M", 4.5), H: f("H", 6), I: f("I", 6), W: f("W", 8) };
@@ -967,12 +974,13 @@ export class RaceSim {
         1.18 *
         PUSH_WEAR[car.push] *
         (1.25 - 0.5 * e.driver.tyreMgmt) *
-        (0.55 + 0.9 * cornerLoad);
+        (0.55 + 0.9 * cornerLoad) *
+        (0.94 + 0.12 * Math.min(1, car.fuel)); // a full tank loads the tyres more than an almost empty one
       if (!racingFree) rate *= 1.1;
       if (this.cfg.rules?.tyreLottery) rate *= 0.72 + 0.7 * this.stintLuck(car);
       if (this.weather && this.wx) {
         rate *= wetWearFactor(car.tyre.compound, wetHere);
-        if (!isWetCompound(car.tyre.compound)) rate *= Math.min(1.25, Math.max(0.85, 1 + 0.012 * (this.wx.trackC - 38)));
+        if (!isWetCompound(car.tyre.compound)) rate *= tempWearMul(car.tyre.compound, this.wx.trackC);
       }
       if (e.human) { const g = this.cfg.gambles?.[car.id] ?? this.cfg.gamble; rate *= g === "undercut" ? 1.06 : g === "long" ? 0.92 : 1; }
       if (sc) rate *= 0.35;

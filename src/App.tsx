@@ -129,7 +129,7 @@ export default function App() {
           }}
         />
       )}
-      {screen === "briefing" && weekend && quali && <Briefing weekend={weekend} quali={quali} onBack={() => setScreen("weekend")} onStart={begin} />}
+      {screen === "briefing" && weekend && quali && <Briefing severity={weekend.meta.tyreSeverity * (weekend.settings.regs?.includes("tyreSev") ? 1.5 : 1)} weekend={weekend} quali={quali} onBack={() => setScreen("weekend")} onStart={begin} />}
       {screen === "race" && session && weekend && <RaceScreen session={session} meta={weekend.meta} onFinish={() => setScreen("results")} />}
       {screen === "results" && session && weekend && <Results session={session} gp={weekend.meta.gp} onMenu={() => setScreen("home")} onAgain={again} />}
       <GlobalSettings />
