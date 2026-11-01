@@ -133,6 +133,11 @@ function QualiScreenInner({ session, meta, onDone, skip, kind }: { session: Qual
         <div className="gpname">{sessionTitle(meta.gp, kind ?? "quali").toUpperCase()}</div>
         <WeatherChip session={session} />
         <div className={`flag ${flagClass}`}>{flag}</div>
+        {sim.red.active && (
+          <button className="btn primary skip-red" onClick={() => sim.command({ type: "skipred", carId: session.humanIds[0] ?? "" })} title="The clock is stopped. Skip the wait for the restart.">
+            SKIP RED FLAG
+          </button>
+        )}
         <div className="speeds">
           {SPEED_LIST.map((s) => (
             <button key={s.v} className={session.speed === s.v ? "on" : ""} onClick={() => (session.speed = s.v)}>

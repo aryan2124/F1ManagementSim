@@ -163,3 +163,23 @@ describe("qualifying rules", () => {
     expect(isFinite(car.best[0])).toBe(true);
   });
 });
+
+describe("qualifying red flag clock", () => {
+  it("stops the session clock under a red flag and lets the player skip the wait", () => {
+    const entries = buildEntries("none");
+    const sim = new QualiSim({ seed: 12, track, entries });
+    sim.startSegment();
+    for (let i = 0; i < 50; i++) sim.step();
+    sim.red.active = true;
+    sim.red.untilTick = sim.tick + 5000;
+    const before = sim.clock;
+    for (let i = 0; i < 200; i++) sim.step();
+    expect(sim.clock).toBe(before);
+    sim.command({ type: "skipred", carId: entries[0].id });
+    for (let i = 0; i < 40; i++) sim.step();
+    expect(sim.red.active).toBe(false);
+    const after = sim.clock;
+    sim.step();
+    expect(sim.clock).toBeLessThan(after);
+  });
+});

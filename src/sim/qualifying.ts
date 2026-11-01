@@ -14,7 +14,7 @@ import { Weather, makeWeather, bestCompoundFor, targetWetness, wetBrakeFactor, w
  *  - Lap times can be deleted for exceeding track limits.
  *  - 107% rule: a driver slower than 107% of the fastest Q1 time may not race unless the stewards allow it.
  *  - Impeding another driver on a flying lap can cost a 3 place grid penalty.
- *  - Red flags suspend running after a crash. The clock keeps running.
+ *  - Red flags suspend running after a crash. The session clock is stopped until the restart.
  *  - Limited tyre sets, free choice of compound.
  *  - Pit exit is released one car at a time.
  */
@@ -47,7 +47,7 @@ export interface QualiConfig {
 }
 
 export interface QualiCommand {
-  type: "go" | "box" | "auto";
+  type: "go" | "box" | "auto" | "skipred";
   carId: string;
   compound?: Compound;
   /** The exact set to fit (its compound is used). */
@@ -336,6 +336,11 @@ export class QualiSim {
   }
 
   command(cmd: QualiCommand) {
+    if (cmd.type === "skipred") {
+      // the stoppage is only waiting: cut it short. The clock is stopped meanwhile, so nobody loses running time.
+      if (this.red.active && this.red.untilTick > this.tick + 30) this.red.untilTick = this.tick + 30;
+      return;
+    }
     const car = this.byId.get(cmd.carId);
     if (!car || car.eliminatedIn !== 0 && car.eliminatedIn < this.segment) return;
     if (cmd.type === "auto") {
@@ -432,7 +437,8 @@ export class QualiSim {
       }
     }
     if (this.phase === "running") {
-      this.clock = Math.max(0, this.clock - DT);
+      // as in real qualifying, the session clock is stopped under a red flag
+      if (!this.red.active) this.clock = Math.max(0, this.clock - DT);
       if (this.clock <= 0 && !this.chequered) {
         this.chequered = true;
         this.emit("q_chequered", undefined, `CHEQUERED FLAG. Q${this.segment} is over for anyone not already on a lap.`);
