@@ -1,5 +1,6 @@
 import type { RaceSim } from "./engine";
 import { COMPOUNDS } from "./engine";
+import { pitLossOf } from "./situation";
 import { makeProfile, TeamRadar } from "./radar";
 import type { CarState, Compound } from "./types";
 import { isWetCompound } from "./types";
@@ -325,9 +326,7 @@ export class Strategist {
 
   /** Time lost in the pits, in seconds. */
   pitLoss(): number {
-    const T = this.sim.track;
-    const lane = Math.max(150, T.length - T.pitOut + T.pitIn);
-    return lane / 22 - lane / (T.length / T.nominalLap) + 2.6;
+    return pitLossOf(this.sim);
   }
 
   /** Safety car: free stop or stay out? */

@@ -276,7 +276,8 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
   const toNext = next ? daysTo(s.day, next.day) : null;
   const rank = standingsRank(s).indexOf(s.teamId) + 1;
   const decisions = s.cards.filter((c) => !c.notice && !c.mail).sort((a, b) => b.urgency - a.urgency || a.created - b.created);
-  const nowCards = decisions.filter((c) => c.kind === "weekPlan" || c.kind === "campaign");
+  // every decision sits at the very top, so a new one is never missed lower down the page
+  const nowCards = decisions;
   const notices = s.cards.filter((c) => c.notice).sort((a, b) => b.created - a.created);
   const topDrivers = Object.entries(s.standings.drivers).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const topTeams = Object.entries(s.standings.teams).sort((a, b) => b[1] - a[1]);
@@ -304,12 +305,12 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
     <div className="c-today">
       {nowCards.length > 0 && !inWeekend && (
         <section className="panel c-now">
-          <h3>DECIDE NOW</h3>
+          <h3>DECISIONS ({nowCards.length})</h3>
           {nowCards.map((c, i) => <CardView key={c.id} c={c} d={d} keys={i === 0} />)}
         </section>
       )}
 
-      <p className="c-nowline">{nowCards.length > 0 && !inWeekend ? `Do this now: ${nowCards[0].title}.` : next ? `${circuitMeta(next.circuitId).gp} is ${toNext === 0 ? "this weekend" : `${toNext} day${toNext === 1 ? "" : "s"} away`}. ${decisions.length ? `${decisions.length} decision${decisions.length === 1 ? "" : "s"} waiting for you below.` : "Nothing needs you right now. Press CONTINUE to move time on."}` : "The season is over."}</p>
+      <p className="c-nowline">{nowCards.length > 0 && !inWeekend ? `Do this now: ${nowCards[0].title}.` : next ? `${circuitMeta(next.circuitId).gp} is ${toNext === 0 ? "this weekend" : `${toNext} day${toNext === 1 ? "" : "s"} away`}. ${decisions.length ? `${decisions.length} decision${decisions.length === 1 ? "" : "s"} waiting for you above.` : "Nothing needs you right now. Press CONTINUE to move time on."}` : "The season is over."}</p>
 
       <section className="panel c-head hero-head">
         <div className="hh-date">
@@ -349,9 +350,9 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
 
       <div className="c-cols">
         <section className="panel">
-          <h3>DECISIONS ({decisions.length})</h3>
+          <h3>{inWeekend ? `DECISIONS (${decisions.length})` : "WHO DECIDES THE SMALL STUFF"}</h3>
           <div className="deleg">
-            <span className="dim small">WHO DECIDES THE SMALL STUFF?</span>
+            <span className="dim small">TEAM OR YOU, PER DEPARTMENT:</span>
             {(Object.keys(DEPT_LABEL) as Dept[]).map((k) => (
               <span key={k} className="deleg-dept"><b>{DEPT_LABEL[k]}</b>
                 <span className="seg">
@@ -367,7 +368,8 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
           </div>
           <p className="dim small">TEAM means that department picks the default answer for routine cards, so the clock does not stop for them. Big and urgent decisions always come to you.</p>
           {decisions.length === 0 && <p className="dim">Nothing needs you. The factory is working.</p>}
-          {decisions.filter((c) => !nowCards.includes(c)).map((c, i) => <CardView key={c.id} c={c} d={d} keys={!nowCards.length && i === 0} />)}
+          {!inWeekend && decisions.length > 0 && <p className="dim small">Your {decisions.length} decision{decisions.length === 1 ? " is" : "s are"} at the top of this page.</p>}
+          {(inWeekend ? decisions : []).map((c, i) => <CardView key={c.id} c={c} d={d} keys={i === 0} />)}
           {s.recap.length > 0 && (
             <div className="c-recap">
               <h4>SINCE LAST TIME</h4>

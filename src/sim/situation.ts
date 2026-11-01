@@ -14,7 +14,8 @@ import type { CarState, Compound, StopRec } from "./types";
 /** Time lost in the pits, in seconds. */
 export function pitLossOf(sim: RaceSim): number {
   const T = sim.track;
-  const lane = Math.max(150, T.length - T.pitOut + T.pitIn);
+  // the lane runs from pitIn metres before the line to pitOut metres after it
+  const lane = Math.max(150, T.pitIn + T.pitOut);
   return lane / 22 - lane / (T.length / T.nominalLap) + 2.6;
 }
 
