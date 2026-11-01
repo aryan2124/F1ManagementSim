@@ -126,7 +126,7 @@ export function scheduledLaps(meta: CircuitMeta): number {
 
 /**
  * 1 or -1 as in TrackModel.pitSide. Where the satellite pictures show the pit and paddock roofs clearly on one side of the start straight, that side wins.
- * Spa: the pit and paddock buildings sit on the inside of La Source. Shanghai: the pits sit on the inside (right) of the start straight, under the turn 1 spiral. Everything not listed picks the side with more room.
+ * Spa: the pit and paddock buildings sit on the inside of La Source. Albert Park: the pits are on the right of the main straight. Shanghai: the pits sit on the inside (right) of the start straight, under the turn 1 spiral. Everything not listed picks the side with more room.
  */
 const PIT_SIDE_REAL: Record<string, 1 | -1> = {
   spa: -1,
@@ -140,6 +140,7 @@ const PIT_SIDE_REAL: Record<string, 1 | -1> = {
   hockenheim: -1,
   estoril: -1,
   "buenos-aires": -1,
+  "albert-park": -1,
 };
 
 const cache = new Map<string, { meta: CircuitMeta; track: TrackModel }>();
