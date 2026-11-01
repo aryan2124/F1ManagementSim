@@ -53,3 +53,8 @@
 
 /* qualifying: skip the wait under a red flag */
 .app .racebar .skip-red{white-space:nowrap;padding:6px 12px;font-size:12px}
+
+/* mood / trust / grudge rows: label column wide enough for the pixel font, no overlap with the bar */
+.app .carcard .mood .ctl{grid-template-columns:84px minmax(0,1fr) 96px;column-gap:10px}
+.app .carcard .mood .ctl > span{white-space:nowrap;overflow:visible}
+.app .carcard .mood .ctl em{white-space:nowrap;font-size:14px}
