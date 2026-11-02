@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TEAMS, DRIVERS } from "../game/data";
 import { CALENDAR_2026, CIRCUITS, circuitMeta, scheduledLaps } from "../game/circuits";
 import { CIRCUIT_GEO } from "../game/circuitGeo.generated";
 import { DISTANCES, REG_OPTIONS, type WeekendSettings } from "../game/setup";
-import { fillTier, TIER_LABEL, TIER_SEATS, type Tier } from "../game/people";
 import { LeaguePanel } from "./LeaguePanel";
 
 const hex = (c: number) => `#${c.toString(16).padStart(6, "0")}`;
@@ -74,11 +73,9 @@ export function Menu({
   onBack: () => void;
 }) {
   const [classics, setClassics] = useState(false);
-  const [ladder, setLadder] = useState<Tier | null>(null);
   const meta = circuitMeta(settings.circuitId);
   const geo = CIRCUIT_GEO[meta.geoId];
   const list = classics ? CIRCUITS.filter((c) => c.classic) : CALENDAR_2026;
-  const tierPeople = useMemo(() => (ladder ? fillTier(ladder, TIER_SEATS[ladder]) : []), [ladder]);
 
   return (
     <div className="screen menu">
@@ -200,30 +197,6 @@ export function Menu({
                 </button>
               ))}
             </div>
-          </section>
-
-          <section className="panel">
-            <h3>THE LADDER</h3>
-            <p className="dim">Real drivers first at every level. Made-up names only appear once the real entry list runs out.</p>
-            <div className="seg tiers">
-              {(Object.keys(TIER_LABEL) as Tier[]).map((t) => (
-                <button key={t} className={ladder === t ? "on" : ""} onClick={() => setLadder(ladder === t ? null : t)}>
-                  {t}
-                </button>
-              ))}
-            </div>
-            {ladder && (
-              <div className="ladder">
-                <h4>{TIER_LABEL[ladder]}</h4>
-                <ol>
-                  {tierPeople.map((p) => (
-                    <li key={p.id} className={p.fictional ? "fake" : ""}>
-                      <b>{p.code}</b> {p.name} <span className="dim">{p.nat}{p.fictional ? " | FICTIONAL" : ""}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
           </section>
         </div>
 
