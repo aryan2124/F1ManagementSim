@@ -70,6 +70,8 @@
 
 /* timing tower: the penalty sits inside the gap cell so it can never push the row wider than the panel */
 .app .tower li{grid-template-columns:26px 8px 52px 36px minmax(0,1fr) 22px}
+.app .qboard li{grid-template-columns:26px 8px 52px 22px 36px minmax(0,1fr) 22px}
+.app .qboard li button.tiny{padding:0;width:20px;height:20px;font-size:12px;line-height:1;min-width:0}
 .app .tower li .gap{display:flex;justify-content:flex-end;align-items:baseline;gap:5px;min-width:0;overflow:hidden}
 .app .tower li .gap .pen{font-size:11px;line-height:1;flex:none}
 
@@ -103,3 +105,7 @@
 .ds-secs div{flex:1;background:#141a33;border:1px solid #34407a;padding:6px 10px}
 .ds-secs div.pb{border-color:#57cc99}
 .ds-secs span{display:block;font-size:11px;color:#a9b2d8}.ds-secs b{font-size:22px}.ds-secs small{display:block;font-size:12px;color:#a9b2d8}
+/* qualifying stats: dark dropdown, label column does not swallow the table */
+.ds-box select{background:#1b1630;color:#fff;border:2px solid var(--line);font-family:var(--pix);font-size:12px;padding:4px 8px;margin-bottom:8px;max-width:100%}
+.ds-box select option{background:#1b1630;color:#fff}
+.ds-table td:first-child{white-space:nowrap}
