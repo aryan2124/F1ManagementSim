@@ -818,6 +818,8 @@ export interface CareerState {
   academy: AcademyState;
   budgets: Budgets;
   spendLog: SpendEntry[];
+  /** The verdict ledger (see ledger.ts). */
+  verdicts?: import("./ledger").LedgerEntry[];
   promises: PromiseItem[];
   rumours: Rumour[];
   rivalries: Rivalry[];

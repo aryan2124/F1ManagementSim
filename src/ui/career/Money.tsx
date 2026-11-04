@@ -44,9 +44,27 @@ export function Money({ s, d }: Props) {
       { k: "budget", label: "BUDGETS" },
       { k: "cap", label: "COST CAP" },
       { k: "brand", label: "SPONSORS AND LIVERY" },
+      { k: "ledger", label: "LEDGER", n: (s.verdicts ?? []).length || undefined },
     ]}>
       {(tab) => (
         <>
+          {tab === "ledger" && (
+            <section className="panel" data-testid="ledger">
+              <h3>LEDGER: WHAT YOU DECIDED, WHAT IT COST, HOW IT TURNED OUT</h3>
+              {(s.verdicts ?? []).length === 0 && <p className="dim">Nothing yet. Parts you fit or scrap, crashes, injuries and stand-ins are written here as they happen.</p>}
+              <table className="ds-table">
+                <tbody>
+                  {(s.verdicts ?? []).slice(0, 80).map((v, i) => (
+                    <tr key={i}>
+                      <td className="dim">{fmtDay(v.day)}</td>
+                      <td><b>{v.text}</b>{v.because ? <span className="dim"> ({v.because})</span> : null}{v.hindsight ? <><br /><span className="small">In hindsight: {v.hindsight}</span></> : null}</td>
+                      <td>{v.cost !== undefined ? fmtMoney(v.cost) : ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
           {tab === "now" && (
             <div className="c-cols">
               <div>

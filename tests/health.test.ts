@@ -95,3 +95,21 @@ describe("crash bills and plumbing", () => {
     expect(Object.keys(r.hurt)).toEqual(["a"]);
   });
 });
+
+import { addHindsight, logLedger } from "../src/career/ledger";
+
+describe("verdict ledger", () => {
+  it("records crashes, injuries and stand-ins for the player's team, newest first, and takes hindsight", () => {
+    const s = newCareer("wil", 7);
+    const [a] = driversOf(s, s.teamId);
+    crashBills(s, { [a.id]: { impact: 1, pose: "side" } });
+    healthAfterRace(s, s.round, { [a.id]: 1.2 });
+    const v = s.verdicts ?? [];
+    expect(v.some((x) => x.kind === "crash" && (x.cost ?? 0) > 0)).toBe(true);
+    if (isOut(a)) expect(v.some((x) => x.kind === "health")).toBe(true);
+    logLedger(s, { kind: "part", text: "Fitted x", ref: "part:1:fit" });
+    addHindsight(s, "part:1:fit", "delivered more");
+    expect(v[0].hindsight).toBe("delivered more");
+    expect(v.length).toBeLessThanOrEqual(300);
+  });
+});

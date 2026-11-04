@@ -18,6 +18,7 @@ import { teamOf } from "./common";
 import type { RndPlan } from "../../career/types";
 import { NextCarPanel } from "./NextCar";
 import { DesignLab } from "./Lab";
+import { FitMapPanel } from "./FitMap";
 import { ConceptPanel, DesignPanel, GuidancePanel, RulebookPanel, TraitPanel } from "./Engineering";
 import { ask } from "../Confirm";
 
@@ -65,6 +66,7 @@ export function Car({ s, d }: Props) {
       { k: "overview", label: "OVERVIEW" },
       { k: "study", label: "STUDY" },
       { k: "build", label: "BUILD", n: me.ideas.length },
+      { k: "fit", label: "FIT MAP" },
       { k: "lab", label: "DESIGN LAB" },
       { k: "next", label: "NEXT YEAR'S CAR" },
       { k: "money", label: "FACILITIES AND CONTROL" },
@@ -193,6 +195,7 @@ export function Car({ s, d }: Props) {
               </div>
             </div>
           )}
+          {tab === "fit" && <FitMapPanel s={s} d={d} />}
           {tab === "lab" && <DesignLab s={s} d={d} />}
           {tab === "next" && (
             <div className="c-cols">

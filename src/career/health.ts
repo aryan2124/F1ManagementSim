@@ -4,6 +4,7 @@ import { news, sendLetter } from "./cards";
 import { rosterOf } from "./finance";
 import { baseTeam } from "./car";
 import { clamp, isHuman, rngFor } from "./util";
+import { logLedger } from "./ledger";
 import type { CareerState, DriverState } from "./types";
 
 /**
@@ -32,6 +33,7 @@ function laidUp(s: CareerState, d: DriverState, cause: "illness" | "injury", rac
   const plural = races === 1 ? "one race" : `${races} races`;
   news(s, `${d.spec.name} is out for ${plural}: ${label}.`, { importance: mine ? 3 : 2, cause: cause === "illness" ? "Illness" : "Injury", tag: "health" });
   if (t === s.teamId) {
+    logLedger(s, { kind: "health", text: `${d.spec.name} out for ${plural}: ${label}`, because: cause === "illness" ? "illness" : "a crash" });
     sendLetter(s, {
       from: "Team doctor",
       role: "Medical",
@@ -94,6 +96,7 @@ export function coverGaps(s: CareerState): void {
       const mine = teamId === s.teamId || (s.humans && isHuman(s, teamId));
       news(s, `${sub.spec.name} steps in for ${hurt.spec.name} at ${baseTeam(teamId).name}.`, { importance: mine ? 3 : 2, cause: "Stand-in", tag: "health" });
       if (teamId === s.teamId) {
+        logLedger(s, { kind: "health", text: `${sub.spec.name} covers for ${hurt.spec.name}`, because: sub.sub.was === "prospect" ? "own reserve" : sub.sub.was === "free" ? "free agent" : "pool junior", cost: 0.2 });
         sendLetter(s, {
           from: "Team principal's office",
           role: "Bench",
@@ -179,6 +182,10 @@ export function crashBills(s: CareerState, crashes: Record<string, { impact: num
     t.cash = Math.round((t.cash - bill) * 100) / 100;
     t.ledger.costs += bill;
     t.ledger.other += bill;
+    if (d.teamId === s.teamId && bill > 0) {
+      const c = crashes[id];
+      logLedger(s, { kind: "crash", text: `${d.spec.name}'s crash (${c.pose.replace("_", " ")})`, cost: bill, because: c.impact >= 0.75 ? "a heavy impact" : "a hit" });
+    }
     if (d.teamId === s.teamId && bill >= 0.5) {
       sendLetter(s, {
         from: "Chief mechanic",

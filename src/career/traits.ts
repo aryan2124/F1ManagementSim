@@ -135,14 +135,19 @@ export function trackNeed(circuitId: string): TrackNeed {
 }
 
 /** How much a trait is worth in seconds at this circuit under these rules, relative to the average trait. */
+/** How hard a circuit's lean pulls on downforce against efficiency (1 means a Monaco or a Monza fully ignores the other trait). */
+export const TRACK_LEAN = 1;
+/** How much of the circuit's pull is felt: above 1, a build that leans the right way at a circuit gains more, and one that leans the wrong way loses more. */
+export const TRACK_BOOST = 1.7;
+
 export function traitWeight(w: Record<Trait, number>, tr: Trait, need?: TrackNeed): number {
   const base = w[tr] ?? 1;
   if (!need) return base;
   const df = need.df;
   const sev = need.sev - 1;
   const f: Record<Trait, number> = {
-    downforce: 1 + 0.4 * df,
-    efficiency: 1 - 0.4 * df,
+    downforce: 1 + TRACK_LEAN * df,
+    efficiency: 1 - TRACK_LEAN * df,
     grip: 1 + 0.1 * df,
     platform: 1,
     output: 1 - 0.15 * df,
@@ -172,7 +177,9 @@ export function effCar(s: CareerState, t: TeamState, circuitId?: string): Record
     const ny = (2 * wy) / (wx + wy);
     // the pair's overall weight also counts: an area made of heavy traits is worth more than one made of light ones
     const sc = (wx + wy) / 2;
-    out[a] = ((nx * t.dna[x] + ny * t.dna[y]) / 2 - IMB * Math.abs(t.dna[x] - t.dna[y])) * (0.3 + 0.7 * sc);
+    const flat = (t.dna[x] + t.dna[y]) / 2 - IMB * Math.abs(t.dna[x] - t.dna[y]);
+    const lean = (nx * t.dna[x] + ny * t.dna[y]) / 2 - IMB * Math.abs(t.dna[x] - t.dna[y]);
+    out[a] = (flat + (need ? TRACK_BOOST : 1) * (lean - flat)) * (0.3 + 0.7 * sc);
   }
   return out;
 }

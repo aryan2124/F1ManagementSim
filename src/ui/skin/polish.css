@@ -109,3 +109,15 @@
 .ds-box select{background:#1b1630;color:#fff;border:2px solid var(--line);font-family:var(--pix);font-size:12px;padding:4px 8px;margin-bottom:8px;max-width:100%}
 .ds-box select option{background:#1b1630;color:#fff}
 .ds-table td:first-child{white-space:nowrap}
+/* fit map */
+.fm-grid{display:grid;gap:3px;margin-top:8px}
+.fm-row{display:grid;grid-template-columns:170px minmax(160px,1fr) 70px minmax(120px,200px);align-items:center;gap:10px;font-size:14px}
+.fm-row.raced{opacity:.7}
+.fm-gp{font-family:var(--pix);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fm-bar{position:relative;height:14px;background:#1b1630}
+.fm-zero{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:#fff8}
+.fm-fill{position:absolute;top:3px;bottom:3px}
+.fm-fill.up{background:#57cc99}.fm-fill.down{background:#e63946}
+.fm-range{position:absolute;top:6px;height:2px;background:#fff}
+.fm-val{font-family:var(--pix);font-size:12px;text-align:right}
+@media (max-width:860px){.fm-row{grid-template-columns:120px 1fr 60px}.fm-lean{display:none}}

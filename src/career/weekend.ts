@@ -30,6 +30,7 @@ import { rulesOf } from "./eras";
 import { afterRace, addCause } from "./people";
 import { ensureStatus } from "./status";
 import { standingsRank } from "./car";
+import { addHindsight } from "./ledger";
 import { crashBills, healthAfterRace, rollHealth } from "./health";
 import { PART_NAME, afterRaceService, fitAllDead, markDead, openWeekendPenalties, totalDrop, wearAfterRace, wearOf } from "./powertrain";
 
@@ -994,6 +995,7 @@ function finishRace(s: CareerState, ws: WeekendState, res: SessionResult, skipWo
       const mid = (p.predLo + p.predHi) / 2;
       const verdict = p.trueGain < p.predLo ? "below" : p.trueGain > p.predHi ? "above" : "inside";
       reveals.push(`${p.name}: delivered ${lapDelta(p.trueGain)} s, ${verdict} the predicted ${fmtRange(p.predLo, p.predHi)}.`);
+      addHindsight(s, `part:${p.id}:fit`, `${meta.gp}: delivered ${lapDelta(p.trueGain)} s, ${verdict} the forecast.`);
       const des = staffOf(s, s.teamId, "designer");
       if (des) {
         des.known = clamp(des.known + 0.05, 0, 1);

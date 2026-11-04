@@ -1,4 +1,5 @@
 import { ideaDrag } from "./nextcar";
+import { logLedger } from "./ledger";
 import { setbackOf } from "./poach";
 import { CFG } from "./config";
 import { staffOf, standingsRank } from "./car";
@@ -386,6 +387,7 @@ export function scrapProject(s: CareerState, teamId: string, id: number) {
   }
   p.status = "scrapped";
   onScrap(s, teamId, p);
+  if (teamId === s.teamId) logLedger(s, { kind: "part", text: `Scrapped "${p.name}"`, cost: round2(p.cost - back), because: back ? "scrapped early, half the cap room came back" : "scrapped late, nothing came back", ref: `part:${p.id}:scrap` });
   if (teamId === s.teamId) logSpend(s, `Scrapped "${p.name}"${back ? `: ${fmtMoney(back)} of cap room came back` : ": nothing came back"}`, { cap: back });
 }
 
@@ -464,6 +466,7 @@ export function fitParts(s: CareerState, teamId: string): Project[] {
       if (teamId === s.teamId) news(s, `"${p.name}" was built to a general spec because nobody briefed the team, and gives up a little.`, { importance: 1, tag: "people" });
     }
     p.status = "fitted";
+    if (teamId === s.teamId) logLedger(s, { kind: "part", text: `Fitted "${p.name}"`, cost: p.cost, because: `forecast ${p.predLo.toFixed(2)} to ${p.predHi.toFixed(2)}`, ref: `part:${p.id}:fit` });
     onFit(s, teamId, p);
     p.fittedRound = s.round + 1;
     const mid = (p.predLo + p.predHi) / 2;
