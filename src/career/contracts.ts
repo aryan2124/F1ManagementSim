@@ -288,7 +288,7 @@ function candidateValue(s: CareerState, d: DriverState, ask: number, brain: numb
   return v;
 }
 
-function juniorToDriver(s: CareerState, j: JuniorState): DriverState {
+export function juniorToDriver(s: CareerState, j: JuniorState): DriverState {
   const spec = { id: j.id, code: j.code, name: j.name, number: freeNumber(s, 40 + (hashSeed(j.id) % 50)), nat: j.nat, born: j.born, pace: j.pace, tyreMgmt: j.tyreMgmt, aggression: j.aggression, consistency: j.consistency, fictional: j.fictional };
   return { id: j.id, spec, teamId: null, salary: 1, endYear: s.year, role: "equal", potential: j.potential, tenure: 0, retired: false, morale: 0.7, trust: 0.7, wins: 0, podiums: 0, titles: 0, starts: 0, grievance: 0, gStage: 0, causes: {} };
 }

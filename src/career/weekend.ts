@@ -30,6 +30,7 @@ import { rulesOf } from "./eras";
 import { afterRace, addCause } from "./people";
 import { ensureStatus } from "./status";
 import { standingsRank } from "./car";
+import { healthAfterRace, rollHealth } from "./health";
 import { PART_NAME, afterRaceService, fitAllDead, markDead, openWeekendPenalties, totalDrop, wearAfterRace, wearOf } from "./powertrain";
 
 export const BASE_AXES: AxisInfo[] = [
@@ -97,6 +98,7 @@ export function startWeekend(s: CareerState): WeekendState {
   const race = s.calendar[s.round];
   // the last race of the season: whoever is about to retire says so now
   if (s.round === s.calendar.length - 1) planRetirements(s);
+  rollHealth(s, s.round);
   const rng = new Rng(hashSeed(`wk:${s.seed}:${s.year}:${s.round}`));
   const sprint = race.sprint;
   const aiQuality: Record<string, number> = {};
@@ -798,7 +800,7 @@ function recordStandings(s: CareerState, kind: SessionKind, order: string[], poi
 /** Store a finished session. A finished Grand Prix closes the weekend and pays out. */
 const BASE_SETS = { normal: { S: 4, M: 5, H: 4 }, sprint: { S: 4, M: 4, H: 4 } } as const;
 
-export function recordSession(s: CareerState, kind: SessionKind, order: string[], points: Record<string, number>, grid: string[] | undefined, dnf: string[], moods?: Record<string, { morale: number; trust: number; grievance: number; strat?: number }>, extra?: { sets?: Record<string, TyreSet[]>; locks?: Record<string, "S" | "M" | "H">; used?: Record<string, Partial<Record<"S" | "M" | "H", number>>>; skipWorld?: boolean; failed?: Record<string, "pu" | "gb">; fastest?: string; pit?: { stops: number; slow: number; best?: number }; radio?: RadioQuote[]; duels?: { a: string; b: string; passes: number; contacts: number }[] }) {
+export function recordSession(s: CareerState, kind: SessionKind, order: string[], points: Record<string, number>, grid: string[] | undefined, dnf: string[], moods?: Record<string, { morale: number; trust: number; grievance: number; strat?: number }>, extra?: { sets?: Record<string, TyreSet[]>; locks?: Record<string, "S" | "M" | "H">; used?: Record<string, Partial<Record<"S" | "M" | "H", number>>>; skipWorld?: boolean; failed?: Record<string, "pu" | "gb">; fastest?: string; pit?: { stops: number; slow: number; best?: number }; radio?: RadioQuote[]; duels?: { a: string; b: string; passes: number; contacts: number }[]; hurt?: Record<string, number> }) {
   const ws = s.weekend;
   if (!ws) return;
   if (kind === "quali" || (kind === "sq" && !ws.sprint)) {
@@ -855,6 +857,7 @@ export function recordSession(s: CareerState, kind: SessionKind, order: string[]
   if (kind === "race") {
     if (!extra?.skipWorld) recordStandings(s, kind, order, points);
     finishRace(s, ws, res, !!extra?.skipWorld, extra?.radio, extra?.duels);
+    if (!extra?.skipWorld) healthAfterRace(s, ws.round, extra?.hurt);
     ws.stage = "done";
     // whatever died is replaced at the factory; the penalty waits for the next race
     if (ws.dead) {
@@ -908,6 +911,7 @@ export function raceExtras(sim: RaceSim, mineIds: string[]) {
     pit: { stops: stops.length, slow: secs.filter((x) => x > 4.6).length, best: secs.length ? Math.min(...secs) : undefined },
     radio: (sim.radio?.quotes ?? []).filter((q) => mineIds.includes(q.carId)).map((q) => ({ ...q })),
     duels: duelsOf(sim, mineIds),
+    hurt: Object.fromEntries(sim.cars.filter((c) => c.crash && c.crash.impact >= 0.75).map((c) => [c.id, c.crash!.impact])),
   };
 }
 

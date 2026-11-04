@@ -10,6 +10,7 @@ import { clauseBonuses } from "./silly";
 import { baseTeam, carRating, standingsRank, teamRanking } from "./car";
 import { buildCalendar } from "./calendar";
 import { pushCard, news, ticker, recap } from "./cards";
+import { healYearEnd } from "./health";
 import { ageWorld, ensureTwoDrivers, runMarket, signDriver, staffYearEnd } from "./contracts";
 import { CFG } from "./config";
 import { driversOf, newFinancialYear, yearEndBooks } from "./finance";
@@ -68,6 +69,7 @@ export function switchTeam(s: CareerState, newTeamId: string) {
 /** The week after the last race: the champions, the books, ageing, the driver market and the board's verdict. */
 export function endOfSeason(s: CareerState) {
   const notes: string[] = [];
+  healYearEnd(s);
   const ranks = standingsRank(s);
   s.prevOrder = ranks.slice();
   const topDriver = Object.entries(s.standings.drivers).filter(([id]) => !s.story.arcs[`out:${id}`]).sort((a, b) => b[1] - a[1])[0];

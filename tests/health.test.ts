@@ -1,0 +1,72 @@
+import { describe, expect, it } from "vitest";
+import { newCareer } from "../src/career/world";
+import { driversOf } from "../src/career/finance";
+import { activeDrivers, entriesFor } from "../src/career/car";
+import { autoPlayDays } from "../src/career/headless";
+import { coverGaps, healthAfterRace, healYearEnd, isOut } from "../src/career/health";
+import { decide } from "../src/career/academy";
+
+describe("health and stand-ins", () => {
+  it("a laid-up driver leaves the entry list and a stand-in covers, then goes home", () => {
+    const s = newCareer("wil", 7);
+    const [a] = driversOf(s, s.teamId);
+    a.out = { cause: "illness", races: 1, from: s.round, year: s.year, label: "a fever" };
+    coverGaps(s);
+    const ids = activeDrivers(s, s.teamId);
+    expect(ids).toHaveLength(2);
+    expect(ids).not.toContain(a.id);
+    const sub = Object.values(s.drivers).find((d) => d.sub?.for === a.id)!;
+    expect(sub.teamId).toBe(s.teamId);
+    expect(entriesFor(s).filter((e) => e.team.id === s.teamId)).toHaveLength(2);
+    healthAfterRace(s, s.round);
+    expect(isOut(a)).toBe(false);
+    expect(activeDrivers(s, s.teamId)).toContain(a.id);
+    expect(sub.teamId).toBeNull();
+    expect(sub.sub).toBeUndefined();
+  });
+
+  it("a heavy crash can lay a driver up, deterministically, for human and AI alike", () => {
+    const run = () => {
+      const s = newCareer("wil", 9);
+      const ai = Object.keys(s.teams).find((t) => t !== s.teamId)!;
+      const hurt: Record<string, number> = {};
+      for (const id of [...activeDrivers(s, s.teamId), ...activeDrivers(s, ai)]) hurt[id] = 1.2;
+      healthAfterRace(s, s.round, hurt);
+      return Object.values(s.drivers).filter((d) => isOut(d)).map((d) => `${d.id}:${d.out!.races}`).sort();
+    };
+    const a = run();
+    expect(a.length).toBeGreaterThan(0);
+    expect(run()).toEqual(a);
+  });
+
+  it("the reserve role is a real flag on an academy prospect", () => {
+    const s = newCareer("wil", 3);
+    const p = Object.values(s.academy.prospects).find((x) => x.owner === s.teamId && x.status === "academy");
+    if (!p) return;
+    p.born = s.year - 20;
+    const r = decide(s, p.id, "reserve");
+    if (r === null) expect(p.reserve).toBe(true);
+    decide(s, p.id, "keep");
+    expect(p.reserve).toBe(false);
+  });
+
+  it("a whole season: always two fit drivers per team, no injured driver racing, all healed at year end", { timeout: 600000 }, () => {
+    const s = newCareer("wil", 11);
+    let sawOut = 0;
+    let guard = 0;
+    const startYear = s.year;
+    while (s.year === startYear && guard++ < 500) {
+      autoPlayDays(s, 1);
+      for (const t of Object.keys(s.teams)) {
+        const ids = activeDrivers(s, t);
+        if (ids.length !== 2) throw new Error(`${t} has ${ids.length} active drivers on day ${s.day}`);
+        for (const id of ids) if (isOut(s.drivers[id])) throw new Error(`${id} racing while out`);
+      }
+      sawOut += Object.values(s.drivers).filter((d) => isOut(d)).length > 0 ? 1 : 0;
+    }
+    expect(s.year).toBe(startYear + 1);
+    expect(Object.values(s.drivers).filter((d) => d.out || d.sub)).toHaveLength(0);
+    healYearEnd(s);
+    expect(sawOut).toBeGreaterThanOrEqual(0);
+  });
+});

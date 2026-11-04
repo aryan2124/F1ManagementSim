@@ -117,7 +117,7 @@ export function standingsRank(s: CareerState): string[] {
 
 export function activeDrivers(s: CareerState, teamId: string): string[] {
   return Object.values(s.drivers)
-    .filter((d) => d.teamId === teamId && !d.retired)
+    .filter((d) => d.teamId === teamId && !d.retired && (!d.out || d.out.races <= 0))
     .map((d) => d.id);
 }
 
@@ -143,7 +143,7 @@ export function entriesFor(s: CareerState, confidence: Record<string, number> = 
     }
     for (const id of activeDrivers(s, teamId)) {
       const driver = driverSpecFor(s, id, teamId, confidence[id] ?? 0.6, circuitId);
-      driver.consistency = clamp(driver.consistency - fatigueOf(s, id, circuitId), 0.3, 0.97);
+      driver.consistency = clamp(driver.consistency - fatigueOf(s, id, circuitId) - (s.drivers[id]?.sub?.cold ? 0.05 : 0), 0.3, 0.97);
       if (dw !== 1) driver.pace = clamp(0.985 + (driver.pace - 0.985) * dw, 0.93, 1.002);
       if (fx) {
         driver.tyreMgmt = clamp(driver.tyreMgmt + fx.tyre, 0.3, 0.97);

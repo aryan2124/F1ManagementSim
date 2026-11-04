@@ -225,6 +225,10 @@ export interface DriverState {
   retireRolled?: number;
   /** Where he stands with the team and what he expects (see status.ts). */
   stat?: import("./status").DriverStatus;
+  /** Laid up: he misses `races` more races counting from round `from` of `year`. See health.ts. */
+  out?: { cause: "illness" | "injury"; races: number; from: number; year: number; label: string };
+  /** A stand-in covering for `for`; `was` is where he came from, `cold` is true when nobody kept him ready. */
+  sub?: { for: string; was: "free" | "prospect" | "pool"; cold: boolean; team: string };
 }
 
 export interface Sponsor {

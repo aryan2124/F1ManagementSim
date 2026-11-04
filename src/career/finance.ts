@@ -11,10 +11,13 @@ import { emptyLedger } from "./world";
 import { logSpend } from "./log";
 import { multiply } from "./factors";
 
-export const driversOf = (s: CareerState, teamId: string) => Object.values(s.drivers).filter((d) => d.teamId === teamId && !d.retired);
+/** Everyone on the books (laid-up drivers included, they are still paid). */
+export const rosterOf = (s: CareerState, teamId: string) => Object.values(s.drivers).filter((d) => d.teamId === teamId && !d.retired);
+/** The drivers who can race: laid-up ones are left out, stand-ins are in. */
+export const driversOf = (s: CareerState, teamId: string) => rosterOf(s, teamId).filter((d) => !d.out || d.out.races <= 0);
 
 export function annualSalaries(s: CareerState, teamId: string): number {
-  return round2(driversOf(s, teamId).reduce((a, d) => a + d.salary, 0) + teamStaff(s, teamId).reduce((a, x) => a + x.salary, 0));
+  return round2(rosterOf(s, teamId).reduce((a, d) => a + d.salary, 0) + teamStaff(s, teamId).reduce((a, x) => a + x.salary, 0));
 }
 export function facilityUpkeep(t: TeamState): number {
   const f = t.facilities;

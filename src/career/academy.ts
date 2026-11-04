@@ -78,6 +78,8 @@ export interface Prospect {
   log: string[];
   /** Set when he was handled badly or well, for the story. */
   setback: number;
+  /** Kept as the team's test and reserve driver, first call when a race driver is laid up. */
+  reserve?: boolean;
   /** Season by season record, newest last. */
   path?: { year: number; series: Series; rank: number; pts: number; wins: number }[];
 }
@@ -968,7 +970,10 @@ export function decide(s: CareerState, id: string, decision: "keep" | "loan" | "
   const t = s.teams[s.teamId];
   if (!p || p.owner !== s.teamId || p.status !== "academy") return "Not in your academy.";
   a.decisions = a.decisions.filter((x) => x !== id);
-  if (decision === "keep") return null;
+  if (decision === "keep") {
+    p.reserve = false;
+    return null;
+  }
   if (decision === "loan") {
     p.ride = clamp(p.ride + 0.2, 0, 1);
     p.log.unshift(`${s.year}: loaned to a stronger team for racing time.`);
@@ -976,6 +981,9 @@ export function decide(s: CareerState, id: string, decision: "keep" | "loan" | "
   }
   if (decision === "reserve") {
     if (!f1Eligible(s, p) && ageOfP(s, p) < 18) return "He is too young to be a reserve.";
+    const held = Object.values(a.prospects).filter((x) => x.owner === s.teamId && x.status === "academy" && x.reserve && x.id !== id).length;
+    if (held >= 2) return "You already keep two reserves. Release one from the role first.";
+    p.reserve = true;
     p.training = [];
     p.log.unshift(`${s.year}: promoted to test and reserve.`);
     p.confidence = clamp(p.confidence + 0.08, 0, 1);
