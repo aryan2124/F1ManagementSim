@@ -2,6 +2,7 @@ import { bestSet, cloneSets, findSet, freshCounts, makeSets, type TyreSet } from
 import { CAR_LEN, DT, ersFactor, PIT_LIMIT, BOX_SPACING, speedFactor } from "./engine";
 import { Rng } from "./rng";
 import { accelAt, brakeAt, sampleTrack, type TrackModel } from "./track";
+import { pickPose, methodFor } from "./recovery";
 import { pitPathLat, pitCommitEnd, pitRoadEnd, PIT_SLEW } from "./pitpath";
 import type { CarStatus, Compound, EnergyMode, EntrySpec, PushLevel, SimEvent, SimEventKind, WeatherSpec } from "./types";
 import { Weather, makeWeather, bestCompoundFor, targetWetness, wetBrakeFactor, wetSpeedFactor, wetWearFactor, type WeatherNow } from "./weather";
@@ -901,11 +902,23 @@ export class QualiSim {
       car.lapValid = false;
       car.crashedOut = true;
       car.flyingLeft = 0;
-      this.emit("q_red", car.id, `${code} crashes at Turn ${f.turn}! RED FLAG. The session is suspended.`);
+      // how the car came to rest decides what the marshals bring, and that decides how long the session waits
+      const { pose, impact } = pickPose(this as never, { kind: "wall", v: Math.max(car.v, 40), braking: this.rng.chance(0.6), spinning: this.rng.chance(0.4), contact: false, closing: 0, wet: this.weather?.wet[1] ?? 0 });
+      const fire = impact > 0.9 && this.rng.chance(0.25);
+      const method = methodFor(pose, impact, fire);
+      const medical = impact >= 0.75;
+      const work = { push: 150, tractor: 230, crane: 330, drive: 120, leave: 100 }[method] + (medical ? 120 : 0) + (fire ? 60 : 0);
+      const wait = work + this.rng.range(0, 120);
+      car.note = `Crash: ${pose.replace("_", " ")}`;
+      const how = method === "crane" ? "The crane is on its way." : method === "tractor" ? "A tractor is going out." : "Marshals are pushing it clear.";
+      this.emit("q_red", car.id, `${code} crashes at Turn ${f.turn}! RED FLAG. The session is suspended. ${how}${medical ? " The medical car is attending." : ""}`);
       if (!this.red.active) {
         this.red.active = true;
-        this.red.untilTick = this.tick + Math.round((180 + this.rng.range(0, 240)) / DT);
+        this.red.untilTick = this.tick + Math.round(wait / DT);
+      } else {
+        this.red.untilTick = Math.max(this.red.untilTick, this.tick + Math.round(wait / DT));
       }
+
     }
   }
 

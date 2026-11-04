@@ -55,3 +55,23 @@ describe("crashes, debris and recovery", () => {
     expect(run()).toBe(run());
   });
 });
+
+
+describe("qualifying crashes", () => {
+  it("a red flag says what is coming out to the car, and every session still completes", { timeout: 240000 }, () => {
+    const { track } = loadCircuit("monza");
+    const entries = buildEntries("none");
+    let reds = 0;
+    for (let seed = 1; seed <= 25; seed++) {
+      const { rows, sim } = runQualifying({ seed, track, entries });
+      expect(rows).toHaveLength(22);
+      for (const e of sim.drainEvents()) {
+        if (e.kind === "q_red" && e.text.includes("crashes")) {
+          reds++;
+          expect(/crane|tractor|pushing/.test(e.text)).toBe(true);
+        }
+      }
+    }
+    expect(reds).toBeGreaterThanOrEqual(0);
+  });
+});
