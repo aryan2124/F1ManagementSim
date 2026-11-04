@@ -315,7 +315,9 @@ export interface CarState {
   /** Water depth the car is driving through right now (0 dry .. 1 standing water). */
   wetD: number;
   /** Accumulated damage. aero and floor cost pace, flat is a flat spot, slow marks a puncture. */
-  damage: { aero: number; floor: number; flat: number; puncture: boolean };
+  damage: { aero: number; floor: number; flat: number; puncture: boolean; /** bent suspension: cannot be fixed in a stop */ susp: number };
+  /** How the car came to rest after a crash, who was to blame, and what it needs. Set when a crash ends the car's race. */
+  crash?: CrashInfo;
   /** An incident in progress: spin, off track, in the gravel, and so on. */
   incident: Incident | null;
   /** Visual spin angle in radians (0 when straight). */
@@ -348,6 +350,23 @@ export interface CarState {
   radioLeft: number;
   /** Restart window after a safety car, ticks. */
   restartUntil: number;
+}
+
+export type Pose = "upright" | "nose_in" | "rear_in" | "side" | "back" | "spun" | "buried";
+
+/** What a crash was: how the car hit and came to rest, who was at fault. One record feeds the animation, the radio, the steward and the recovery crew. */
+export interface CrashInfo {
+  pose: Pose;
+  /** 0..1.2, a stand-in for the g-load. About 0.75 sends the driver to the medical centre whatever he says. */
+  impact: number;
+  fire: boolean;
+  speed: number;
+  /** self: his own error. other: hit by another car. none: nobody (mechanical, weather, a racing incident). */
+  blame: "self" | "other" | "none";
+  otherId?: string;
+  cause: string;
+  mech: boolean;
+  side: 1 | -1;
 }
 
 export type IncidentKind = "lockup" | "off" | "spin" | "gravel" | "wall" | "stall" | "puncture" | "collision";
@@ -409,6 +428,7 @@ export type SimEventKind =
   | "wall"
   | "damage"
   | "debris"
+  | "recovery"
   | "red_flag"
   | "red_restart"
   | "weather"

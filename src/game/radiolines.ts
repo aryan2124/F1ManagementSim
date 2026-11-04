@@ -353,3 +353,79 @@ export const TALK = {
     anxious: ["{rival} is really close, should I defend or let him go?", "He is right there, I do not want to make a mistake."],
   } satisfies Bank,
 };
+
+/**
+ * What is said after a crash. Engineers ask about the driver before the car; the driver answers about himself, then the cause.
+ * The line chosen depends on who was at fault (the stewards' call, the same one the report uses) and on how hard the hit was.
+ */
+export const CRASH = {
+  /** The engineer, first thing: is the driver all right. */
+  welfare: ["{call}, are you OK? Talk to me.", "{call}, are you OK? Are you OK?", "{call}, confirm you are OK.", "Check in, {call}. Are you hurt?"],
+  /** The engineer, once the driver has answered: what to do now. */
+  stay: ["Stay in the car for now. The marshals are coming.", "Hold still, {call}. Marshals are on their way.", "OK, copy. Do not unbuckle until the marshals say."],
+  tryMove: ["Can you move the car? Try to select first.", "Switch off, {call}, and wait for the marshals.", "Is the car alive? Try to re-fire if you can."],
+  fire: ["Fire in the car! Fire! Get out!", "I have fire! I have fire!", "There are flames, there are flames!"],
+  /** The driver, answering. Own fault. */
+  self: {
+    blunt: ["I am OK. My mistake. Sorry, that is on me.", "I am fine. I went in too deep. That was my error.", "OK, OK. I made a mistake. Sorry."],
+    fire: ["I am OK, I am OK! I messed up, {eng}! Sorry!", "Ahh! I am fine, that was me, I got it wrong, sorry!", "I am alright! Stupid, stupid mistake, sorry guys!"],
+    sunny: ["I am fine, mate. Sorry, that one is on me, I pushed too hard.", "All good here, {eng}. My bad, sorry about that!", "I am OK! Sorry, boys, I got greedy there."],
+    analyst: ["I am OK. I misjudged the braking point. The error was mine.", "No injury. I carried too much speed into the corner. My fault.", "I am fine. Apologies, I will review it, but it was my error."],
+    elder: ["I am all right. That one is on me, {eng}. Sorry.", "Fine, fine. My mistake. It happens, but it should not have.", "I am OK. I got it wrong. I will put it right."],
+    anxious: ["I am OK, I think I am OK! Sorry, sorry, I am so sorry!", "Yes, I am fine. I am sorry, I am so sorry, that was my fault.", "I am OK. Oh no. Sorry, everyone, sorry."],
+  } satisfies Bank,
+  /** Hit by another car. */
+  other: {
+    blunt: ["I am OK. He hit me. He turned in on me.", "Fine. He drove straight into me. Look at the replay.", "I am OK. He did not leave me any room."],
+    fire: ["I am OK! He hit me, {eng}! He just drove into me!", "He turned in! He took me out, he took me out!", "I am fine! What was that? He did not even look!"],
+    sunny: ["I am fine, mate. He came across on me, no room at all.", "All good here. Not sure what he was thinking there!", "I am OK! He just did not see me, I think."],
+    analyst: ["I am OK. Contact from the car on my left. I was on the racing line.", "No injury. He closed the door when I was alongside.", "I am fine. I had nowhere to go. Please check the data."],
+    elder: ["I am all right. I gave him room. He did not give me any.", "Fine. That was avoidable, {eng}. I was there.", "I am OK. I was alongside and he came across."],
+    anxious: ["I am OK, I think! He hit me, I did not do anything, did I?", "Yes, I am fine. He came across, I could not avoid it, I am sorry.", "I am OK. Did I do something wrong? I was just there."],
+  } satisfies Bank,
+  /** Nobody's fault: the car, the track, the rain, the debris, or a racing incident. */
+  none: {
+    blunt: ["I am OK. The car just went. I had no control.", "Fine. No brakes. Nothing I could do.", "I am OK. I lost the rear. It was the conditions."],
+    fire: ["I am OK! The car just snapped, {eng}! Nothing I could do!", "I am fine! I had nothing, no grip, no brakes, nothing!", "Ahh, it just went! I am OK! I could not hold it!"],
+    sunny: ["I am fine, mate. Just one of those, I think. Car just went away.", "All good. Not sure what happened there, honestly!", "I am OK! It was slippery, we all were on the edge."],
+    analyst: ["I am OK. A sudden loss of grip at the rear. I will check the data.", "No injury. Something failed on the car, I felt it go before the corner.", "I am fine. It looked like a racing incident, no one at fault."],
+    elder: ["I am all right. These things happen, {eng}. It was racing.", "Fine. The car let go. Nothing more to say.", "I am OK. It is part of it. Nobody to blame."],
+    anxious: ["I am OK, I think. Was it me? I do not think it was me.", "Yes, I am fine. The car just went, I am sure. I hope.", "I am OK. I do not know what happened. I am sorry if it was me."],
+  } satisfies Bank,
+  /** A hard hit: the driver is slow to answer and short when he does. */
+  hurt: {
+    blunt: ["...OK. Give me a moment.", "I am... I am OK. Do not move me yet."],
+    fire: ["...ahh. I am OK. I am OK. Give me a second.", "...yes. Yes. I am here."],
+    sunny: ["...yeah. I am... I am fine. Just give me a second, mate.", "...OK. I am here. Everything hurts a bit."],
+    analyst: ["...I am conscious. I need a moment. No feeling lost.", "...OK. I am here. I will wait for the doctor."],
+    elder: ["...I am OK. Just let them come, {eng}.", "...fine. A moment, please."],
+    anxious: ["...I am OK? I think I am OK. Please stay on the radio.", "...yes. I am here. Please stay with me."],
+  } satisfies Bank,
+  /** Later, while the crews work. */
+  after: {
+    self: {
+      blunt: ["Sorry to the team. I will do better.", "That one is on me. Sorry."],
+      fire: ["I am so angry with myself, {eng}. Sorry, sorry.", "I threw it away. Sorry to everyone."],
+      sunny: ["Sorry, boys. Let us make up for it next time.", "My bad, team. We will get it back."],
+      analyst: ["I will go through it carefully. Apologies to the team.", "The error was mine. I will not repeat it."],
+      elder: ["Sorry, {eng}. I know what it cost.", "That was not good enough from me."],
+      anxious: ["I am so sorry. Is the car OK? Is everyone OK?", "Sorry, sorry. I feel terrible about this."],
+    } satisfies Bank,
+    other: {
+      blunt: ["Look at the replay. He took me out.", "Tell the stewards. That was not on."],
+      fire: ["He took me out, {eng}! Tell the stewards!", "I was there! He just drove into me!"],
+      sunny: ["Not ideal, mate. Hopefully the stewards see it.", "Shame. That was a good race until then."],
+      analyst: ["Please send the onboard to the stewards.", "The data will show I was on the line."],
+      elder: ["I will talk to him later. That was avoidable.", "Fine. Let the stewards decide."],
+      anxious: ["Is the other car OK? Was it my fault?", "I hope they look at it fairly. I did nothing."],
+    } satisfies Bank,
+    none: {
+      blunt: ["Nothing I could do. Check the car.", "Check what failed. I will wait."],
+      fire: ["I need to know what broke, {eng}!", "That was not me, that was the car!"],
+      sunny: ["Ah well. These things happen. Thanks for the support.", "Shame, but nobody to blame. Next one."],
+      analyst: ["I will give the engineers every detail I felt.", "We need to find the cause before the next race."],
+      elder: ["That is racing. Let us look at it and move on.", "Nothing to say. Just bad luck."],
+      anxious: ["Was it me? Please tell me it was not me.", "I hope everyone is OK. I just do not know what happened."],
+    } satisfies Bank,
+  },
+};

@@ -15,6 +15,8 @@ import { getPrefs, setPref } from "../ui/prefs";
 import { useUiTick } from "../ui/hooks";
 import { WeatherFx } from "./weatherFx";
 import { drawCrew, lift } from "./pitCrew";
+import { drawRecoveries, poseDraw } from "./recoveryArt";
+import type { RecoverySystem } from "../sim/recovery";
 import { DT } from "../sim/engine";
 
 export const VIEW_W = 640;
@@ -367,6 +369,7 @@ export function RaceView({ session, meta, children }: { session: LiveSession<Liv
 
           // cars
           const crewJobs: { x: number; y: number; h: number; p: number; colour: number; slow: boolean }[] = [];
+          const recSys = (session.sim as unknown as { inc?: { rec?: RecoverySystem } }).inc?.rec;
           for (const c of session.sim.cars) {
             const s = sprites.get(c.id);
             if (!s) continue;
@@ -386,6 +389,20 @@ export function RaceView({ session, meta, children }: { session: LiveSession<Liv
             }
             s.sprite.visible = !c.removed;
             s.sprite.alpha = c.status === "dnf" ? 0.55 : 1;
+            s.sprite.tint = 0xffffff;
+            const crash = recSys?.forCar(c.id);
+            if (crash && crash.stage !== "done") {
+              // a crashed car sits the way it came to rest, is turned over, pushed, dragged or lifted
+              const pd = poseDraw(crash, session.sim.tick);
+              s.sprite.alpha = 1;
+              s.sprite.rotation += pd.rot;
+              s.sprite.scale.y = Math.abs(s.sprite.scale.y) * pd.sy;
+              s.sprite.scale.set(s.sprite.scale.x * (1 + 0.25 * pd.lift), s.sprite.scale.y * (1 + 0.25 * pd.lift));
+              s.sprite.tint = pd.tint;
+              s.sprite.x += Math.sin(p.heading) * pd.off * Z;
+              s.sprite.y -= Math.cos(p.heading) * pd.off * Z;
+              if (pd.hidden || pd.custom) s.sprite.visible = false;
+            }
             if (c.status === "pit_stop" && c.stopSecs && !c.removed) {
               const prog = Math.max(0, Math.min(1, 1 - ((c.pitTimer ?? 0) * DT) / c.stopSecs));
               const up = lift(prog);
@@ -463,6 +480,7 @@ export function RaceView({ session, meta, children }: { session: LiveSession<Liv
           // particles
           fx.clear();
           for (const j of crewJobs) drawCrew(fx, j.x, j.y, j.h, j.p, j.colour, performance.now(), j.slow, []);
+          if (recSys) drawRecoveries(fx, recSys.recoveries, recSys.debris, track, session.sim.tick, performance.now(), (id) => session.sim.car(id).entry.team.color, (id) => session.sim.car(id).lateral);
           if (incs) {
             for (let k = 0; k < 3; k++) {
               if (!incs.yellowAt(k)) continue;

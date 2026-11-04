@@ -1,6 +1,8 @@
 import type { RaceSim } from "./engine";
 import { DT, GRID_GAP, LIGHTS_TICKS } from "./engine";
-import type { CarState, Incident, IncidentKind } from "./types";
+import type { CarState, CrashInfo, Incident, IncidentKind } from "./types";
+import { pickPose, RecoverySystem } from "./recovery";
+import { sampleTrack } from "./track";
 import { wetLoss } from "./weather";
 
 /**
@@ -38,7 +40,11 @@ export class IncidentSystem {
   private stormTicks = 0;
   private wetStartChecked = false;
 
-  constructor(private sim: RaceSim) {}
+  readonly rec: RecoverySystem;
+
+  constructor(private sim: RaceSim) {
+    this.rec = new RecoverySystem(sim);
+  }
 
   get enabled(): boolean {
     return !this.sim.cfg.noIncidents && !this.sim.cfg.noCrashes;
@@ -65,6 +71,7 @@ export class IncidentSystem {
     const worn = wear ? 1 + 6 * Math.pow(1 - wear.pu, 3) : 1;
     const pFail = ((1 - car.entry.team.reliability) * 0.018 * DT * worn) / sim.track.nominalLap;
     if (wear && sim.rng.chance((0.0007 * DT * (1 + 6 * Math.pow(1 - wear.gb, 3))) / sim.track.nominalLap)) {
+      this.mechCrash(car, "Gearbox failure", 0.01);
       sim.retire(car, "Gearbox failure");
       sim.emit("failure", car.id, undefined, `${d.code} stops on track with a gearbox failure${sim.cornerText(car)}.`);
       if (sim.rng.chance(0.3)) sim.deployNeutral("sc", `${d.code} stopped on track`);
@@ -72,6 +79,7 @@ export class IncidentSystem {
       return;
     }
     if (sim.rng.chance(pFail)) {
+      this.mechCrash(car, "Power unit failure", 0.05);
       sim.retire(car, "Power unit failure");
       sim.emit("failure", car.id, undefined, `${d.code} stops on track with a power unit failure${sim.cornerText(car)}.`);
       if (sim.rng.chance(0.3)) sim.deployNeutral("sc", `${d.code} stopped on track`);
@@ -136,6 +144,7 @@ export class IncidentSystem {
       sim.emit("spin", car.id, undefined, `${code} spins${turn}!`);
       if (stalled) {
         sim.emit("spin", car.id, undefined, `${code} has stalled and cannot restart.`);
+        this.setCrash(car, "spin_stall", { blame: wetM > 2.2 ? "none" : "self", cause: "Spun and stalled", side });
         sim.retire(car, "Spun and stalled");
         this.consequence(car, "spin_stall", turn);
       } else this.consequence(car, "spin", turn);
@@ -147,6 +156,7 @@ export class IncidentSystem {
       sim.emit("gravel", car.id, undefined, `${code} goes into the gravel${turn}.`);
       if (beached) {
         sim.emit("gravel", car.id, undefined, `${code} is beached and cannot get out.`);
+        this.setCrash(car, "gravel", { blame: wetM > 2.2 ? "none" : "self", cause: "Beached in the gravel", side });
         sim.retire(car, "Beached in the gravel");
         this.consequence(car, "gravel_stuck", turn);
       } else this.consequence(car, "gravel", turn);
@@ -158,15 +168,44 @@ export class IncidentSystem {
     car.damage.aero = clamp(car.damage.aero + sim.rng.range(0.2, 0.75), 0, 1);
     car.damage.floor = clamp(car.damage.floor + sim.rng.range(0.05, 0.4), 0, 1);
     if (sim.rng.chance(0.3)) car.damage.puncture = true;
+    const tr = sampleTrack(sim.track, car.s);
+    const impactV = car.v;
     sim.emit("wall", car.id, undefined, `${code} hits the wall${turn}!`);
+    car.damage.susp = clamp(car.damage.susp + (terminal ? sim.rng.range(0.2, 0.6) : sim.rng.chance(0.3) ? sim.rng.range(0.05, 0.25) : 0), 0, 1);
+    const info = this.setCrash(car, "wall", { blame: wetM > 2.2 ? "none" : "self", cause: "Accident damage", side, braking: tr.straight && impactV > 45, spinning: wetM > 1.6 && sim.rng.chance(0.5), speedOverride: impactV, keep: !terminal });
+    const d = this.rec.spawnDebris(car, terminal ? 3 : 2, "wing", terminal ? 0.2 : 0.35);
     if (terminal) {
       sim.retire(car, "Accident damage");
       sim.emit("crash", car.id, undefined, `${code} is out of the race${turn}.`);
       this.consequence(car, "wall_out", turn);
     } else {
       sim.emit("damage", car.id, undefined, `${code} has damage to the front wing but carries on.`);
-      this.consequence(car, "wall", turn);
+      this.rec.raceControlForDebris(d, car, turn, car.damage.puncture ? 1 : 0);
+      car.crash = undefined;
     }
+    void info;
+  }
+
+  /** Record how a crash happened and how the car comes to rest. One record feeds the animation, the radio and the recovery crew. */
+  private setCrash(
+    car: CarState,
+    kind: "wall" | "spin_stall" | "gravel",
+    o: { blame: CrashInfo["blame"]; cause: string; side: 1 | -1; braking?: boolean; spinning?: boolean; speedOverride?: number; keep?: boolean; otherId?: string; contact?: boolean; closing?: number },
+  ): CrashInfo {
+    const sim = this.sim;
+    const v = o.speedOverride ?? car.v;
+    const wet = sim.wx ? sim.wx.wetMean : 0;
+    const { pose, impact } = pickPose(sim, { kind, v, braking: !!o.braking, spinning: !!o.spinning, contact: !!o.contact, closing: o.closing ?? 0, wet });
+    const fire = kind === "wall" && !o.keep && impact > 0.85 && sim.rng.chance(0.1);
+    const info: CrashInfo = { pose, impact, fire, speed: v, blame: o.blame, otherId: o.otherId, cause: o.cause, mech: false, side: o.side };
+    if (!o.keep) car.crash = info;
+    return info;
+  }
+
+  private mechCrash(car: CarState, cause: string, pFire: number) {
+    const sim = this.sim;
+    const fire = car.v > 55 && sim.rng.chance(pFire);
+    car.crash = { pose: "upright", impact: fire ? 0.3 : 0.05, fire, speed: car.v, blame: "none", cause, mech: true, side: sim.rng.chance(0.5) ? 1 : -1 };
   }
 
   private consequence(car: CarState, what: string, turn: string) {
@@ -187,7 +226,6 @@ export class IncidentSystem {
         else sim.deployNeutral("vsc", cause);
         break;
       case "wall":
-        if (roll < 0.2 + w) sim.deployNeutral("vsc", `debris${turn}`);
         break;
       case "gravel":
         if (roll < 0.12 + w) sim.deployNeutral("vsc", `${car.entry.driver.code} in the gravel${turn}`);
@@ -250,6 +288,7 @@ export class IncidentSystem {
   damageFactor(car: CarState, cw: number): number {
     const d = car.damage;
     let f = 1 - 0.1 * d.aero * (0.4 + 0.6 * cw) - 0.05 * d.floor - 0.025 * d.flat;
+    f -= 0.07 * d.susp;
     if (d.puncture) f *= 0.62;
     return f;
   }
@@ -277,11 +316,17 @@ export class IncidentSystem {
     attacker.errorUntil = Math.max(attacker.errorUntil, sim.tick + 20);
     victim.errorUntil = Math.max(victim.errorUntil, sim.tick + 20);
     sim.emit("contact", attacker.id, victim.id, scrum ? `Contact at the first corners! ${a} and ${v}${turn}.` : `Contact between ${a} and ${v}${turn}!`);
+    let penalised = false;
     if (!sim.cfg.noPenalties) {
-      if (sim.rng.chance(scrum ? 0.4 : 0.6)) sim.givePenalty(attacker, 5, "Causing a collision", `${a} is given 5 seconds for causing a collision with ${v}`);
-      else sim.emit("contact", attacker.id, victim.id, `Stewards: ${a} and ${v}, a racing incident. No further action.`);
+      if (sim.rng.chance(scrum ? 0.4 : 0.6)) {
+        penalised = true;
+        sim.givePenalty(attacker, 5, "Causing a collision", `${a} is given 5 seconds for causing a collision with ${v}`);
+      } else sim.emit("contact", attacker.id, victim.id, `Stewards: ${a} and ${v}, a racing incident. No further action.`);
     }
     let anyOut = false;
+    // who is to blame is what the stewards decided, so the radio and the report agree with the penalty
+    const atFault = penalised;
+    const closing = Math.abs(attacker.v - victim.v);
     for (const [car, other] of [[attacker, victim], [victim, attacker]] as const) {
       if (car.incident || car.status !== "racing") continue;
       car.damage.aero = clamp(car.damage.aero + sim.rng.range(0, 0.55), 0, 1);
@@ -296,6 +341,7 @@ export class IncidentSystem {
       const at = mod(car.s, sim.track.length);
       if (roll < 0.1 + (scrum ? 0.08 : 0)) {
         car.incident = { kind: "wall", start: sim.tick, until: sim.tick + 60, at, side, terminal: true };
+        this.setCrash(car, "wall", { blame: scrum ? "none" : car === attacker ? (atFault ? "self" : "none") : atFault ? "other" : "none", cause: "Collision damage", side, contact: true, closing, otherId: other.id, braking: false, spinning: sim.rng.chance(0.4) });
         sim.retire(car, "Collision damage");
         sim.emit("crash", car.id, other.id, `${car.entry.driver.code} is out after the contact${turn}.`);
         anyOut = true;
@@ -309,8 +355,16 @@ export class IncidentSystem {
     if (anyOut) {
       if (sim.rng.chance(scrum ? 0.1 : 0.04)) this.startRed(`multiple cars stopped${turn}`, 420);
       else sim.deployNeutral(sim.rng.chance(0.7) ? "sc" : "vsc", `contact${turn}`);
-    } else if (attacker.damage.aero > 0.35 || victim.damage.aero > 0.35 || scrum) {
-      if (sim.rng.chance(0.25)) sim.deployNeutral("vsc", `debris${turn}`);
+    }
+    // bits come off cars that touch: a wing, bodywork, a shredded tyre
+    const worse = attacker.damage.aero >= victim.damage.aero ? attacker : victim;
+    const punctures = (attacker.damage.puncture ? 1 : 0) + (victim.damage.puncture ? 1 : 0);
+    if (anyOut || scrum || worse.damage.aero > 0.35) {
+      const d = this.rec.spawnDebris(worse, anyOut || scrum ? 3 : 2, "wing", 0.5);
+      if (!anyOut) this.rec.raceControlForDebris(d, worse, turn, punctures);
+    } else if (punctures) {
+      const d = this.rec.spawnDebris(worse, 1, "tyre", 0.4);
+      this.rec.raceControlForDebris(d, worse, turn, punctures);
     }
     if (scrum) {
       // the cars behind may not have anywhere to go
@@ -333,6 +387,7 @@ export class IncidentSystem {
   step() {
     const sim = this.sim;
     this.updateYellows();
+    this.rec.step();
     this.recoverCars();
     if (this.red.active) {
       sim.maxTicks++;
@@ -357,11 +412,12 @@ export class IncidentSystem {
     for (const c of sim.cars) {
       if (c.removed) continue;
       const sec = Math.min(2, Math.floor(mod(c.s, L) / (L / 3)));
-      if (c.status === "dnf" && c.v < 8 && sim.tick - c.retireTick < RECOVER_TICKS && !this.red.active) now[sec] = true;
+      if (c.status === "dnf" && c.v < 8 && !c.removed && !this.red.active) now[sec] = true;
       else if (c.incident && c.status === "racing" && c.v < 30 && c.incident.kind !== "lockup" && c.incident.kind !== "off") now[sec] = true;
       else if (c.incident && c.incident.kind === "off" && c.status === "racing") now[sec] = true;
     }
     for (let k = 0; k < 3; k++) {
+      if (this.rec.hazardInSector(k)) now[k] = true;
       if (now[k]) this.yellowUntil[k] = sim.tick + 40;
       const active = this.yellowUntil[k] > sim.tick;
       if (active && !this.yellowShown[k]) {
@@ -378,7 +434,7 @@ export class IncidentSystem {
     const sim = this.sim;
     if (sim.tick % 10 !== 0 || this.red.active) return;
     for (const c of sim.cars) {
-      if (c.status === "dnf" && !c.removed && c.v < 1 && sim.tick - c.retireTick > RECOVER_TICKS) c.removed = true;
+      if (c.status === "dnf" && !c.removed && c.v < 1 && sim.tick - c.retireTick > RECOVER_TICKS && !this.rec.forCar(c.id) && Math.abs(c.lateral) > 14) c.removed = true;
     }
   }
 
@@ -423,7 +479,7 @@ export class IncidentSystem {
     const weatherOk = !sim.wx || (sim.wx.rain < 0.7 && sim.wx.wetMean < 0.92);
     const longEnough = sim.tick >= R.minUntil && weatherOk;
     const tooLong = sim.tick - R.since > 27000;
-    if (waiting && (longEnough || tooLong)) this.restart();
+    if (waiting && !this.rec.busy() && (longEnough || tooLong)) this.restart();
   }
 
   private restart() {

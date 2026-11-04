@@ -93,10 +93,57 @@ export class Director {
     }
     if (cur && holding) return cur.id;
 
+    // while the crews work, the feed does what the world feed does: the scene, the people, the machine, then back to the queue
+    const scene = this.recoveryScene(sim, now);
+    if (scene) return this.cut(scene, now);
+
     // nothing special: the best battle, or the leader
     const best = this.bestFight(sim, human, now);
     return this.cut({ id: best.id, score: best.score, until: now + MIN_DWELL + (best.score > 30 ? 2500 : 0), why: best.why, at: now }, now);
   }
+
+  /**
+   * The recovery shot list. Each stage of a clean-up is shown once when it begins, and the scene is revisited from time to time,
+   * with the safety car queue in between. A serious crash (a hard hit, a fire) is cut away from quickly and not revisited: the
+   * feed does not dwell on it until the driver's condition is known.
+   */
+  private recoveryScene(sim: RaceSim, now: number): Shot | null {
+    const rec = sim.inc?.rec;
+    if (!rec) return null;
+    const open = rec.active();
+    if (!open.length) return null;
+    const LABEL: Record<string, string> = {
+      dispatch: "MARSHALS RUN TO THE CAR",
+      fire: "FIRE: MARSHALS ON IT",
+      check: "CHECKING THE DRIVER",
+      right: "MARSHALS RIGHT THE CAR",
+      driver_out: "THE DRIVER CLIMBS OUT",
+      sweep: "SWEEPING THE TRACK",
+    };
+    for (const r of open) {
+      const key = `${r.id}:${r.stage}`;
+      const serious = r.medical || r.fire;
+      if (this.sceneSeen.has(key)) continue;
+      let why = LABEL[r.stage];
+      if (r.stage === "remove") why = r.method === "crane" ? "THE CRANE LIFTS THE CAR" : r.method === "tractor" ? "THE TRACTOR DRAGS IT CLEAR" : r.method === "push" ? "MARSHALS PUSH THE CAR OUT" : "THE CAR IS REMOVED";
+      if (!why) continue;
+      if (r.stage === "check" && !serious) continue;
+      this.sceneSeen.set(key, now);
+      this.lastScene = now;
+      return { id: r.carId, score: 60, until: now + (serious ? 3200 : 5500), why, at: now };
+    }
+    // a revisit, not too often, and never to a serious one
+    const calm = open.filter((r) => !r.medical && !r.fire);
+    if (calm.length && now - this.lastScene > 22000) {
+      const r = calm[Math.floor(now / 1000) % calm.length];
+      this.lastScene = now;
+      return { id: r.carId, score: 40, until: now + 4500, why: "THE SCENE", at: now };
+    }
+    return null;
+  }
+
+  private sceneSeen = new Map<string, number>();
+  private lastScene = -99999;
 
   private cut(s: Shot, now: number): string {
     this.shot = { ...s, at: now };

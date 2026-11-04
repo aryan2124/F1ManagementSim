@@ -129,7 +129,7 @@ export class RaceSim {
   tick = 0;
   phase: "grid" | "racing" | "finished" = "grid";
   /** Safety car or virtual safety car. Ends when the leader completes `endLap` laps. */
-  neutral = { active: false, kind: "sc" as NeutralKind, endLap: 0, announcedEnd: false, id: 0, endedTick: -9999, endedKind: "sc" as NeutralKind, lockLap: 0 };
+  neutral = { active: false, kind: "sc" as NeutralKind, endLap: 0, announcedEnd: false, id: 0, endedTick: -9999, endedKind: "sc" as NeutralKind, lockLap: 0, extended: 0 };
   /** The safety car itself: leads the leader, and dives into the pit lane on the in lap. */
   sc = { vis: false, s: 0, lat: 0 };
   chequered = false;
@@ -252,7 +252,7 @@ export class RaceSim {
         retireTick: 0,
         aiStops: this.rng.chance(0.3) ? 2 : 1,
         wetD: 0,
-        damage: { aero: 0, floor: 0, flat: 0, puncture: false },
+        damage: { aero: 0, floor: 0, flat: 0, puncture: false, susp: 0 },
         incident: null,
         spin: 0,
         redStop: false,
@@ -487,6 +487,12 @@ export class RaceSim {
       const lead = this.leader();
       if (lead) {
         const vsc = n.kind === "vsc";
+        // the crews are not finished: stay out another lap (race control cannot restart over a car on the circuit)
+        if (lead.lap >= n.endLap - 1 && n.endLap < this.cfg.laps && n.extended < 6 && this.inc.rec.busy()) {
+          n.endLap = Math.min(this.cfg.laps, lead.lap + 2);
+          n.extended++;
+          n.announcedEnd = false;
+        }
         if (!n.announcedEnd && lead.lap >= n.endLap - 1) {
           n.announcedEnd = true;
           this.emit(vsc ? "vsc_ending" : "sc_ending", undefined, undefined, vsc ? "VSC ending. Be ready to go green." : "Safety car in this lap.");
@@ -537,6 +543,7 @@ export class RaceSim {
     const laps = kind === "sc" ? 2 + Math.floor(this.rng.range(0, 3)) : 1 + Math.floor(this.rng.range(0, 2));
     if (!n.active) {
       n.id++;
+      n.extended = 0;
       n.kind = kind;
       n.endLap = Math.min(this.cfg.laps, lap + laps);
       n.announcedEnd = false;
@@ -914,7 +921,7 @@ export class RaceSim {
         const nc = this.cfg.rules?.oneCompound && (req === "S" || req === "M" || req === "H") ? "M" : req;
         this.stow(car);
         const ageBefore = car.tyre.ageLaps, wearBefore = car.tyre.wear;
-        const hurt = car.damage.puncture || car.damage.flat > 0.05 || car.damage.aero > 0.1 || car.damage.floor > 0.1;
+        const hurt = car.damage.puncture || car.damage.flat > 0.05 || car.damage.aero > 0.1 || car.damage.floor > 0.1 || car.damage.susp > 0.1;
         car.tyre = { compound: nc, wear: 0, ageLaps: 0 };
         this.takeSet(car, nc, false, car.pitSetId);
         car.pitSetId = undefined;

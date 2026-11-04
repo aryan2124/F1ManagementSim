@@ -1,6 +1,6 @@
 import type { RaceSim } from "./engine";
 import { engineerCall, engineerName } from "../game/crew";
-import { ENG, fill, REPLY, RIVAL, SAY, TALK, type Voice } from "../game/radiolines";
+import { CRASH, ENG, fill, REPLY, RIVAL, SAY, TALK, type Voice } from "../game/radiolines";
 import { Rng, hashSeed } from "./rng";
 import type { CarState, Compound, Psyche, RadioChannel, RadioTruth, SimEvent, TeamOrder } from "./types";
 import { isWetCompound } from "./types";
@@ -238,6 +238,44 @@ export class RadioSystem {
 
   private onStraight(car: CarState): boolean {
     return sampleTrack(this.sim.track, car.s).straight;
+  }
+
+  /**
+   * A car has stopped after a crash. The engineer asks about the driver first, then the driver answers about himself and the cause,
+   * in his own voice and by who was at fault (the stewards' call). A hard hit gets a slow, short answer. Fire gets a shout.
+   */
+  crashCall(car: CarState) {
+    const info = car.crash;
+    if (!info || info.mech && !info.fire) return;
+    const sim = this.sim;
+    const t = sim.tick;
+    const human = car.entry.human;
+    const ch: RadioChannel = human ? "driver" : "rival";
+    const at = (d: number, fn: () => void) => this.later.push({ at: t + d, born: t, fn });
+    const code = car.entry.driver.code;
+    if (info.fire) {
+      at(2, () => this.push(ch, car.id, `${code}: ${fill(this.pick(CRASH.fire), this.vars(car))}`));
+    }
+    if (human) at(8, () => this.eng(car, CRASH.welfare));
+    const hurt = info.impact >= 0.75;
+    const bank = hurt ? CRASH.hurt : CRASH[info.blame];
+    at(hurt ? 38 : 22, () => this.say(car, bank, {}, "honest", ch));
+    if (human) {
+      at(hurt ? 70 : 48, () => this.eng(car, hurt ? CRASH.stay : this.pickFrom([CRASH.stay, CRASH.tryMove])));
+      const m = this.mood(car.id);
+      m.morale = clamp(m.morale - (info.blame === "self" ? 0.08 : 0.04), 0, 1);
+    }
+  }
+
+  /** While the crews work: the driver has climbed out, or is waiting for the doctor, and says what is on his mind. */
+  crashAfter(car: CarState) {
+    const info = car.crash;
+    if (!info || !car.entry.human || info.mech || info.impact >= 0.75) return;
+    this.say(car, CRASH.after[info.blame], {}, "honest", "driver");
+  }
+
+  private pickFrom(lists: string[][]): string[] {
+    return lists[Math.floor(this.rng.next() * lists.length) % lists.length];
   }
 
   /** A soft call from the pit wall: the engineer waits for a straight, because nobody talks to a driver mid-corner. */
