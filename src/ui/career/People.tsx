@@ -3,7 +3,7 @@ import { useState } from "react";
 import { ageOf, staffAsk } from "../../career/contracts";
 import { TalkPanel, talkLabel } from "./Talks";
 import { DRIVER_TOPICS, MANAGER_TOPICS, clientsOf, managerMood } from "../../career/talks";
-import { driversOf } from "../../career/finance";
+import { driversOf, rosterOf } from "../../career/finance";
 import { STAFF_LABEL } from "../../career/types";
 import { fmtMoney, round2 } from "../../career/util";
 import { StaffFit } from "./Engineering";
@@ -84,6 +84,27 @@ export function People({ s, d }: Props) {
             <p className="dim small">Replies take a day or two. Talks about replacing a driver can leak to the press, and the driver at risk reads it.</p>
           </section>
         )}
+                {(() => {
+                  const roster = rosterOf(s, s.teamId);
+                  const laid = roster.filter((x) => x.out && x.out.races > 0);
+                  const reserves = Object.values(s.academy.prospects).filter((p) => p.owner === s.teamId && p.status === "academy" && p.reserve);
+                  if (!laid.length && !reserves.length) return null;
+                  return (
+                    <section className="panel" data-testid="medical">
+                      <h3>MEDICAL ROOM AND BENCH</h3>
+                      {laid.map((x) => {
+                        const sub = roster.find((r) => r.sub?.for === x.id);
+                        return (
+                          <p key={x.id} className="c-line">
+                            <span><b>{x.spec.name}</b> <span className="dim">{x.out!.label}, out for {x.out!.races} more race{x.out!.races === 1 ? "" : "s"}</span></span>
+                            <span className="dim">{sub ? `${sub.spec.name} drives` : "no stand-in found"}</span>
+                          </p>
+                        );
+                      })}
+                      {reserves.length > 0 && <p className="dim small">Reserve: {reserves.map((p) => p.name).join(", ")}. First call when a driver is laid up.</p>}
+                    </section>
+                  );
+                })()}
                 <section className="panel">
           <h3>YOUR DRIVERS</h3>
           {me.map((x) => (
