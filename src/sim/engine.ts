@@ -4,6 +4,7 @@ import { IncidentSystem } from "./incidents";
 import { Strategist } from "./strategy";
 import { RadioSystem } from "./radio";
 import { Weather, makeWeather, targetWetness, wetBrakeFactor, wetSpeedFactor, wetWearFactor, type WeatherNow } from "./weather";
+import { pitPathLat, pitCommitEnd, pitRoadEnd, PIT_LANE_LAT, PIT_SLEW } from "./pitpath";
 import type {
   CarState,
   Command,
@@ -702,8 +703,9 @@ export class RaceSim {
     // ---- pit entry
     if (car.status === "racing" && car.pitRequest && !car.incident) {
       if (car.lap + 1 >= this.cfg.laps && !this.inc.red.active) car.pitRequest = null;
-      else if (lapPos >= L - T.pitIn && lapPos <= L - 125) {
+      else if (lapPos >= L - T.pitIn && lapPos <= pitCommitEnd(T)) {
         car.status = "pit_in";
+        car.viaPit = true;
         car.overtaking = null;
       }
     }
@@ -993,8 +995,11 @@ export class RaceSim {
 
     // ---- lateral offset (render only)
     const incLat = this.inc.lateral(car);
-    const latTarget = incLat !== null ? incLat : inPit ? 24 * T.pitSide : car.overtaking ? 5 : 0;
-    car.lateral += clamp(latTarget - car.lateral, -9 * DT, 9 * DT);
+    if (car.viaPit && !inPit && lapPos > pitRoadEnd(T) && lapPos < L / 2) car.viaPit = false;
+    const pathLat = inPit || car.viaPit ? pitPathLat(T, lapPos + car.v * DT) ?? (inPit ? PIT_LANE_LAT * T.pitSide : null) : null;
+    const latTarget = incLat !== null ? incLat : pathLat !== null ? pathLat : car.overtaking ? 5 : 0;
+    const slew = incLat === null && pathLat !== null ? PIT_SLEW : 9;
+    car.lateral += clamp(latTarget - car.lateral, -slew * DT, slew * DT);
 
     // ---- loops (timing gaps)
     const loopLen = L / LOOPS;

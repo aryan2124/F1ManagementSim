@@ -284,6 +284,8 @@ export interface CarState {
   blueUntil?: number;
   blueLap?: number;
   lateral: number; // metres from racing line, positive = left of direction of travel; for rendering
+  /** On the pit road (entry, lane or exit merge): the car follows the pit path, not the racing line. */
+  viaPit?: boolean;
   /** Seconds behind car ahead, measured via timing loops. */
   gapAhead: number;
   gapLeader: number;

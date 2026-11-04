@@ -2,6 +2,7 @@ import { bestSet, cloneSets, findSet, freshCounts, makeSets, type TyreSet } from
 import { CAR_LEN, DT, ersFactor, PIT_LIMIT, BOX_SPACING, speedFactor } from "./engine";
 import { Rng } from "./rng";
 import { accelAt, brakeAt, sampleTrack, type TrackModel } from "./track";
+import { pitPathLat, pitCommitEnd, pitRoadEnd, PIT_SLEW } from "./pitpath";
 import type { CarStatus, Compound, EnergyMode, EntrySpec, PushLevel, SimEvent, SimEventKind, WeatherSpec } from "./types";
 import { Weather, makeWeather, bestCompoundFor, targetWetness, wetBrakeFactor, wetSpeedFactor, wetWearFactor, type WeatherNow } from "./weather";
 
@@ -68,6 +69,8 @@ export interface QCar {
   s: number;
   v: number;
   lateral: number;
+  /** Following the pit road (entry, lane or exit merge) instead of the racing line. */
+  via?: boolean;
   compound: Compound;
   wear: number;
   fresh: boolean;
@@ -689,7 +692,8 @@ export class QualiSim {
         car.mode = "harvest";
         car.push = 0;
       }
-      latTarget = PIT_LAT * T.pitSide;
+      latTarget = pitPathLat(T, lapPos + car.v * DT) ?? PIT_LAT * T.pitSide;
+      car.via = true;
     } else if (car.phase === "entering") {
       car.status = "pit_in";
       const boxS = T.boxS + car.boxOff;
@@ -705,7 +709,8 @@ export class QualiSim {
       const vBox = Math.sqrt(2 * 7 * Math.max(0, dist));
       cap = Math.min(cap, Math.max(1.2, vBox));
       target = cap;
-      latTarget = PIT_LAT * T.pitSide;
+      latTarget = pitPathLat(T, lapPos + car.v * DT) ?? PIT_LAT * T.pitSide;
+      car.via = true;
       if ((dist < 1.5 && car.v < 3) || dist < -0.5) {
         // arrived at the box
         car.runsDone++;
@@ -784,6 +789,11 @@ export class QualiSim {
       target = tr.speed * f * ers * phaseF;
       // cars on out and in laps keep out of the way of anyone on a flying lap
       latTarget = car.phase === "push" ? 0 : 5;
+      if (car.via) {
+        const pl = pitPathLat(T, lapPos + car.v * DT);
+        if (pl !== null && lapPos < L / 2) latTarget = pl;
+        else if (lapPos > pitRoadEnd(T)) car.via = false;
+      }
       if (this.red.active) target = Math.min(target, 40);
       // energy
       if (straight) car.soc -= (car.phase === "push" ? 0.0165 : car.phase === "out" ? -0.004 : -0.002) * DT;
@@ -797,10 +807,10 @@ export class QualiSim {
       // line crossing and pit entry logic
       const crossed = Math.floor(car.s / L);
       if (crossed > car.lineCount) this.crossLine(car, crossed);
-      if (car.phase === "in" && lapPos >= L - T.pitIn && lapPos <= L - 125) {
+      if (car.phase === "in" && lapPos >= L - T.pitIn && lapPos <= pitCommitEnd(T)) {
         car.phase = "entering";
       }
-      if (car.phase === "out" && car.flyingLeft === 0 && lapPos >= L - T.pitIn && lapPos <= L - 125 && car.s > T.pitOut + 100) {
+      if (car.phase === "out" && car.flyingLeft === 0 && lapPos >= L - T.pitIn && lapPos <= pitCommitEnd(T) && car.s > T.pitOut + 100) {
         // plan cancelled on the out lap: come straight back in
         car.phase = "entering";
       }
@@ -816,7 +826,8 @@ export class QualiSim {
     const dv = clamp(target - car.v, -brakeAt(car.v) * brakeScale * DT, acc * DT);
     car.v = Math.max(0, car.v + dv);
     car.s += car.v * DT;
-    car.lateral += clamp(latTarget - car.lateral, -9 * DT, 9 * DT);
+    const slew = car.via ? PIT_SLEW : 9;
+    car.lateral += clamp(latTarget - car.lateral, -slew * DT, slew * DT);
   }
 
   private crossLine(car: QCar, crossed: number) {
