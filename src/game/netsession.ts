@@ -3,7 +3,7 @@ import { QualiSession } from "./qsession";
 import { RaceSession } from "./session";
 import type { QualiConfig } from "../sim/qualifying";
 import type { Command, RaceConfig } from "../sim/types";
-import { extrasFromRows } from "../career/weekend";
+import { extrasFromRows, hurtOf } from "../career/weekend";
 
 /** What a networked session needs from the room connection. */
 export interface NetLink {
@@ -104,7 +104,7 @@ export class NetRaceSession extends RaceSession {
       const m = this.sim.radio?.moods.get(id);
       if (m) moods[id] = { morale: m.morale, trust: m.trust, grievance: m.grievance, strat: m.strat };
     }
-    this.link.finish({ order: rows.map((r) => r.carId), points, dnf: rows.filter((r) => r.dnf).map((r) => r.carId), moods });
+    this.link.finish({ order: rows.map((r) => r.carId), points, dnf: rows.filter((r) => r.dnf).map((r) => r.carId), moods, ...hurtOf(this.sim) });
   }
 }
 

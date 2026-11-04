@@ -844,7 +844,11 @@ export class RadioSystem {
 
   private promptDamage(car: CarState) {
     if (!this.canPrompt(car, 150)) return;
-    this.openPrompt(car, "damage", `${car.entry.driver.code}: ${car.damage.puncture ? "Puncture" : "Damage"} on the car. What do we do?`.replace(/^[A-Z]{3}: /, ""), [
+    const d = car.damage;
+    const band = d.aero + d.floor + d.susp * 1.5;
+    const how = d.puncture ? "Puncture" : band > 1.1 ? "Heavy damage" : band > 0.5 ? "Moderate damage" : "Light damage";
+    const detail = d.susp > 0.3 ? ", suspension is bent and a stop will not fix it" : d.aero > 0.4 ? ", the front wing is badly hurt" : d.floor > 0.3 ? ", floor damage is costing downforce" : "";
+    this.openPrompt(car, "damage", `${how} on the car${detail}. What do we do?`, [
       { id: "box", label: car.damage.puncture ? "Box now for tyres" : "Box for a new nose and tyres", note: "Pit this lap" },
       { id: "push", label: "Carry on", note: "Risk it" },
     ], { compound: this.sim.chooseCompound(car) }, 200);

@@ -137,11 +137,11 @@ export function drawRecoveries(g: G, recs: Recovery[], debris: Debris[], track: 
     const a = f.at(d.at, d.lat);
     const hidden = d.pickStart >= 0 && tick > d.pickStart + (d.pickEnd - d.pickStart) * 0.55;
     if (!hidden) {
-      const col = d.kind === "tyre" ? 0x15151c : d.kind === "wing" ? 0xe8e8ee : d.kind === "bodywork" ? 0x9aa0b4 : 0xd4a017;
+      const col = d.kind === "wheel" ? 0x1b1b24 : d.kind === "tyre" ? 0x15151c : d.kind === "wing" ? 0xe8e8ee : d.kind === "bodywork" ? 0x9aa0b4 : 0xd4a017;
       f.px(a.x, a.y, col);
       if (d.size >= 2) {
         f.px(a.x + 1, a.y, 0x3a3a46);
-        f.px(a.x, a.y + 1, d.kind === "wing" ? 0xe63946 : 0x555566);
+        f.px(a.x, a.y + 1, d.kind === "wing" ? 0xe63946 : d.kind === "wheel" ? 0xc8c8d4 : 0x555566);
       }
       if (d.size === 3) {
         f.px(a.x - 1, a.y + 1, 0xe8e8ee);

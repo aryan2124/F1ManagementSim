@@ -70,3 +70,28 @@ describe("health and stand-ins", () => {
     expect(sawOut).toBeGreaterThanOrEqual(0);
   });
 });
+
+import { crashBill, crashBills } from "../src/career/health";
+import { hurtOf } from "../src/career/weekend";
+
+describe("crash bills and plumbing", () => {
+  it("the bill grows with impact and with a car on its side; small touches are free", () => {
+    expect(crashBill(0.2, "upright")).toBe(0);
+    expect(crashBill(0.8, "nose_in")).toBeGreaterThan(crashBill(0.5, "nose_in"));
+    expect(crashBill(0.8, "side")).toBeGreaterThan(crashBill(0.8, "nose_in"));
+  });
+  it("charges the team of the driver and sends a letter to a human team", () => {
+    const s = newCareer("wil", 7);
+    const [a] = driversOf(s, s.teamId);
+    const before = s.teams[s.teamId].cash;
+    const letters = (s.letters ?? []).length;
+    crashBills(s, { [a.id]: { impact: 1, pose: "side" } });
+    expect(s.teams[s.teamId].cash).toBeLessThan(before);
+    expect((s.letters ?? []).length).toBe(letters + 1);
+  });
+  it("hurtOf separates a heavy crash from a bump", () => {
+    const r = hurtOf({ cars: [{ id: "a", crash: { impact: 0.9, pose: "side" } }, { id: "b", crash: { impact: 0.4, pose: "upright" } }, { id: "c", crash: null }] });
+    expect(Object.keys(r.crashes).sort()).toEqual(["a", "b"]);
+    expect(Object.keys(r.hurt)).toEqual(["a"]);
+  });
+});

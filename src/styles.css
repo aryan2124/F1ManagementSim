@@ -1132,7 +1132,14 @@ tr.mine {
   animation: blink 1.4s steps(2) infinite;
 }
 .qboard li {
-  grid-template-columns: 22px 8px 38px 28px 1fr 18px;
+  grid-template-columns: 22px 8px 38px 20px 28px 1fr 18px;
+}
+.qboard li button.tiny {
+  padding: 0;
+  width: 18px;
+  height: 18px;
+  font-size: 12px;
+  line-height: 1;
 }
 .qboard li.cutline {
   border-bottom: 3px solid var(--red);

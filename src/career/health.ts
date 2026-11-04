@@ -31,7 +31,7 @@ function laidUp(s: CareerState, d: DriverState, cause: "illness" | "injury", rac
   const mine = t === s.teamId || (s.humans && t && isHuman(s, t));
   const plural = races === 1 ? "one race" : `${races} races`;
   news(s, `${d.spec.name} is out for ${plural}: ${label}.`, { importance: mine ? 3 : 2, cause: cause === "illness" ? "Illness" : "Injury", tag: "health" });
-  if (mine) {
+  if (t === s.teamId) {
     sendLetter(s, {
       from: "Team doctor",
       role: "Medical",
@@ -93,7 +93,7 @@ export function coverGaps(s: CareerState): void {
       roster.push(sub);
       const mine = teamId === s.teamId || (s.humans && isHuman(s, teamId));
       news(s, `${sub.spec.name} steps in for ${hurt.spec.name} at ${baseTeam(teamId).name}.`, { importance: mine ? 3 : 2, cause: "Stand-in", tag: "health" });
-      if (mine) {
+      if (teamId === s.teamId) {
         sendLetter(s, {
           from: "Team principal's office",
           role: "Bench",
@@ -124,7 +124,7 @@ export function healthAfterRace(s: CareerState, round: number, hurt: Record<stri
     if (d.out.races <= 0) {
       const mine = d.teamId === s.teamId || (s.humans && d.teamId && isHuman(s, d.teamId));
       news(s, `${d.spec.name} is cleared to drive again.`, { importance: mine ? 3 : 1, cause: "Recovery", tag: "health" });
-      if (mine) sendLetter(s, { from: "Team doctor", role: "Medical", subject: `${d.spec.name} is fit`, body: `${d.spec.name} has passed the medical and is back in the car.` });
+      if (d.teamId === s.teamId) sendLetter(s, { from: "Team doctor", role: "Medical", subject: `${d.spec.name} is fit`, body: `${d.spec.name} has passed the medical and is back in the car.` });
     }
   }
   endStints(s);
@@ -161,4 +161,31 @@ export function healYearEnd(s: CareerState): void {
     }
   }
   endStints(s);
+}
+
+/** The bill for the rebuild after a crash: spare parts and labour. Bigger when the car ended on its side or its back. */
+export function crashBill(impact: number, pose: string): number {
+  if (impact < 0.3) return 0;
+  return Math.round((0.1 + 0.8 * impact + (pose === "side" || pose === "back" ? 0.4 : 0)) * 100) / 100;
+}
+
+export function crashBills(s: CareerState, crashes: Record<string, { impact: number; pose: string }> = {}): void {
+  for (const id of Object.keys(crashes).sort()) {
+    const d = s.drivers[id];
+    const t = d?.teamId ? s.teams[d.teamId] : undefined;
+    if (!d || !t) continue;
+    const bill = crashBill(crashes[id].impact, crashes[id].pose);
+    if (bill <= 0) continue;
+    t.cash = Math.round((t.cash - bill) * 100) / 100;
+    t.ledger.costs += bill;
+    t.ledger.other += bill;
+    if (d.teamId === s.teamId && bill >= 0.5) {
+      sendLetter(s, {
+        from: "Chief mechanic",
+        role: "Garage",
+        subject: `Rebuild after ${d.spec.name}'s crash: $${bill.toFixed(2)}m`,
+        body: `${d.spec.name}'s car came back ${crashes[id].pose === "side" || crashes[id].pose === "back" ? "upside down or on its side, so the tub is being checked end to end" : "with the front end and floor gone"}. Parts and labour come to $${bill.toFixed(2)}m.`,
+      });
+    }
+  }
 }

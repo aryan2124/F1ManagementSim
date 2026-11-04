@@ -45,7 +45,7 @@ export interface Debris {
   at: number;
   lat: number;
   size: 1 | 2 | 3;
-  kind: "wing" | "tyre" | "bodywork" | "object";
+  kind: "wing" | "tyre" | "bodywork" | "object" | "wheel";
   onLine: boolean;
   born: number;
   pickStart: number;

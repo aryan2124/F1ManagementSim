@@ -3,6 +3,7 @@ import { QualiKindCtx, sessionTitle, useQPrefix, useQualiName } from "./sessionT
 import { SkipPrompt, type NetSkip } from "./SkipPrompt";
 import { useMusic } from "../audio/useMusic";
 import { useEffect, useRef, useState } from "react";
+import { QualiStats } from "./QualiStats";
 import { PLink } from "./career/Profile";
 import type { QualiSession } from "../game/qsession";
 import type { SpeedSetting } from "../game/live";
@@ -76,6 +77,7 @@ function QualiScreenInner({ session, meta, onDone, skip, kind }: { session: Qual
   const sim = session.sim;
   const [tab, setTab] = useState<QTab>("radio");
   const [secMode, setSecMode] = useState<"last" | "best">("last");
+  const [statsId, setStatsId] = useState<string | null>(null);
   const teamId = sim.car(session.humanIds[0]).entry.team.id;
 
   // the qualifying director follows the flying laps until the player clicks a car to pin the camera
@@ -149,7 +151,8 @@ function QualiScreenInner({ session, meta, onDone, skip, kind }: { session: Qual
       <SkipPrompt session={session} net={skip} />
 
       <div className={`race-grid${session.humanIds.length > 1 ? " has-two" : ""}`}>
-        <QualiBoard session={session} />
+        <QualiBoard session={session} onStats={setStatsId} />
+        {statsId && <QualiStats sim={session.sim} carId={statsId} onClose={() => setStatsId(null)} />}
         <div className="center">
           <div className="viewbox">
             <RaceView session={session} meta={meta}>
@@ -263,7 +266,7 @@ function QualiOverlay({ session, onDone }: { session: QualiSession; onDone: () =
   );
 }
 
-function QualiBoard({ session }: { session: QualiSession }) {
+function QualiBoard({ session, onStats }: { session: QualiSession; onStats: (id: string) => void }) {
   const QP = useQPrefix();
   const sim = session.sim;
   const [exact, setExact] = useState(false);
@@ -290,6 +293,7 @@ function QualiBoard({ session }: { session: QualiSession }) {
               <span className="p">{i + 1}</span>
               <i className="chip" />
               <span className="code">{c.entry.driver.code}</span>
+              <button className="tiny" aria-label={`${c.entry.driver.code} stats`} title="Full qualifying stats and compare" onClick={(e) => { e.stopPropagation(); onStats(c.id); }}>i</button>
               <span className="secs">
                 {[0, 1, 2].map((k) => (
                   <u key={k} style={{ background: SECTOR_COLORS[liveSectorColors(c.sectors.color, c.sectors.last, c.sectors.best, sim.bestSector)[k]] }} />

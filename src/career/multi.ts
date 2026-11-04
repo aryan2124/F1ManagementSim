@@ -6,7 +6,7 @@ import { defaultBudgets } from "./finance";
 import { newBrand } from "./brand";
 import { newPress, newRift } from "./dressing";
 import { advanceDay, playerDay, stopNow } from "./tick";
-import { endPractice, extrasFromRows, planSession, recordSession, runQualiWithSets, runRace, setKeyFor, startWeekend, type SessionPlan } from "./weekend";
+import { hurtOf, endPractice, extrasFromRows, planSession, recordSession, runQualiWithSets, runRace, setKeyFor, startWeekend, type SessionPlan } from "./weekend";
 import { rulesOf } from "./eras";
 import { noisyRanking } from "./car";
 import { clamp, rngFor } from "./util";
@@ -375,7 +375,7 @@ export const careerEngine: CareerEngine<MultiState> & CareerEngineExtras = {
         } else {
           const moods: Record<string, { morale: number; trust: number; grievance: number; strat?: number }> = {};
           for (const id of own) if (res!.moods?.[id]) moods[id] = res!.moods[id];
-          recordSession(s, "race", res!.order, res!.points ?? {}, undefined, res!.dnf ?? [], moods, { skipWorld: !first });
+          recordSession(s, "race", res!.order, res!.points ?? {}, undefined, res!.dnf ?? [], moods, { skipWorld: !first, hurt: res!.hurt, crashes: res!.crashes });
         }
       });
       shareArcs(ms, h);
@@ -405,6 +405,8 @@ export interface SessionResultIn {
   locks?: Record<string, "S" | "M" | "H">;
   used?: Record<string, Partial<Record<"S" | "M" | "H", number>>>;
   sets?: Record<string, import("../sim/tyreSets").TyreSet[]>;
+  hurt?: Record<string, number>;
+  crashes?: Record<string, { impact: number; pose: string }>;
 }
 
 function ownDrivers(s: CareerState, teamId: string): string[] {
@@ -424,7 +426,7 @@ function headless(ms: MultiState, lead: string, k: "quali" | "race"): SessionRes
     const rows = sim.results();
     const points: Record<string, number> = {};
     for (const r of rows) points[r.carId] = r.points;
-    return { order: rows.map((r) => r.carId), points, dnf: rows.filter((r) => r.dnf).map((r) => r.carId) };
+    return { order: rows.map((r) => r.carId), points, dnf: rows.filter((r) => r.dnf).map((r) => r.carId), ...hurtOf(sim) };
   });
 }
 

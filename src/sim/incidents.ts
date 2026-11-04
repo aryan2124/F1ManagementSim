@@ -163,7 +163,10 @@ export class IncidentSystem {
       return;
     }
     // the wall
-    const terminal = sim.rng.chance(0.45 + bad * 0.5);
+    let terminal = sim.rng.chance(0.45 + bad * 0.5);
+    // a hard hit can take a wheel off the car: it cannot go on, and the wheel bounces away across the track
+    const wheelOff = car.v > 55 && sim.rng.chance(terminal ? 0.3 : 0.12);
+    if (wheelOff) terminal = true;
     car.incident = mk("wall", rr(40, 70), terminal);
     car.damage.aero = clamp(car.damage.aero + sim.rng.range(0.2, 0.75), 0, 1);
     car.damage.floor = clamp(car.damage.floor + sim.rng.range(0.05, 0.4), 0, 1);
@@ -174,8 +177,14 @@ export class IncidentSystem {
     car.damage.susp = clamp(car.damage.susp + (terminal ? sim.rng.range(0.2, 0.6) : sim.rng.chance(0.3) ? sim.rng.range(0.05, 0.25) : 0), 0, 1);
     const info = this.setCrash(car, "wall", { blame: wetM > 2.2 ? "none" : "self", cause: "Accident damage", side, braking: tr.straight && impactV > 45, spinning: wetM > 1.6 && sim.rng.chance(0.5), speedOverride: impactV, keep: !terminal });
     const d = this.rec.spawnDebris(car, terminal ? 3 : 2, "wing", terminal ? 0.2 : 0.35);
+    if (wheelOff) {
+      car.damage.susp = 1;
+      const w = this.rec.spawnDebris(car, 2, "wheel", 0.3);
+      sim.emit("damage", car.id, undefined, `${code} loses a wheel${turn}!`);
+      if (!sim.neutral.active) this.rec.raceControlForDebris(w, car, turn, 0);
+    }
     if (terminal) {
-      sim.retire(car, "Accident damage");
+      sim.retire(car, wheelOff ? "Wheel lost" : "Accident damage");
       sim.emit("crash", car.id, undefined, `${code} is out of the race${turn}.`);
       this.consequence(car, "wall_out", turn);
     } else {
