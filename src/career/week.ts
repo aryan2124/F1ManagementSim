@@ -2,6 +2,7 @@ import { pushCard, recap } from "./cards";
 import { campaignLine } from "./campaign";
 import { factoryClosed } from "./calendar";
 import { circuitMeta } from "../game/circuits";
+import { parseMix, mixEffect, dominant } from "./tradeoff";
 import type { CardOption, CareerState } from "./types";
 
 const clamp = (n: number) => Math.max(0, Math.min(1, n));
@@ -25,7 +26,7 @@ export function weekPlanCard(s: CareerState): void {
   const trouble = me.cash < 3 || mine0.some((d) => d.morale < 0.35);
   const due = !last || s.day - (s.planAskedDay ?? -999) >= 28 || trouble;
   if (!due) {
-    resolveWeekPlan(s, last);
+    resolveWeekPlan(s, s.focus?.mix ?? last);
     return;
   }
   s.planAskedDay = s.day;
@@ -35,13 +36,12 @@ export function weekPlanCard(s: CareerState): void {
     { id: "money", label: "THE MONEY", lines: ["+$0.5m from cost savings", "Cost: fans drift away (-0.2)"] },
     { id: "academy", label: "THE ACADEMY", lines: ["Prospects gain confidence and rest", "Cost: $0.15m in coaching"] },
   ];
-  if (camp) options.splice(1, 0, { id: "push", label: "PUSH THE CAMPAIGN", lines: ["+7 points on the campaign this week", "Cost: $0.35m overtime, drivers see less of the engineers (morale -1%)"] });
   const gp = circuitMeta(next.circuitId).gp;
   const n = Math.max(0, next.day - s.day);
   const race = s.lastRace?.length ? `LAST RACE: ${s.lastRace.join(" | ")}\n` : "";
   s.lastRace = undefined;
   const lastLine = race + (s.lastWeek?.length ? `LAST WEEK: ${s.lastWeek.join(" ")}\n` : "");
-  const body = `${lastLine}Next up: ${gp}, in ${n} day${n === 1 ? "" : "s"}.${camp ? ` ${camp.text}, at ${camp.pct}%.` : ""} Cash ${me.cash.toFixed(1)}m. Where does the effort go? This plan then repeats every week by itself until you change it, and you see its result in the news. ${trouble ? "Something is going wrong, so you are asked early." : ""}`;
+  const body = `${lastLine}${gp} in ${n} day${n === 1 ? "" : "s"}.${trouble ? " Something is going wrong." : ""}`;
   pushCard(s, "weekPlan", "YOUR PLAN: WHERE DOES THE EFFORT GO?", body, options, { urgency: 2, data: { step: "week" } });
 }
 
@@ -51,6 +51,21 @@ export function resolveWeekPlan(s: CareerState, option: string): void {
   const out: string[] = [];
   const bump = (n: number) => { for (const d of mine) d.morale = clamp(d.morale + n); };
   const c = s.campaign;
+  const mix = parseMix(option);
+  if (mix) {
+    const e = mixEffect(mix);
+    me.tunnelLeft += e.tunnel;
+    if (c) c.progress += e.campaign;
+    bump(e.morale);
+    for (const d of mine) d.trust = clamp(d.trust + e.trust);
+    me.cash += e.cash;
+    s.brand.fans = Math.max(0, s.brand.fans + e.fans);
+    out.push(`This week's effort: ${Math.round(mix.car * 100)}% car, ${Math.round(mix.drivers * 100)}% drivers, ${Math.round(mix.money * 100)}% money.`);
+    s.focus = { kind: dominant(mix), since: s.day, mix: option };
+    s.lastWeek = out;
+    for (const o of out) recap(s, o);
+    return;
+  }
   switch (option) {
     case "car":
       me.tunnelLeft += 6;

@@ -1,5 +1,5 @@
 import { KIND_LABEL, KIND_TEXT } from "./rndplan";
-import { nextAllowanceReset, capRoom, maxConcurrent } from "./rnd";
+import { nextAllowanceReset, capRoom } from "./rnd";
 import { fmtDay, fmtMoney, fmtRange } from "./util";
 import { TRAIT_NAME } from "./traits";
 import { fitFor } from "./capability";
@@ -55,8 +55,7 @@ export function ideaOptions(s: CareerState, ideas: Idea[]): CardOption[] {
   });
 }
 
-export function ideaBody(s: CareerState, shown = 0, total = 0): string {
-  const t = s.teams[s.teamId];
-  const running = t.projects.filter((p) => p.status === "building").length;
-  return `A month of design work has produced these. They are the same ideas as on the Car screen${shown && total > shown ? `, the best ${shown} of ${total}` : ""}. They are different kinds of bet, so this is about risk, not just the biggest number. Cap room left ${fmtMoney(capRoom(t))}. Wind tunnel ${Math.round(t.tunnelLeft)} of ${t.tunnelTotal} hours left until ${fmtDay(nextAllowanceReset(s))}. Projects running: ${running} of ${maxConcurrent(t)}.\nThe lap time shown is how much each part changes a lap: a minus number is faster. It is only the staff's guess until the part runs at a track.`;
+export function ideaBody(s: CareerState, shown = 0, _total = 0): string {
+  void s;
+  return `${shown || "New"} idea${shown === 1 ? " is" : "s are"} growing on the car tree. Pick one to build, the rest are shelved.`;
 }

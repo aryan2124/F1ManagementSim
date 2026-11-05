@@ -499,6 +499,8 @@ export interface CardOption {
   lines?: string[];
   /** A warning, such as not being able to afford it. */
   warn?: string;
+  /** What it does to the five meters: shown as sliding bars instead of lines of text. */
+  fx?: import("./tradeoff").Fx;
 }
 
 export interface Card {
@@ -837,7 +839,7 @@ export interface CareerState {
   loops?: { heat: Record<string, number>; patched: string[]; hinted: string[] };
   /** The person is away: letters without a standing order wait for them instead of lapsing. */
   away?: boolean;
-  focus?: { kind: import("./focus").FocusKind; since: number };
+  focus?: { kind: import("./focus").FocusKind; since: number; mix?: string };
   /** The last day the weekly plan stopped the clock to ask the player. */
   planAskedDay?: number;
   /** Regulation eras. */

@@ -14,7 +14,7 @@ import { hex, teamOf, type Dispatch } from "./common";
 import "./devroom.css";
 import { ask } from "../Confirm";
 
-const KINDS: Card["kind"][] = ["devCrisis", "staffNotice", "testDay", "projectReady", "ideaBatch", "rndDirection", "media"];
+const KINDS: Card["kind"][] = ["devCrisis", "staffNotice", "testDay", "projectReady", "rndDirection", "media"];
 export const isScene = (c: Card) => KINDS.includes(c.kind) && !c.notice;
 /** Only the really urgent scenes (a resignation, a split office) interrupt you away from the dashboard. Everything else waits in the Inbox. */
 const interrupts = (c: Card) => c.kind === "devCrisis" || c.kind === "staffNotice";

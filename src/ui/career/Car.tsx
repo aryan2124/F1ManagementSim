@@ -21,6 +21,7 @@ import { DesignLab } from "./Lab";
 import { FitMapPanel, SeasonMapPanel } from "./FitMap";
 import { ConceptPanel, DesignPanel, GuidancePanel, RulebookPanel, TraitPanel } from "./Engineering";
 import { ask } from "../Confirm";
+import { CarTree } from "./CarTree";
 
 const FAC = { tunnel: "Wind tunnel", sim: "Simulator", factory: "Factory", academy: "Academy" } as const;
 const DEL: { k: keyof Delegation; label: string }[] = [
@@ -63,9 +64,10 @@ export function Car({ s, d }: Props) {
   const recent = me.projects.filter((p) => p.status === "fitted").slice(-5).reverse();
   return (
     <Sub id="car" tabs={[
+      { k: "tree", label: "CAR TREE", n: me.ideas.length },
       { k: "overview", label: "OVERVIEW" },
       { k: "study", label: "STUDY" },
-      { k: "build", label: "BUILD", n: me.ideas.length },
+      { k: "build", label: "DIRECTION" },
       { k: "fit", label: "FIT MAP" },
       { k: "season", label: "SEASON MAP" },
       { k: "lab", label: "DESIGN LAB" },
@@ -74,6 +76,7 @@ export function Car({ s, d }: Props) {
     ]}>
       {(tab) => (
         <>
+          {tab === "tree" && <CarTree s={s} d={d} />}
           {tab === "overview" && (
             <div className="c-cols">
               <div>

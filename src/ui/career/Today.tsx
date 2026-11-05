@@ -304,13 +304,13 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
   return (
     <div className="c-today">
       {nowCards.length > 0 && !inWeekend && (
-        <section className="panel c-now">
-          <h3>DECISIONS ({nowCards.length})</h3>
-          {nowCards.map((c, i) => <CardView key={c.id} c={c} d={d} keys={i === 0} />)}
+        <section className="panel c-now c-door" data-testid="inbox-door">
+          <h3>{nowCards.length} IN YOUR INBOX</h3>
+          <button className="btn primary" onClick={() => go("inbox")}>OPEN INBOX{urgent ? " (URGENT)" : ""}</button>
         </section>
       )}
 
-      <p className="c-nowline">{nowCards.length > 0 && !inWeekend ? `Do this now: ${nowCards[0].title}.` : next ? `${circuitMeta(next.circuitId).gp} is ${toNext === 0 ? "this weekend" : `${toNext} day${toNext === 1 ? "" : "s"} away`}. ${decisions.length ? `${decisions.length} decision${decisions.length === 1 ? "" : "s"} waiting for you above.` : "Nothing needs you right now. Press CONTINUE to move time on."}` : "The season is over."}</p>
+      <p className="c-nowline">{nowCards.length > 0 && !inWeekend ? `Your inbox is waiting: ${nowCards[0].title}.` : next ? `${circuitMeta(next.circuitId).gp} is ${toNext === 0 ? "this weekend" : `${toNext} day${toNext === 1 ? "" : "s"} away`}. ${decisions.length ? `${decisions.length} decision${decisions.length === 1 ? "" : "s"} waiting for you in the inbox.` : "Nothing needs you right now. Press CONTINUE to move time on."}` : "The season is over."}</p>
 
       <section className="panel c-head hero-head">
         <div className="hh-date">
@@ -368,7 +368,7 @@ export function Today({ s, d, onWeekend, msg, go, clock, play, pause, setSpeed, 
           </div>
           <p className="dim small">TEAM means that department picks the default answer for routine cards, so the clock does not stop for them. Big and urgent decisions always come to you.</p>
           {decisions.length === 0 && <p className="dim">Nothing needs you. The factory is working.</p>}
-          {!inWeekend && decisions.length > 0 && <p className="dim small">Your {decisions.length} decision{decisions.length === 1 ? " is" : "s are"} at the top of this page.</p>}
+          {!inWeekend && decisions.length > 0 && <p className="dim small">Your {decisions.length} decision{decisions.length === 1 ? " is" : "s are"} in the inbox.</p>}
           {(inWeekend ? decisions : []).map((c, i) => <CardView key={c.id} c={c} d={d} keys={i === 0} />)}
           {s.recap.length > 0 && (
             <div className="c-recap">

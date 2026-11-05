@@ -282,7 +282,7 @@ export function CareerApp({ initial, onExit, net, tutorial }: { initial: CareerS
     if (!net) window.dispatchEvent(new CustomEvent("boxbox-hold", { detail: on }));
   };
   const weekendLive = inWeekend && !!s.weekend;
-  const waiting = s.cards.filter((c) => !c.notice && !c.mail).length + unreadCount(s);
+  const waiting = unreadCount(s);
 
 
   return (
@@ -305,7 +305,7 @@ export function CareerApp({ initial, onExit, net, tutorial }: { initial: CareerS
           {TABS.map((t, i) => (
             <button key={t.k} className={tab === t.k ? "on" : ""} title={`Key ${i + 1}`} onClick={() => setTab(t.k)}>
               {t.label}
-              {t.k === "today" && s.cards.filter((c) => !c.notice && !c.mail).length > 0 ? ` (${s.cards.filter((c) => !c.notice && !c.mail).length})` : ""}{t.k === "inbox" && unreadCount(s) > 0 ? ` (${unreadCount(s)})` : ""}
+              {t.k === "inbox" && unreadCount(s) > 0 ? ` (${unreadCount(s)})` : ""}
             </button>
           ))}
         </nav>
@@ -313,7 +313,7 @@ export function CareerApp({ initial, onExit, net, tutorial }: { initial: CareerS
       {THEME[tab] && <ScreenBanner theme={tab === "today" ? "hq" : THEME[tab]!} />}
       <div key={tab} className="tab-in">
       {tab === "today" && <Today dock={net ? <ReadyDock room={net} s={s} onWeekend={() => { setMsg(""); setInWeekend(true); if (peek) toggleDash(false); }} /> : undefined} s={s} d={d} msg={msg} go={setTab} clock={clock} play={play} pause={pause} setSpeed={setSpeed} onWeekend={() => { setMsg(""); setInWeekend(true); if (peek) toggleDash(false); }} />}
-      {tab === "inbox" && <Inbox s={s} d={d} />}
+      {tab === "inbox" && <Inbox s={s} d={d} go={setTab} />}
       {tab === "calendar" && <Calendar s={s} d={d} net={!!net} />}
       {tab === "car" && <Car s={s} d={d} />}
       {tab === "people" && <People s={s} d={d} />}

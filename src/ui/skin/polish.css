@@ -69,8 +69,10 @@
 .app .tl-stops small{flex:1 1 100%}
 
 /* timing tower: the penalty sits inside the gap cell so it can never push the row wider than the panel */
-.app .tower li{grid-template-columns:26px 8px 52px 36px minmax(0,1fr) 22px}
-.app .qboard li{grid-template-columns:26px 8px 52px 22px 36px minmax(0,1fr) 22px}
+.app .tower li{grid-template-columns:20px 6px 40px 30px minmax(70px,1fr) 20px;gap:4px;padding:4px 4px}
+.app .qboard li{grid-template-columns:20px 6px 40px 20px 30px minmax(74px,1fr) 20px;gap:4px;padding:4px 4px}
+.app .tower li .gap{font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.app .tower li .code{font-size:14px}
 .app .qboard li button.tiny{padding:0;width:20px;height:20px;font-size:12px;line-height:1;min-width:0}
 .app .tower li .gap{display:flex;justify-content:flex-end;align-items:baseline;gap:5px;min-width:0;overflow:hidden}
 .app .tower li .gap .pen{font-size:11px;line-height:1;flex:none}
@@ -124,3 +126,74 @@
 .ks-chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.ks-chips button{font-size:11px;padding:4px 8px;letter-spacing:0}
 .app .ks-chips .btn{font-size:11px;padding:6px 10px;letter-spacing:0}
 .live-delta.up b{color:#3fdc6b}.live-delta.down b{color:#ff5a4f}
+
+/* decisions as pictures: five meters that slide, and the weekly plan as a dial */
+.tf-meters{display:grid;gap:8px;margin:10px auto;max-width:620px;user-select:none}
+.tf-row{display:grid;grid-template-columns:96px 1fr 140px;align-items:center;gap:10px;font-size:16px}
+.tf-name{color:#9fa8d6;letter-spacing:1px}
+.tf-track{position:relative;height:16px;background:#0d1226;border:1px solid #2c3560}
+.tf-mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:#6a74a8}
+.tf-bar{position:absolute;top:1px;bottom:1px;transition:left .35s ease,width .35s ease}
+.tf-bar.up{background:#57cc99}.tf-bar.down{background:#e63946}
+.tf-say{text-align:right;color:#8890b8;font-variant-numeric:tabular-nums}
+.tf-say.up{color:#57cc99}.tf-say.down{color:#ff6b78}
+.tf-tri{width:min(300px,100%);display:block;margin:6px auto;touch-action:none;cursor:grab;user-select:none}
+.tf-dial{user-select:none}
+.tf-poly{fill:#141a33;stroke:#f9a03f;stroke-width:1}
+.tf-corner{fill:#ece7ff;font-size:5.5px;letter-spacing:.3px}
+.tf-puck{fill:#f9a03f;stroke:#fff;stroke-width:1}
+.tf-hide{display:none}
+@media (max-width:520px){.tf-row{grid-template-columns:60px 1fr 90px}}
+.tf-dial{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);gap:18px;align-items:center}
+.tf-dial .tf-tri{width:100%;margin:0}
+.tf-dial .tf-meters{margin:0;max-width:none}
+.tf-dial .c-confirm{grid-column:1/-1}
+.tf-dial .tf-row{grid-template-columns:84px 1fr 130px}
+@media (max-width:640px){.tf-dial{grid-template-columns:1fr}}
+.tf-mini{display:flex;gap:3px;height:26px;margin:4px 0}
+.tf-mcol{position:relative;width:8px;background:#0d1226;border-top:1px solid #1d2547;border-bottom:1px solid #1d2547}
+.tf-mcol::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:#4a5486}
+.tf-mcol i{position:absolute;left:0;right:0;transition:height .3s ease}
+.tf-mcol i.up{background:#57cc99}.tf-mcol i.down{background:#e63946}
+.c-opt .c-lines-hidden{display:none}
+
+/* the car as a tree: ideas are leaves, big choices are gems, areas are branches, the concept is the trunk */
+.ct{display:grid;gap:12px;grid-template-columns:minmax(0,1fr) 340px;align-items:start}
+.ct-main{display:grid;gap:10px;min-width:0}
+.ct-detail{position:sticky;top:8px}
+.ct-branches{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-items:end}
+.ct-branch{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0}
+.ct-leaves,.ct-keys{display:flex;flex-direction:column;gap:6px;justify-content:flex-end;min-height:90px}
+.ct-stem{height:14px;width:3px;background:#4a5486;margin:0 auto}
+.ct-leaf,.ct-key{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;padding:6px 8px;background:#141a33;border:2px solid #2c3560;color:#ece7ff;text-align:left;cursor:pointer;font-size:16px;min-width:0}
+.ct-leaf b,.ct-key span{min-width:0;line-height:1.15}
+.ct-leaf:hover,.ct-key:hover,.ct-leaf.on,.ct-key.on,.ct-trunk.on{border-color:#f9a03f}
+.ct-leaf small.up{color:#57cc99}.ct-leaf small.down{color:#ff6b78}
+.ct-shape{width:12px;height:12px;background:#57cc99;display:block}
+.ct-leaf.dia .ct-shape{background:#f9a03f;transform:rotate(45deg) scale(.85)}
+.ct-leaf.tri .ct-shape{background:#7aa7ff;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.ct-leaf.building{border-style:dashed}
+.ct-ring{width:14px;height:14px;border-radius:50%;background:conic-gradient(#57cc99 var(--p),#2c3560 0)}
+.ct-gem{width:12px;height:12px;background:#9a7bff;transform:rotate(45deg) scale(.8);display:block}
+.ct-key.fit{border-color:#9a7bff;background:#241f4a;box-shadow:0 0 10px #9a7bff66}
+.ct-key.fit .ct-gem{background:#d6c7ff}
+.ct-key.ban{opacity:.4;text-decoration:line-through}
+.ct-key{grid-template-columns:auto 1fr}
+.ct-node{background:#0d1226;border:2px solid #f9a03f;padding:6px;text-align:center;display:flex;justify-content:space-between;gap:6px;font-size:16px}
+.ct-node small.up{color:#57cc99}.ct-node small.down{color:#ff6b78}
+.ct-trunk{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px;background:#1b2243;border:3px solid #6a74a8;color:#ece7ff;cursor:pointer}
+.ct-trunk b{font-size:18px}.ct-trunk span{font-size:15px;color:#9fa8d6}
+.ct-empty{color:#6a74a8;font-size:12px;text-align:center}
+.ct-slots{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.ct-chips{display:flex;gap:8px;margin:8px 0}
+.chip-cost{padding:3px 8px;background:#0d1226;border:1px solid #2c3560;font-size:14px}
+.tf-range .tf-bar.mix{background:#f9a03f}
+.tf-ends{display:flex;justify-content:space-between;font-size:12px;color:#8890b8;margin-top:3px}
+@media (max-width:1100px){.ct{grid-template-columns:1fr}.ct-detail{position:static}}
+@media (max-width:760px){.ct-branches{grid-template-columns:1fr}.ct-leaves,.ct-keys{min-height:0}}
+.app .ct .ct-leaf,.app .ct .ct-key,.app .ct .ct-node,.app .ct .ct-trunk{font-size:17px}
+.app .ct .ct-leaf small,.app .ct .ct-node small{font-size:15px}
+.app .ct-detail .tf-row{grid-template-columns:120px 1fr 64px;font-size:15px}
+.app .ct-detail .tf-name{font-size:13px}
+.ct-leaf.offer{box-shadow:0 0 12px #f9a03f88;border-color:#f9a03f}
+.ct-banner{display:flex;gap:10px;align-items:center;padding:8px 10px;background:#2a1f10;border:2px solid #f9a03f;color:#ffd08a}

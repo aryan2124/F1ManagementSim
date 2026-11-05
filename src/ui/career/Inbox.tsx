@@ -1,4 +1,6 @@
 import { Linked } from "./Profile";
+import { CardView } from "./common";
+import { MiniMeters, fxOf } from "./Tradeoff";
 import { isScene, openScene } from "./DevRoom";
 import { useState } from "react";
 import { HUNT, huntCooldown, type HuntMode } from "../../career/mail";
@@ -6,10 +8,11 @@ import type { CareerState } from "../../career/types";
 import { TalkPanel } from "./Talks";
 import { fmtDay } from "../../career/util";
 import type { Props } from "./common";
+import type { Card } from "../../career/types";
 
 export interface InboxItem {
   key: string;
-  kind: "mail" | "talk" | "letter";
+  kind: "mail" | "talk" | "letter" | "decision";
   id: number;
   day: number;
   from: string;
@@ -19,9 +22,14 @@ export interface InboxItem {
   open: boolean;
 }
 
+/** A decision that needs the player: it lives in the inbox, never on the home screen. */
+export const isDecision = (c: Card) => !c.notice && !c.mail && !isScene(c);
+const DECISION_FROM: Record<string, string> = { weekPlan: "Team principal's office", campaign: "Drawing office", sponsorOffer: "Commercial", sponsorReview: "Commercial", contractExpiring: "Contracts", contractOffer: "Contracts", staffExpiring: "Human resources", staffPoach: "Human resources", board: "The board", capWarning: "Finance", capBreach: "Finance", facility: "Facilities", era: "The FIA", firing: "The board" };
+
 /** Everything in the inbox, newest first: offers and letters, and every conversation, read or unread. */
 export function inboxItems(s: CareerState): InboxItem[] {
   const out: InboxItem[] = [];
+  for (const c of s.cards) if (isDecision(c)) out.push({ key: `d${c.id}`, kind: "decision", id: c.id, day: c.created, from: DECISION_FROM[c.kind] ?? "The factory", subject: c.title, unread: true, open: true });
   for (const c of s.cards) if (c.kind === "mail") out.push({ key: `m${c.id}`, kind: "mail", id: c.id, day: c.created, from: c.mail?.from ?? "Mail", subject: c.title, unread: !c.read, open: c.options.length > 1 });
   for (const l of s.letters ?? []) out.push({ key: `l${l.id}`, kind: "letter", id: l.id, day: l.day, from: l.from, subject: l.subject, unread: !l.read, open: false });
   for (const tk of s.talks) {
@@ -30,7 +38,7 @@ export function inboxItems(s: CareerState): InboxItem[] {
     const state = tk.status === "waiting" ? "waiting for a reply" : tk.status === "agreed" ? "terms agreed, sign or it lapses" : tk.status === "closed" ? "closed" : "your move";
     out.push({ key: `t${tk.id}`, kind: "talk", id: tk.id, day: last, from: name, subject: `${tk.kind === "junior" ? "Academy talks" : "Talks"}: ${state}`, unread: !!tk.unread, open: tk.status === "open" || tk.status === "agreed" });
   }
-  return out.sort((a, b) => b.day - a.day);
+  return out.sort((a, b) => (a.kind === "decision" ? 0 : 1) - (b.kind === "decision" ? 0 : 1) || b.day - a.day);
 }
 
 export const unreadCount = (s: CareerState) => inboxItems(s).filter((x) => x.unread).length + s.cards.filter(isScene).length;
@@ -38,16 +46,17 @@ export const unreadCount = (s: CareerState) => inboxItems(s).filter((x) => x.unr
 /** Letters from sponsors, scouts and young drivers, every conversation with a driver, and the way to go looking for sponsors yourself. */
 const SCENE_FROM: Record<string, string> = { ideaBatch: "Drawing office", rndDirection: "Drawing office", projectReady: "Drawing office", testDay: "Test crew", staffNotice: "A member of staff", devCrisis: "The whole department", devEvent: "The factory", media: "Press office" };
 
-export function Inbox({ s, d }: Props) {
+export function Inbox({ s, d, go }: Props & { go?: (t: import("./common").Tab) => void }) {
   const items = inboxItems(s);
   const waiting = s.cards.filter(isScene);
   const cool = huntCooldown(s);
   const [sel, setSel] = useState<string | null>(null);
-  const cur = items.find((x) => x.key === sel) ?? null;
+  const cur = items.find((x) => x.key === sel) ?? items.find((x) => x.kind === "decision") ?? null;
   const pick = (x: InboxItem) => {
     setSel(x.key);
-    if (x.unread && x.kind !== "talk") d({ type: "markRead", what: x.kind === "mail" ? "card" : "letter", id: x.id });
+    if (x.unread && x.kind !== "talk" && x.kind !== "decision") d({ type: "markRead", what: x.kind === "mail" ? "card" : "letter", id: x.id });
   };
+  const dec = cur?.kind === "decision" ? s.cards.find((k) => k.id === cur.id) : undefined;
   const c = cur?.kind === "mail" ? s.cards.find((k) => k.id === cur.id) : undefined;
   const letter = cur?.kind === "letter" ? (s.letters ?? []).find((k) => k.id === cur.id) : undefined;
   return (
@@ -91,6 +100,17 @@ export function Inbox({ s, d }: Props) {
             </li>
           ))}
         </ul>
+        {dec && dec.kind === "ideaBatch" && (
+          <div className="c-card mail" data-testid="idea-letter">
+            <h4>{dec.title}</h4>
+            <p>{dec.body}</p>
+            <div className="ct-slots">
+              <button className="btn primary" onClick={() => { try { sessionStorage.setItem("bb.sub.car", "tree"); } catch { /* ignore */ } go?.("car"); }}>OPEN THE CAR TREE</button>
+              <button className="btn" onClick={() => d({ type: "card", id: dec.id, option: "none" })}>SHELVE THEM ALL</button>
+            </div>
+          </div>
+        )}
+        {dec && dec.kind !== "ideaBatch" && <CardView c={dec} d={d} />}
         {cur?.kind === "talk" && <TalkPanel s={s} d={d} id={cur.id} onClose={() => setSel(null)} />}
         {c && (
           <div className="c-card mail">
@@ -101,8 +121,9 @@ export function Inbox({ s, d }: Props) {
               {c.options.map((o) => (
                 <button key={o.id + o.label} className="c-opt" onClick={() => d({ type: "card", id: c.id, option: o.id })}>
                   <b>{o.label}</b>
+                  <MiniMeters fx={fxOf(o)} />
                   {o.detail && <span className="dim">{o.detail}</span>}
-                  {o.lines && <ul>{o.lines.map((l, i) => <li key={i}>{l}</li>)}</ul>}
+                  {o.lines && !fxOf(o) && <ul>{o.lines.map((l, i) => <li key={i}>{l}</li>)}</ul>}
                   {o.warn && <em className="warn">{o.warn}</em>}
                 </button>
               ))}
@@ -125,7 +146,7 @@ export function Inbox({ s, d }: Props) {
             {letter.body.split("\n").map((l, i) => (l ? <p key={i}>{l}</p> : <br key={i} />))}
           </div>
         )}
-        {cur && !c && !letter && cur.kind !== "talk" && <p className="dim">That one has been dealt with.</p>}
+        {cur && !c && !letter && !dec && cur.kind !== "talk" && <p className="dim">That one has been dealt with.</p>}
       </section>
       <section className="panel">
         <h3>GO LOOKING FOR SPONSORS</h3>
