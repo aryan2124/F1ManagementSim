@@ -950,6 +950,15 @@ export class RaceSim {
         car.pitSetId = undefined;
         if (!car.compoundsUsed.includes(nc)) car.compoundsUsed.push(nc);
         car.stops++;
+        if (this.cfg.rules?.relay && car.stops === 1 && !car.startDriver) {
+          const mate = this.cars.find((c) => c !== car && c.entry.team.id === car.entry.team.id);
+          const partner = mate ? (mate.startDriver ?? mate.entry.driver) : undefined;
+          if (partner) {
+            car.startDriver = car.entry.driver;
+            car.entry = { ...car.entry, driver: partner };
+            this.emit("radio", car.id, undefined, `RELAY: ${car.startDriver.code} hands over to ${partner.code}.`);
+          }
+        }
         this.stopLog.push({ carId: car.id, lap: car.lap + 1, secs: car.stopSecs ?? 0, from: car.stopFrom ?? "M", to: nc, posBefore: car.position, ageBefore, wearBefore, hurt, underNeutral: this.neutral.active });
         if (this.cfg.rules?.refuelling) car.fuel = Math.min(1, car.fuel + this.fuelToAdd(car));
         if (car.pitSwap && this.cfg.rules?.batterySwap) {

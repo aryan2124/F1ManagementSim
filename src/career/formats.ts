@@ -34,6 +34,31 @@ export const FORMATS: FormatDef[] = [
     { id: "matched", name: "Matched pair", blurb: "Two drivers who like the same car: one setup, fewer surprises.", fx: { platform: 0.04, drive: 0.03 } },
     { id: "opposite", name: "Opposite styles", blurb: "A smooth driver and an aggressive one: the car has to suit both.", fx: { packaging: 0.03, grip: 0.03, platform: -0.03 } },
   ] },
+  { moduleId: "computerCars", title: "Where the software goes", options: [
+    { id: "traction", name: "Traction suite", blurb: "Launch and traction control tuned first: drive out of corners, a twitchier platform.", fx: { drive: 0.07, platform: -0.03 } },
+    { id: "aero", name: "Active aero", blurb: "Ride height and wing control: more load, less efficiency in the straights.", fx: { downforce: 0.06, efficiency: -0.03 } },
+    { id: "tyre", name: "Tyre care", blurb: "Software that looks after the rubber: it comes in sooner, less peak output.", fx: { warmup: 0.05, grip: 0.02, output: -0.03 } },
+  ] },
+  { moduleId: "grenadeEra", title: "Engine mode philosophy", options: [
+    { id: "peak", name: "Peak modes", blurb: "Run the destructive modes whenever they pay: more output, a smaller battery margin.", fx: { output: 0.09, capacity: -0.05 } },
+    { id: "reserve", name: "Reserve engines", blurb: "Spend the pool slowly and keep units for the end: steady, less peak.", fx: { capacity: 0.06, output: -0.02 } },
+  ] },
+  { moduleId: "fuelIsMoney", title: "The fuel plan", options: [
+    { id: "light", name: "Light starts", blurb: "Fuel for short stints, stop often: grip early, less in the tank.", fx: { grip: 0.05, capacity: -0.04 } },
+    { id: "heavy", name: "Heavy starts", blurb: "Fuel for long stints: a calmer car, a slower start.", fx: { platform: 0.04, grip: -0.02 } },
+  ] },
+  { moduleId: "wingsBanned", title: "Where the load comes from", options: [
+    { id: "tunnels", name: "Floor tunnels", blurb: "All the load under the car: a lot of it, and a fussy platform.", fx: { downforce: 0.07, platform: -0.04 } },
+    { id: "body", name: "Body shape", blurb: "Shape the bodywork to make load and cut drag: less load, much less drag.", fx: { efficiency: 0.06, downforce: -0.02 } },
+  ] },
+  { moduleId: "rainOnDemand", title: "The wet or dry bet", options: [
+    { id: "wetaero", name: "Wet aero", blurb: "A car that works when the sprinklers go on, and gives up a little when they do not.", fx: { grip: 0.05, efficiency: -0.04 } },
+    { id: "dry", name: "Dry bet", blurb: "A car for the dry days, slightly lost when it rains.", fx: { efficiency: 0.05, grip: -0.03 } },
+  ] },
+  { moduleId: "transparentPaddock", title: "What you publish", options: [
+    { id: "honest", name: "Honest dials", blurb: "Rivals trust what you publish and you read theirs better: a steadier car, little edge.", fx: { platform: 0.03, packaging: 0.02 } },
+    { id: "misleading", name: "Misleading dials", blurb: "Publish numbers that point rivals the wrong way: an edge if it works, rivals notice when it does not.", fx: { downforce: 0.03, efficiency: -0.02 } },
+  ] },
 ];
 
 export interface AuctionDef { moduleId: string; title: string; slots: number; fx: Partial<Record<Trait, number>> }

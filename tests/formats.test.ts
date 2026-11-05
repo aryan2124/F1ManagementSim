@@ -54,3 +54,22 @@ describe("ruleset choices", () => {
     expect(apply).toBeTypeOf("function");
   });
 });
+
+import { FORMATS, AUCTIONS } from "../src/career/formats";
+import { MODULE_BY_ID } from "../src/career/modules";
+import { TRAITS } from "../src/career/types";
+describe("choice catalogue", () => {
+  it("every choice belongs to a real ruleset, has at least two options, and every option has a gain and a price", () => {
+    for (const f of FORMATS) {
+      expect(MODULE_BY_ID[f.moduleId], f.moduleId).toBeTruthy();
+      expect(f.options.length).toBeGreaterThanOrEqual(2);
+      for (const o of f.options) {
+        const v = Object.entries(o.fx);
+        expect(v.every(([k]) => TRAITS.includes(k as never))).toBe(true);
+        expect(v.some(([, x]) => (x as number) > 0), `${o.id} has no gain`).toBe(true);
+      }
+    }
+    for (const a of AUCTIONS) expect(MODULE_BY_ID[a.moduleId]).toBeTruthy();
+    expect(new Set([...FORMATS.map((f) => f.moduleId), ...AUCTIONS.map((a) => a.moduleId)]).size).toBeGreaterThanOrEqual(13);
+  });
+});

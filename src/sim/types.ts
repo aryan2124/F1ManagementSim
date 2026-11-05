@@ -191,6 +191,8 @@ export interface StopRec {
 }
 
 export interface RaceRules {
+  /** At its first stop each car hands over to the driver of its teammate (and the teammate's car to this one). */
+  relay?: boolean;
   /** Every pit stop takes this many seconds, for everyone. */
   fixedStop?: number;
   /** A safety car is deployed at a fixed point of the race. */
@@ -252,6 +254,8 @@ export interface CarState {
   holdUntil?: number;
   id: string;
   entry: EntrySpec;
+  /** Relay: the driver this car started with, once it has handed over. */
+  startDriver?: DriverSpec;
   status: CarStatus;
   /** Total distance along track in metres; start/finish line = 0, grid slots are negative. */
   s: number;

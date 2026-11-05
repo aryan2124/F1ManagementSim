@@ -67,7 +67,7 @@ describe("races with weather, crashes and radio", () => {
       const res = sim.results();
       expect(res.filter((r) => r.status === "FIN").length).toBeGreaterThan(8);
     }
-  });
+  }, 60000); // four full races: slow when the whole suite runs in parallel
 });
 
 describe("venue art", () => {

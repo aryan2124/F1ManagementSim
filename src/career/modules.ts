@@ -67,6 +67,8 @@ export interface Flags {
   lapLed?: boolean;
   /** Fixed pit stop time, seconds. */
   fixedStop?: number;
+  /** Two drivers a car: at the first stop the car hands over to its teammate's driver. */
+  relay?: boolean;
   scheduledSC?: boolean;
   oneCompound?: boolean;
   tyreLottery?: boolean;
@@ -371,7 +373,7 @@ export const MODULES: ModuleDef[] = [
     change: "A cockpit tree and driver pairing become decisions.",
     headline: ["spectacle"], support: ["spectacle"], intent: "Two drivers one car",
     unknowns: ["Cost of a slow swap", "Which pair fits"], scale: "Swap time",
-    flags: () => ({ fixedStop: 3.4 }),
+    flags: () => ({ fixedStop: 3.4, relay: true }),
   }),
   M({
     id: "tyreWars", name: "Tyre wars", category: "Tyres", kind: "setting", live: "career",

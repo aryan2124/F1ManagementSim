@@ -58,7 +58,7 @@ describe.skipIf(!process.env.FEEL)("feel index of the sim-live rules", () => {
     const base = measure({}, seeds);
     const sets: Record<string, RaceRules> = {
       pushToPass: { pushToPass: 5 }, twoHeat: { twoHeat: true }, refuelling: { refuelling: true }, stopWindow: { stopWindow: [4, 8] },
-      stageRacing: { stageRacing: true }, standingRestarts: { standingRestarts: true }, batterySwap: { batterySwap: true },
+      stageRacing: { stageRacing: true }, standingRestarts: { standingRestarts: true }, batterySwap: { batterySwap: true }, relay: { relay: true, fixedStop: 3.4 },
     };
     const out = ["base " + JSON.stringify(base)];
     for (const [k, r] of Object.entries(sets)) {

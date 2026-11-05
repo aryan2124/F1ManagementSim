@@ -770,6 +770,7 @@ export function planSession(s: CareerState, kind: SessionKind, allAi = false): S
     ...(kind === "race" || kind === "sprint" ? { tyreSetList: sets, sessionLabel: kind === "sprint" ? "SPRINT" : "RACE" } : {}),
     rules: {
       fixedStop: rules.fixedStop,
+      relay: rules.relay && kind === "race",
       scheduledSC: rules.scheduledSC && kind === "race",
       oneCompound,
       tyreLottery: rules.tyreLottery,
