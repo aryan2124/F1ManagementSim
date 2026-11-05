@@ -1,7 +1,7 @@
 import { schoolReading } from "./schools";
 import { Rng, hashSeed } from "../sim/rng";
 import { clamp, round2, rngFor, fmtMoney } from "./util";
-import { DESIGN_KEYS, NEUTRAL, clampDesign, designOf, designWorth, initDesigns, type Design } from "./design";
+import { DESIGN_KEYS, NEUTRAL, clampDesign, designOf, designWorth, initDesigns, teamQuirk, type Design } from "./design";
 import { learn } from "./know";
 import { quality } from "./know";
 import { factorsOf } from "./factors";
@@ -152,8 +152,10 @@ export function applyDesign(s: CareerState, teamId: string, effort: number, qual
   const worthCur = designWorth(cur, s.regW);
   const exec = clamp(0.35 + quality01 * 0.7, 0.3, 1.05) * clamp(effort, 0.15, 1.15);
   const rng = rngFor(s, `applyDesign:${teamId}`);
+  // the team's own unmodelled quirks: the car answers a little differently from what any instrument said
+  const quirk = teamQuirk(teamId, s.seed);
   const delta = {} as Record<Trait, number>;
-  for (const tr of TRAITS) delta[tr] = round2((worthNew[tr] - worthCur[tr]) * exec + rng.gauss() * 0.02 * (1.2 - exec));
+  for (const tr of TRAITS) delta[tr] = round2((worthNew[tr] - worthCur[tr]) * exec + quirk[tr] * Math.min(1, Math.abs(worthNew[tr] - worthCur[tr]) * 8) + rng.gauss() * 0.02 * (1.2 - exec));
   t.design = t.designNext;
   t.designNext = undefined;
   const mean = TRAITS.reduce((a, tr) => a + delta[tr], 0) / TRAITS.length;
