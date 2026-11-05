@@ -1,3 +1,4 @@
+import { draftPick, tagDriver } from "./draft";
 import { pickFormat, placeBid } from "./formats";
 import { proposeAmendment, voteAmendment } from "./amendments";
 import { setExploit } from "./loopholes";
@@ -319,6 +320,14 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
     }
     case "bid": {
       const r = placeBid(s, s.teamId, a.moduleId, a.amount);
+      return r.ok ? good(r.message) : fail(r.message);
+    }
+    case "draftPick": {
+      const r = draftPick(s, s.teamId, a.driverId);
+      return r.ok ? good(r.message) : fail(r.message);
+    }
+    case "draftTag": {
+      const r = tagDriver(s, s.teamId, a.driverId);
       return r.ok ? good(r.message) : fail(r.message);
     }
     case "exploit": {

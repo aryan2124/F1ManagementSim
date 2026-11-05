@@ -69,6 +69,8 @@ export interface Flags {
   fixedStop?: number;
   /** Two drivers a car: at the first stop the car hands over to its teammate's driver. */
   relay?: boolean;
+  /** Drivers belong to the league: expiring drivers go into a pool and teams pick in reverse standings order. */
+  draft?: boolean;
   scheduledSC?: boolean;
   oneCompound?: boolean;
   tyreLottery?: boolean;
@@ -333,7 +335,7 @@ export const MODULES: ModuleDef[] = [
     change: "The academy becomes a main tree and contracts are short.",
     headline: ["equaliser"], support: ["equaliser"], intent: "Talent by order of misery",
     unknowns: ["Value of a pick", "What a franchise tag costs"], scale: "n/a",
-    flags: () => ({ rookieRule: true, talentCap: 30 }),
+    flags: () => ({ rookieRule: true, talentCap: 30, draft: true }),
   }),
   M({
     id: "energyAuction", name: "Energy auction", category: "Power", kind: "setting", live: "career",

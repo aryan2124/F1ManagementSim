@@ -1,5 +1,7 @@
 import { liveLoopholes, loopState } from "../../career/loopholes";
 import { formatState, liveAuctions, liveFormats } from "../../career/formats";
+import { draftOn, draftPool, TAG_COST } from "../../career/draft";
+import { driversOf } from "../../career/finance";
 import { amendState } from "../../career/amendments";
 import { KEYSTONES } from "../../career/keystones";
 import { useState } from "react";
@@ -151,6 +153,36 @@ export function Rules({ s, d }: Props) {
                 </p>
               );
             })}
+          </section>
+        )}
+        {(draftOn(s) || (s.draft && !s.draft.done)) && (
+          <section className="panel" data-testid="draft">
+            <h3>THE DRAFT</h3>
+            <p className="dim small">Drivers belong to the league. When a deal runs out the driver goes into the pool, and the teams pick in reverse order of last season's constructors' table. Picks sign for one season at 65% of the asking price. One franchise tag a year (${TAG_COST}m) keeps an expiring driver out of the pool.</p>
+            {draftOn(s) && driversOf(s, s.teamId).filter((x) => x.endYear <= s.year).map((x) => (
+              <p key={x.id} className="c-line">
+                <span>{x.spec.name} is out of contract this year.</span>
+                <button className={`btn ${s.draftTags?.[s.teamId] === x.id ? "on" : ""}`} onClick={() => setMsg(d({ type: "draftTag", driverId: s.draftTags?.[s.teamId] === x.id ? null : x.id }).message)}>{s.draftTags?.[s.teamId] === x.id ? "TAGGED" : `TAG HIM ($${TAG_COST}M)`}</button>
+              </p>
+            ))}
+            {s.draft && !s.draft.done && (
+              <>
+                <p className="small"><b>Round {s.draft.round}.</b> {s.draft.clock === s.teamId ? "You are on the clock." : s.draft.clock ? `${s.draft.clock.toUpperCase()} is on the clock.` : "The computer teams are picking."} Order: {s.draft.order.map((t) => t.toUpperCase()).join(", ")}.</p>
+                {draftPool(s, s.teamId).slice(0, 12).map((id) => {
+                  const dd = s.drivers[id];
+                  const j = s.pool.find((x) => x.id === id);
+                  const name = dd?.spec.name ?? j?.name ?? id;
+                  const pace = dd?.spec.pace ?? j?.pace ?? 0;
+                  return (
+                    <p key={id} className="c-line">
+                      <span><b>{name}</b> <span className="dim small">pace {(pace * 100).toFixed(1)}{j ? ", academy graduate" : ""}</span></span>
+                      <button className="btn" disabled={s.draft!.clock !== s.teamId} onClick={() => setMsg(d({ type: "draftPick", driverId: id }).message)}>PICK</button>
+                    </p>
+                  );
+                })}
+              </>
+            )}
+            {(s.draft?.picks ?? []).filter((p) => p.driverId).slice(-8).map((p, i) => <p key={i} className="dim small">Round {p.round}: {p.teamId.toUpperCase()} pick {p.name}.</p>)}
           </section>
         )}
         <section className="panel" data-testid="amendments">

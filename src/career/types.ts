@@ -829,6 +829,9 @@ export interface CareerState {
   /** Loophole heat, patched gaps and hints already sent. */
   /** Sealed bid auctions by ruleset. */
   formats?: { auctions: Record<string, { year: number; closes: number; bids: Record<string, number>; winners: string[]; done: boolean }> };
+  /** The yearly draft (see draft.ts) and the franchise tags set for the next one. */
+  draft?: import("./draft").DraftState;
+  draftTags?: Record<string, string>;
   /** Amendments tabled and voted by the teams. */
   amend?: { open?: { id: string; kind: "patch-gap" | "ban-keystone"; target: string; by: string; day: number; votes: Record<string, boolean> }; banned: string[]; history: { day: number; text: string; passed: boolean }[] };
   loops?: { heat: Record<string, number>; patched: string[]; hinted: string[] };
@@ -1038,6 +1041,8 @@ export type Action =
   | { type: "exploit"; id: string; on: boolean }
   | { type: "proposeAmendment"; kind: "patch-gap" | "ban-keystone"; target: string }
   | { type: "voteAmendment"; yes: boolean }
+  | { type: "draftPick"; driverId: string }
+  | { type: "draftTag"; driverId: string | null }
   | { type: "pickFormat"; moduleId: string; option: string }
   | { type: "bid"; moduleId: string; amount: number }
   | { type: "promoteIntern"; staffId: string }

@@ -2,6 +2,7 @@ import { reserveDuty } from "./health";
 import { auditMonthly, loopholesMonthly } from "./loopholes";
 import { amendmentsMonthly } from "./amendments";
 import { formatsMonthly } from "./formats";
+import { draftDaily } from "./draft";
 import { delegated } from "./focus";
 import { campaignWeekly, resolveCampaign, campaignOpen } from "./campaign";
 import { weekPlanCard, resolveWeekPlan, weekPlanOpen } from "./week";
@@ -670,6 +671,7 @@ export function advanceDay(s: CareerState): void {
     dayCtx.newSeason = true;
     newSeason(s);
   }
+  draftDaily(s);
   if (d === 1) monthly(s, m);
 
   if (s.day === summerStart(s.year)) summerBegin(s);

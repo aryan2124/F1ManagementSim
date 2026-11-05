@@ -278,7 +278,7 @@ export function ageWorld(s: CareerState): string[] {
   return notes;
 }
 
-function candidateValue(s: CareerState, d: DriverState, ask: number, brain: number, ownTeam: boolean): number {
+export function candidateValue(s: CareerState, d: DriverState, ask: number, brain: number, ownTeam: boolean): number {
   const age = ageOf(s, d);
   let v = (d.spec.pace - 0.98) * 100 * 3;
   if (age < 25) v += (d.potential - 0.8) * 4;

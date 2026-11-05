@@ -19,7 +19,8 @@ import { clamp, fmtMoney, rngFor, round2 } from "./util";
 import { AREAS, type CareerState } from "./types";
 import { makeSponsor, ordinal } from "./world";
 import { restoreIdentity } from "./brand";
-import { launchEra } from "./eras";
+import { launchEra, rulesOf } from "./eras";
+import { draftOpenFor, startDraft } from "./draft";
 import { academyYearEnd, newCohort } from "./academy";
 import { hallYearEnd, ownerNewSeason, ownerYearEnd, updateRecords } from "./people";
 import { eventsYearEnd } from "./events";
@@ -112,7 +113,7 @@ export function endOfSeason(s: CareerState) {
 
   notes.push(...academyYearEnd(s));
   notes.push(...ageWorld(s));
-  notes.push(...runMarket(s, false).slice(0, 12));
+  notes.push(...(rulesOf(s).draft ? startDraft(s) : runMarket(s, false)).slice(0, 12));
   initRoles(s, true, s.teamId); // new signings at the other teams get the role their record earns
   notes.push(...staffYearEnd(s));
   internYearEnd(s);
@@ -132,7 +133,7 @@ export function yearEndPlayer(s: CareerState, champName: string, champTeam: stri
   notes.push(met ? `You finished ${ordinal(playerPos)}: objective met. The board is pleased.` : `You finished ${ordinal(playerPos)}, short of the target (${obj.text}). The board is not pleased.`);
 
   notes.push(...clauseBonuses(s));
-  notes.push(...ensureTwoDrivers(s));
+  if (!draftOpenFor(s, s.teamId)) notes.push(...ensureTwoDrivers(s));
   notes.push(...ownerYearEnd(s));
   notes.push(...eventsYearEnd(s));
   if (champTeam === s.teamId) s.legacy.push({ year: s.year, text: `${champName} won the drivers' title for your team.` });
