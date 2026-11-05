@@ -86,6 +86,11 @@ export interface QCar {
   flyingLeft: number;
   lineCount: number;
   lapStartTick: number;
+  /** Seconds into the lap at each 25 m of track, filled as the push lap runs. */
+  trace: number[];
+  /** The trace of this car's quickest valid lap so far. */
+  refTrace: number[];
+  refTime: number;
   sectorStartTick: number;
   sectorIdx: number;
   sectors: { last: [number, number, number]; best: [number, number, number]; color: [number, number, number] };
@@ -147,6 +152,9 @@ export interface QualiRow {
 
 const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
 const mod = (a: number, n: number) => ((a % n) + n) % n;
+
+/** Metres of track between live delta samples. */
+const TRACE_STEP = 25;
 
 export class QualiSim {
   readonly cfg: QualiConfig;
@@ -222,6 +230,9 @@ export class QualiSim {
         flyingLeft: 0,
         lineCount: 0,
         lapStartTick: -1,
+        trace: [],
+        refTrace: [],
+        refTime: Infinity,
         sectorStartTick: 0,
         sectorIdx: 0,
         sectors: { last: [0, 0, 0], best: [Infinity, Infinity, Infinity], color: [0, 0, 0] },
@@ -816,6 +827,10 @@ export class QualiSim {
         car.phase = "entering";
       }
       // sectors
+      if (car.phase === "push" && car.lapStartTick >= 0) {
+        const b = Math.floor(lapPos / TRACE_STEP);
+        if (b < Math.ceil(L / TRACE_STEP) && car.trace[b] === undefined && (b === 0 || car.trace[b - 1] !== undefined)) car.trace[b] = (this.tick - car.lapStartTick) * DT;
+      }
       if (car.phase === "push") {
         const sIdx = Math.floor(lapPos / (L / 3));
         if (car.lapStartTick >= 0 && sIdx === car.sectorIdx + 1) this.completeSector(car, car.sectorIdx);
@@ -854,6 +869,7 @@ export class QualiSim {
     car.mode = "attack";
     car.push = 2;
     car.lapStartTick = crossTick;
+    car.trace = [];
     car.sectorStartTick = crossTick;
     car.sectorIdx = 0;
     car.lapValid = true;
@@ -985,6 +1001,8 @@ export class QualiSim {
     car.lapStartTick = crossTick;
     car.lastLap = lapTime;
     car.lastValid = car.lapValid;
+    if (car.lapValid && lapTime < car.refTime) { car.refTime = lapTime; car.refTrace = car.trace; }
+    car.trace = [];
     car.flyingLeft--;
     this.rubber = Math.min(0.005, this.rubber + 0.00004);
     const q = this.segment - 1;
@@ -1072,6 +1090,15 @@ export class QualiSim {
     });
     return grid.map((c) => byId.get(c.id) as QualiRow);
   }
+
+  /** Seconds up (negative) or down (positive) on this car's quickest valid lap at the same point on track, continuous through the lap. Null with nothing to compare to. */
+  liveDelta(car: QCar): number | null {
+    if (car.phase !== "push" || car.lapStartTick < 0 || !car.refTrace.length) return null;
+    let b = car.trace.length - 1;
+    while (b >= 0 && (car.trace[b] === undefined || car.refTrace[b] === undefined)) b--;
+    if (b < 0) return null;
+    return car.trace[b] - car.refTrace[b];
+  }
 }
 
 function fmt(t: number): string {
@@ -1093,4 +1120,5 @@ export function runQualifying(cfg: QualiConfig): { rows: QualiRow[]; sim: QualiS
     if (sim.phase === "break") sim.nextSegment();
   }
   return { rows: sim.results(), sim };
+
 }

@@ -365,6 +365,11 @@ function QualiCard({ session, car }: { session: QualiSession; car: QCar }) {
             <span>
               BEST <b>{fmtTime(car.best[seg])}</b>
             </span>
+            {sim.liveDelta(car) !== null && (
+              <span className={`live-delta ${sim.liveDelta(car)! <= 0 ? "up" : "down"}`} title="Gap to this car's own best lap at the same point on track">
+                <b>{sim.liveDelta(car)! <= 0 ? "-" : "+"}{Math.abs(sim.liveDelta(car)!).toFixed(3)}</b>
+              </span>
+            )}
             <span>
               LAST <b>{car.lastLap ? `${fmtTime(car.lastLap)}${car.lastValid ? "" : " DELETED"}` : "--"}</b>
             </span>

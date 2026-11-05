@@ -123,3 +123,4 @@
 @media (max-width:860px){.fm-row{grid-template-columns:120px 1fr 60px}.fm-lean{display:none}}
 .ks-chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.ks-chips button{font-size:11px;padding:4px 8px;letter-spacing:0}
 .app .ks-chips .btn{font-size:11px;padding:6px 10px;letter-spacing:0}
+.live-delta.up b{color:#3fdc6b}.live-delta.down b{color:#ff5a4f}
