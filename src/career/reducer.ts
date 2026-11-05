@@ -1,4 +1,4 @@
-import { draftPick, tagDriver } from "./draft";
+import { draftPick, tagDriver, tradePlaces } from "./draft";
 import { pickFormat, placeBid } from "./formats";
 import { proposeAmendment, voteAmendment } from "./amendments";
 import { setExploit } from "./loopholes";
@@ -324,6 +324,10 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
     }
     case "draftPick": {
       const r = draftPick(s, s.teamId, a.driverId);
+      return r.ok ? good(r.message) : fail(r.message);
+    }
+    case "draftTrade": {
+      const r = tradePlaces(s, s.teamId, a.withTeam);
       return r.ok ? good(r.message) : fail(r.message);
     }
     case "draftTag": {

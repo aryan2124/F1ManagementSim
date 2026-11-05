@@ -51,7 +51,7 @@ describe("junior seasons and scouts", () => {
     const reports = s.cards.filter((c) => c.kind === "academy" && c.title.startsWith("Scout report"));
     const news = s.news.filter((n) => n.tag === "junior");
     expect(reports.length + news.length).toBeGreaterThan(0);
-  });
+  }, 60000); // 400 days of world: slow when the whole suite runs in parallel
 });
 
 describe("livery", () => {

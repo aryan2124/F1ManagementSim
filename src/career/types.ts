@@ -1043,6 +1043,7 @@ export type Action =
   | { type: "voteAmendment"; yes: boolean }
   | { type: "draftPick"; driverId: string }
   | { type: "draftTag"; driverId: string | null }
+  | { type: "draftTrade"; withTeam: string }
   | { type: "pickFormat"; moduleId: string; option: string }
   | { type: "bid"; moduleId: string; amount: number }
   | { type: "promoteIntern"; staffId: string }

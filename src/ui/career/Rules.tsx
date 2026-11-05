@@ -1,6 +1,6 @@
 import { liveLoopholes, loopState } from "../../career/loopholes";
 import { formatState, liveAuctions, liveFormats } from "../../career/formats";
-import { draftOn, draftPool, TAG_COST } from "../../career/draft";
+import { draftOn, draftPool, TAG_COST, tradePrice } from "../../career/draft";
 import { driversOf } from "../../career/finance";
 import { amendState } from "../../career/amendments";
 import { KEYSTONES } from "../../career/keystones";
@@ -168,6 +168,17 @@ export function Rules({ s, d }: Props) {
             {s.draft && !s.draft.done && (
               <>
                 <p className="small"><b>Round {s.draft.round}.</b> {s.draft.clock === s.teamId ? "You are on the clock." : s.draft.clock ? `${s.draft.clock.toUpperCase()} is on the clock.` : "The computer teams are picking."} Order: {s.draft.order.map((t) => t.toUpperCase()).join(", ")}.</p>
+                {s.draft.tradeUntil > s.day && !s.draft.picks.length && driversOf(s, s.teamId).length < 2 && (
+                  <>
+                    <p className="small"><b>Trading places</b> (until day {s.draft.tradeUntil}, once each). The team moving up pays $0.80m a place to the team moving down.</p>
+                    {s.draft.order.filter((t) => t !== s.teamId && driversOf(s, t).length < 2).map((t) => (
+                      <p key={t} className="c-line">
+                        <span>{t.toUpperCase()} <span className="dim small">pick {s.draft!.order.indexOf(t) + 1}, yours is {s.draft!.order.indexOf(s.teamId) + 1}. {s.draft!.order.indexOf(t) < s.draft!.order.indexOf(s.teamId) ? `Moving up costs you $${tradePrice(s, s.teamId, t).toFixed(2)}m.` : `Moving down earns you $${tradePrice(s, s.teamId, t).toFixed(2)}m.`}</span></span>
+                        <button className="btn" disabled={s.draft!.traded.includes(s.teamId)} onClick={() => setMsg(d({ type: "draftTrade", withTeam: t }).message)}>SWAP</button>
+                      </p>
+                    ))}
+                  </>
+                )}
                 {draftPool(s, s.teamId).slice(0, 12).map((id) => {
                   const dd = s.drivers[id];
                   const j = s.pool.find((x) => x.id === id);

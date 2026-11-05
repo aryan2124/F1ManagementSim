@@ -45,6 +45,8 @@ describe("the draft", () => {
     s.round = s.calendar.length;
     endOfSeason(s);
     const dr = s.draft!;
+    s.day = dr.tradeUntil;
+    draftDaily(s);
     expect(dr.clock).toBe(s.teamId);
     expect(dr.done).toBe(false);
     expect(driversOf(s, s.teamId).length).toBe(0);
@@ -77,5 +79,68 @@ describe("the draft", () => {
     expect(mine.teamId).toBe(s.teamId);
     expect(mine.endYear).toBe(s.year + 1);
     expect(s.teams[s.teamId].ledger.other - other).toBeGreaterThanOrEqual(2);
+  });
+});
+
+import { askingSalary } from "../src/career/contracts";
+import { advanceDraft, tradePlaces, tradePrice } from "../src/career/draft";
+describe("draft trades and compensation", () => {
+  const short = (seed: number) => {
+    const s = mk(seed);
+    for (const d of Object.values(s.drivers)) if (d.teamId) d.endYear = s.year + 2;
+    // the player and two others have expiring drivers
+    for (const id of [s.teamId, "mer", "mcl"]) for (const d of driversOf(s, id)) d.endYear = s.year;
+    s.round = s.calendar.length;
+    return s;
+  };
+  it("a player short of drivers gets a trading window before the first pick", () => {
+    const s = short(7);
+    endOfSeason(s);
+    const dr = s.draft!;
+    expect(dr.tradeUntil).toBeGreaterThan(s.day);
+    expect(dr.picks.length).toBe(0);
+    // the seat is not auto-filled during the window
+    expect(driversOf(s, s.teamId).length).toBe(0);
+  });
+  it("trading places swaps the order and moves the money; once each", () => {
+    const s = short(7);
+    endOfSeason(s);
+    const dr = s.draft!;
+    s.teams[s.teamId].cash = 50;
+    const other = dr.order.find((t) => t !== s.teamId && driversOf(s, t).length < 2)!;
+    const iMe = dr.order.indexOf(s.teamId), iOther = dr.order.indexOf(other);
+    const price = tradePrice(s, s.teamId, other);
+    const myCash = s.teams[s.teamId].cash, theirCash = s.teams[other].cash;
+    // try a few times: a computer team may say no, but the swap is exact when it says yes
+    let r = tradePlaces(s, s.teamId, other);
+    for (let k = 0; !r.ok && k < 8 && /turn the offer down/.test(r.message); k++) { s.day++; dr.tradeUntil++; dr.deadline++; r = tradePlaces(s, s.teamId, other); }
+    expect(r.ok, r.message).toBe(true);
+    expect(dr.order.indexOf(s.teamId)).toBe(iOther);
+    expect(dr.order.indexOf(other)).toBe(iMe);
+    const movedUp = iOther < iMe;
+    expect(s.teams[s.teamId].cash).toBeCloseTo(myCash + (movedUp ? -price : price), 2);
+    expect(s.teams[other].cash).toBeCloseTo(theirCash + (movedUp ? price : -price), 2);
+    expect(tradePlaces(s, s.teamId, other).ok).toBe(false);
+  });
+  it("the picks start after the window, and a team that loses a top driver is paid for him", () => {
+    const s = short(9);
+    // give mer a star who expires
+    const star = driversOf(s, "mer")[0];
+    star.spec.pace = 1.0;
+    s.draftTags = { mer: driversOf(s, "mer")[1].id }; // mer tag the other one, so the star goes into the pool
+    endOfSeason(s);
+    const dr = s.draft!;
+    const cash0 = s.teams.mer.cash;
+    s.day = dr.tradeUntil;
+    draftDaily(s);
+    expect(dr.picks.length).toBeGreaterThan(0);
+    const pick = dr.picks.find((p) => p.driverId === star.id);
+    expect(pick, "the star is picked").toBeTruthy();
+    expect(pick!.teamId).not.toBe("mer");
+    expect(star.teamId).toBe(pick!.teamId);
+    const comp = Math.round(askingSalary(s, star) * 0.25 * 100) / 100;
+    expect(s.teams.mer.cash - cash0).toBeGreaterThan(0);
+    expect(s.teams.mer.cash - cash0).toBeLessThanOrEqual(comp + 0.01);
+    expect(advanceDraft).toBeTypeOf("function");
   });
 });

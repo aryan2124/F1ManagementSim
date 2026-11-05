@@ -15,6 +15,12 @@ import type { CareerState, DriverState } from "./types";
 export const TAG_COST = 2;
 export const SCALE = 0.65;
 export const DRAFT_DAYS = 12;
+/** Days between the draft opening and the first pick, when teams can trade places. */
+export const TRADE_DAYS = 4;
+/** Price of one place in the order, $m. */
+export const PLACE_PRICE = 0.8;
+/** A team that loses a good driver to the pool is paid this share of his asking price by the team that picks him. */
+export const COMP_SHARE = 0.25;
 
 export interface DraftPick { round: number; teamId: string; driverId: string; name: string }
 export interface DraftState {
@@ -29,10 +35,17 @@ export interface DraftState {
   picks: DraftPick[];
   /** Franchise tags for the coming draft, team to driver. */
   tags: Record<string, string>;
+  /** The team each pooled driver left, for compensation. */
+  from: Record<string, string>;
+  /** The first pick waits until this day while teams trade places. */
+  tradeUntil: number;
+  /** Teams that have traded places this draft (one trade each). */
+  traded: string[];
 }
 
 export const draftOn = (s: CareerState) => !!rulesOf(s).draft;
-export const draftOpenFor = (s: CareerState, teamId: string) => !!s.draft && !s.draft.done && s.draft.clock === teamId;
+/** True while the draft still has a seat to fill for this team (waiting to trade, on the clock, or waiting its turn). */
+export const draftOpenFor = (s: CareerState, teamId: string) => !!s.draft && !s.draft.done && driversOf(s, teamId).length < 2;
 
 /** Everyone who can be picked now: free agents and academy graduates old enough to race. */
 export function draftPool(s: CareerState, forTeam?: string): string[] {
@@ -74,6 +87,7 @@ export function startDraft(s: CareerState): string[] {
     const exp = driversOf(s, id).filter((d) => d.endYear <= s.year).sort((a, b) => b.spec.pace - a.spec.pace)[0];
     if (exp && candidateValue(s, exp, askingSalary(s, exp), s.teams[id].skillBrain, true) > 0.9 - 0.3 * s.teams[id].skillBrain + rng.gauss() * 0.3) tags[id] = exp.id;
   }
+  const from: Record<string, string> = {};
   for (const id of Object.keys(s.teams).sort()) {
     const t = s.teams[id];
     for (const d of driversOf(s, id).filter((x) => x.endYear <= s.year)) {
@@ -88,13 +102,15 @@ export function startDraft(s: CareerState): string[] {
       d.teamId = null;
       d.tenure = 0;
       s.freeDrivers.push(d.id);
+      from[d.id] = id;
       notes.push(`${d.spec.name} goes into the draft pool.`);
     }
   }
   const order = (s.prevOrder ?? Object.keys(s.teams)).slice().reverse();
-  s.draft = { year: s.year, order, round: 1, deadline: s.day + DRAFT_DAYS, done: false, picks: [], tags };
-  notes.push("The draft is open: the worst team picks first.");
-  notes.push(...advanceDraft(s));
+  const humanShort = Object.keys(s.teams).some((id) => isHuman(s, id) && driversOf(s, id).length < 2);
+  s.draft = { year: s.year, order, round: 1, deadline: s.day + DRAFT_DAYS, done: false, picks: [], tags, from, tradeUntil: humanShort ? s.day + TRADE_DAYS : 0, traded: [] };
+  notes.push(humanShort ? `The draft is open. Teams can trade places for ${TRADE_DAYS} days, then the worst team picks first.` : "The draft is open: the worst team picks first.");
+  if (!humanShort) notes.push(...advanceDraft(s));
   return notes;
 }
 
@@ -124,6 +140,19 @@ function makePick(s: CareerState, teamId: string, id: string): string[] {
   }
   const pay = Math.min(round2(askingSalary(s, d) * SCALE), rulesOf(s).talentCap ? round2(rulesOf(s).talentCap! * 0.5) : 99);
   const notes = signDriver(s, teamId, id, { salary: pay, years: 1, role: "equal" });
+  // the team he came from is paid for a good driver lost to the pool
+  const was = dr.from[id];
+  if (was && was !== teamId && s.teams[was] && d.spec.pace >= 0.99) {
+    const comp = round2(askingSalary(s, d) * COMP_SHARE);
+    const payer = s.teams[teamId], payee = s.teams[was];
+    const paid = Math.min(comp, Math.max(0, payer.cash));
+    payer.cash = round2(payer.cash - paid);
+    payer.ledger.costs += paid;
+    payer.ledger.other += paid;
+    payee.cash = round2(payee.cash + paid);
+    notes.push(`${teamId.toUpperCase()} pay ${was.toUpperCase()} $${paid.toFixed(2)}m for ${d.spec.name}.`);
+    if (was === s.teamId || teamId === s.teamId) sendLetter(s, { from: "The Commission", role: "Draft", subject: "Draft compensation", body: `${teamId.toUpperCase()} picked ${d.spec.name}, who came from ${was.toUpperCase()}. Compensation of $${paid.toFixed(2)}m was paid.` });
+  }
   dr.picks.push({ round: dr.round, teamId, driverId: id, name: d.spec.name });
   news(s, `Draft: ${teamId.toUpperCase()} pick ${d.spec.name} (round ${dr.round}).`, { importance: 1, cause: "Draft", tag: "rules" });
   return notes;
@@ -134,6 +163,7 @@ export function advanceDraft(s: CareerState): string[] {
   const dr = s.draft;
   const notes: string[] = [];
   if (!dr || dr.done) return notes;
+  if (s.day < dr.tradeUntil) return notes;
   let guard = 0;
   while (guard++ < 400) {
     const needing = dr.order.filter((id) => driversOf(s, id).length < 2);
@@ -179,10 +209,46 @@ export function draftPick(s: CareerState, teamId: string, driverId: string): { o
   return { ok: true, message: notes[0] ?? "Picked." };
 }
 
+/** What it costs to move from one place in the order to another. */
+export function tradePrice(s: CareerState, a: string, b: string): number {
+  const o = s.draft?.order ?? [];
+  return round2(Math.abs(o.indexOf(a) - o.indexOf(b)) * PLACE_PRICE);
+}
+
+/** Swap places in the draft order with another team that is also short of drivers. The team moving up pays; the team moving down is paid. */
+export function tradePlaces(s: CareerState, teamId: string, withId: string): { ok: boolean; message: string } {
+  const dr = s.draft;
+  if (!dr || dr.done) return { ok: false, message: "There is no draft open." };
+  if (dr.picks.length) return { ok: false, message: "The picks have started; trading places is closed." };
+  if (teamId === withId || !s.teams[teamId] || !s.teams[withId]) return { ok: false, message: "No such team." };
+  if (dr.traded.includes(teamId) || dr.traded.includes(withId)) return { ok: false, message: "Each team may trade places once." };
+  if (driversOf(s, teamId).length >= 2 || driversOf(s, withId).length >= 2) return { ok: false, message: "A team with two drivers has no pick to trade." };
+  const o = dr.order;
+  const i = o.indexOf(teamId), j = o.indexOf(withId);
+  const price = tradePrice(s, teamId, withId);
+  const payer = j < i ? teamId : withId;
+  // `payer` is the one moving to the earlier place
+  const buyer = s.teams[payer], seller = s.teams[payer === teamId ? withId : teamId];
+  if (buyer.cash < price) return { ok: false, message: `Moving up costs $${price.toFixed(2)}m and ${payer.toUpperCase()} cannot pay.` };
+  if (!isHuman(s, withId)) {
+    const r = rngFor(s, `trade:${teamId}:${withId}:${s.day}`).next();
+    if (r > 0.55 + 0.4 * s.teams[withId].skillBrain) return { ok: false, message: `${withId.toUpperCase()} turn the offer down.` };
+  }
+  buyer.cash = round2(buyer.cash - price);
+  buyer.ledger.costs += price;
+  buyer.ledger.other += price;
+  seller.cash = round2(seller.cash + price);
+  [o[i], o[j]] = [o[j], o[i]];
+  dr.traded.push(teamId, withId);
+  news(s, `Draft: ${payer.toUpperCase()} move up to trade places with ${(payer === teamId ? withId : teamId).toUpperCase()} for $${price.toFixed(2)}m.`, { importance: 1, cause: "Draft", tag: "rules" });
+  return { ok: true, message: `Places swapped. ${payer === teamId ? "You paid" : "You were paid"} $${price.toFixed(2)}m.` };
+}
+
 /** Daily: a person who runs out the clock has the best available driver picked for them. */
 export function draftDaily(s: CareerState): void {
   const dr = s.draft;
   if (!dr || dr.done) return;
+  if (!dr.clock && dr.tradeUntil && s.day >= dr.tradeUntil && !dr.picks.length) advanceDraft(s);
   if (dr.clock && (s.day >= dr.deadline || s.year > dr.year)) {
     const who = dr.clock;
     const pick = aiPick(s, who);
