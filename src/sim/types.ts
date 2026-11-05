@@ -271,6 +271,8 @@ export interface CarState {
   soc: number; // battery 0..1
   mode: EnergyMode;
   push: PushLevel;
+  /** Half a step above the pace level: with SAVE/STD gives the in-between settings of the five step dial. */
+  trim: 0 | 1;
   pitRequest: Compound | null;
   pitTimer: number;
   stops: number;
@@ -457,7 +459,7 @@ export type Command =
   | { type: "defend"; carId: string }
   | { type: "cancelPit"; carId: string }
   | { type: "mode"; carId: string; mode: EnergyMode }
-  | { type: "push"; carId: string; push: PushLevel }
+  | { type: "push"; carId: string; push: PushLevel; trim?: 0 | 1 }
   /** Timed release in the pit box: pressed in the last half second of the stop it saves that time, pressed early it costs a second. */
   /** A team order to one of the player's cars. */
   | { type: "order"; carId: string; order: TeamOrder }

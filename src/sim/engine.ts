@@ -13,7 +13,6 @@ import type {
   EntrySpec,
   LapRec,
   LoggedCommand,
-  PushLevel,
   RaceConfig,
   ResultRow,
   ResultStatus,
@@ -78,6 +77,12 @@ export function tyreLifeFor(laps: number, severity = 1): Record<Compound, number
 const PUSH_GRIP = [0.99, 1.0, 1.007];
 const PUSH_WEAR = [0.7, 1.0, 1.45];
 const PUSH_FUEL = [0.94, 1.0, 1.06];
+/** Reads a pace table at a half step: the five steps are SAVE, SAVE+, STD, STD+ and PUSH. */
+function atPace(tab: number[], push: number, trim = 0): number {
+  const x = Math.min(2, push + trim * 0.5);
+  const i = Math.floor(x);
+  return tab[i] + (tab[Math.min(2, i + 1)] - tab[i]) * (x - i);
+}
 
 const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
 const mod = (a: number, n: number) => ((a % n) + n) % n;
@@ -90,7 +95,7 @@ export function speedFactor(
   e: EntrySpec,
   tyre: { compound: Compound; wear: number },
   fuel: number,
-  push: PushLevel,
+  push: number,
   curvAbs: number,
   dirty: number,
 ): number {
@@ -99,7 +104,7 @@ export function speedFactor(
   const w = tyre.wear;
   const wearF = 1 - 0.04 * Math.pow(Math.min(w, 1.4), 1.4) - (w > 0.8 ? (w - 0.8) * 0.14 : 0) - (w > 1 ? (w - 1) * 0.2 : 0);
   const fuelF = 1 - 0.011 * fuel;
-  const grip = comp.grip * wearF * fuelF * PUSH_GRIP[push] * dirty * e.driver.pace;
+  const grip = comp.grip * wearF * fuelF * atPace(PUSH_GRIP, push) * dirty * e.driver.pace;
   const carF = 1 - (1 - e.team.aero) * cw * 0.75 - (1 - e.team.power) * (1 - cw) * 0.6;
   const gripWeight = 0.4 + 0.6 * cw;
   return (1 - (1 - grip) * gripWeight) * carF;
@@ -223,6 +228,7 @@ export class RaceSim {
         soc: 0.8,
         mode: "balanced",
         push: 1,
+        trim: 0,
         pitRequest: null,
         pitTimer: 0,
         stops: 0,
@@ -396,6 +402,7 @@ export class RaceSim {
         break;
       case "push":
         car.push = cmd.push;
+        car.trim = cmd.trim ?? 0;
         break;
       case "order":
         this.radio?.order(cmd.carId, cmd.order);
@@ -726,7 +733,7 @@ export class RaceSim {
     const dirty =
       ah && gapM < 45 && !(overtakingNow && ah.id === car.overtaking) ? 1 - 0.014 * (1 - gapM / 45) * (0.3 + 0.7 * cw) : 1;
 
-    let factor = speedFactor(e, car.tyre, car.fuel, car.push, curvAbs, dirty);
+    let factor = speedFactor(e, car.tyre, car.fuel, car.push + car.trim * 0.5, curvAbs, dirty);
     if (this.tick < car.errorUntil) factor *= 0.93;
     if (car.defendUntil > this.tick) factor *= 0.992; // a hard defence compromises the line
     if (car.restartUntil > this.tick) {
@@ -981,7 +988,7 @@ export class RaceSim {
       let rate =
         (1 / (lifeLaps * T.nominalLap)) *
         1.18 *
-        PUSH_WEAR[car.push] *
+        atPace(PUSH_WEAR, car.push, car.trim) *
         (1.25 - 0.5 * e.driver.tyreMgmt) *
         (0.55 + 0.9 * cornerLoad) *
         (0.94 + 0.12 * Math.min(1, car.fuel)); // a full tank loads the tyres more than an almost empty one
@@ -995,7 +1002,7 @@ export class RaceSim {
       if (sc) rate *= 0.35;
       else if (vsc) rate *= 0.5;
       car.tyre.wear += rate * DT;
-      const burn = (PUSH_FUEL[car.push] / (this.cfg.laps * T.nominalLap * 1.06)) * DT * (sc ? 0.5 : vsc ? 0.6 : 1) * (1 - 0.06 * ((e.driver.fuelSave ?? 0.5) - 0.5));
+      const burn = (atPace(PUSH_FUEL, car.push, car.trim) / (this.cfg.laps * T.nominalLap * 1.06)) * DT * (sc ? 0.5 : vsc ? 0.6 : 1) * (1 - 0.06 * ((e.driver.fuelSave ?? 0.5) - 0.5));
       // without refuelling a car always keeps a small reserve in the tank (it lifts and coasts instead of running dry)
       car.fuel = Math.max(this.cfg.rules?.refuelling ? 0 : FUEL_RESERVE, car.fuel - burn);
     }

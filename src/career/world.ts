@@ -88,7 +88,7 @@ export function makeSponsor(rng: Rng, id: number, size: number, year: number, ta
   };
 }
 
-export const SALARY_BASE: Record<StaffRole, number> = { td: 3.2, designer: 2.6, aero: 2.2, power: 2.2, data: 1.6, strategy: 1.8, mechanic: 1.0, engineer: 0.9, scout: 0.7, coach: 0.9 };
+export const SALARY_BASE: Record<StaffRole, number> = { td: 3.2, designer: 2.6, aero: 2.2, power: 2.2, data: 1.6, strategy: 1.8, mechanic: 1.0, engineer: 0.9, scout: 0.7, coach: 0.9, medic: 0.8 };
 
 export function makeStaff(rng: Rng, id: string, role: StaffRole, teamId: string | null, skill: number, year: number, driverId?: string): Staff {
   const traits: string[] = [];
@@ -232,6 +232,7 @@ function buildStaff(s: CareerState, rng: Rng) {
     mk("mechanic", team.id, base + rng.gauss() * 5);
     mk("scout", team.id, base - 4 + rng.gauss() * 6);
     mk("coach", team.id, base - 6 + rng.gauss() * 6);
+    mk("medic", team.id, base - 4 + rng.gauss() * 6);
     for (const d of DRIVERS[team.id]) mk("engineer", team.id, base + rng.gauss() * 6, d.id);
   }
   const roles: StaffRole[] = ["aero", "aero", "power", "power", "data", "data", "td", "designer", "strategy", "mechanic", "engineer", "td", "designer", "strategy", "mechanic", "engineer", "engineer", "strategy", "scout", "scout", "scout", "coach", "coach"];

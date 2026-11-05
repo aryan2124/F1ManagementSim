@@ -114,7 +114,7 @@ export function rollHealth(s: CareerState, round: number): void {
   for (const id of ids) {
     const d = s.drivers[id];
     const r = rngFor(s, `ill:${round}:${id}`);
-    const physio = Object.values(s.staff).some((x) => x.teamId === d.teamId && x.role === "coach") ? 0.85 : 1;
+    const physio = Object.values(s.staff).some((x) => x.teamId === d.teamId && x.role === "medic") ? 0.85 : 1;
     if (r.next() < illnessChance(d) * physio) laidUp(s, d, "illness", r.next() < 0.8 ? 1 : 2, round, r.next() < 0.5 ? "a stomach bug" : "a fever");
   }
   coverGaps(s);
@@ -145,7 +145,7 @@ export function healthAfterRace(s: CareerState, round: number, hurt: Record<stri
     const d = s.drivers[id];
     if (!d || !d.teamId || d.sub || isOut(d)) continue;
     const r = rngFor(s, `hurt:${round}:${id}`);
-    if (r.next() < injuryChance(hurt[id])) laidUp(s, d, "injury", Math.max(1, raceMiss(r.next(), hurt[id]) - (Object.values(s.staff).some((x) => x.teamId === d.teamId && x.role === "coach") && r.next() < 0.5 ? 1 : 0)), round + 1, hurt[id] > 1 ? "a heavy crash, concussion and a fractured wrist" : "bruised ribs from the impact");
+    if (r.next() < injuryChance(hurt[id])) laidUp(s, d, "injury", Math.max(1, raceMiss(r.next(), hurt[id]) - (Object.values(s.staff).some((x) => x.teamId === d.teamId && x.role === "medic") && r.next() < 0.5 ? 1 : 0)), round + 1, hurt[id] > 1 ? "a heavy crash, concussion and a fractured wrist" : "bruised ribs from the impact");
   }
   coverGaps(s);
 }

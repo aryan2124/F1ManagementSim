@@ -79,7 +79,7 @@ export function fatigueOf(s: CareerState, driverId: string, circuitId?: string):
   const len = s.raceLength === "full" ? 1 : s.raceLength === "half" ? 0.55 : 0.3;
   const a = attributesOf(dr);
   const fit = ((a.composure + a.determination) / 2 - 1) / 19;
-  const physio = Object.values(s.staff).some((x) => x.teamId === dr.teamId && x.role === "coach") ? 0.85 : 1;
+  const physio = Object.values(s.staff).some((x) => x.teamId === dr.teamId && x.role === "medic") ? 0.85 : 1;
   return 0.035 * heat * len * (1.25 - fit) * physio;
 }
 

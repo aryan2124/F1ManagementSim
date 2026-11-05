@@ -567,6 +567,7 @@ export class RadioSystem {
       const o = this.standing.get(car.id);
       if (o && car.entry.human && car.status === "racing" && this.stanceDone.get(car.id) !== o.stance) {
         this.stanceDone.set(car.id, o.stance);
+        car.trim = 0;
         if (o.stance === "tyres") car.push = 0;
         else if (o.stance === "attack") car.push = 2;
         else if (sim.tick > 0 && car.push !== 1) car.push = 1;

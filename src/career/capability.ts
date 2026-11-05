@@ -30,6 +30,7 @@ const PRIMARY: Record<StaffRole, Area[]> = {
   engineer: ["tyres", "chassis"],
   scout: ["tyres"],
   coach: ["tyres"],
+  medic: ["chassis"],
 };
 
 export function makeCapability(role: StaffRole, rng: Rng): { spec: Record<Area, number>; phil: Phil } {

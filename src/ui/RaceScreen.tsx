@@ -612,10 +612,12 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
   ];
   const moodWord = (m: number) => (m > 0.7 ? "HAPPY" : m > 0.5 ? "FINE" : m > 0.3 ? "ANNOYED" : "FURIOUS");
   const dead = car.status === "dnf";
-  const push: { v: PushLevel; label: string }[] = [
-    { v: 0, label: "SAVE" },
-    { v: 1, label: "STD" },
-    { v: 2, label: "PUSH" },
+  const push: { v: PushLevel; t: 0 | 1; label: string }[] = [
+    { v: 0, t: 0, label: "SAVE" },
+    { v: 0, t: 1, label: "SAVE+" },
+    { v: 1, t: 0, label: "STD" },
+    { v: 1, t: 1, label: "STD+" },
+    { v: 2, t: 0, label: "PUSH" },
   ];
   const modes: { v: EnergyMode; label: string }[] = [
     { v: "harvest", label: "HARVEST" },
@@ -679,7 +681,7 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
             <span>PACE</span>
             <div className="seg">
               {push.map((p) => (
-                <button key={p.v} className={car.push === p.v ? "on" : ""} onClick={() => sim.command({ type: "push", carId: car.id, push: p.v })}>
+                <button key={p.label} className={car.push === p.v && car.trim === p.t ? "on" : ""} onClick={() => sim.command({ type: "push", carId: car.id, push: p.v, trim: p.t })}>
                   {p.label}
                 </button>
               ))}

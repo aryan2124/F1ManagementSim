@@ -76,7 +76,7 @@ function card(s: CareerState, th: Thread, title: string, body: string, options: 
   pushCard(s, "event", title, body, options, { deadline: s.day + days, defaultOption: options[options.length - 1].id, urgency: 2, data: { ev: `thread:${th.id}`, tid: th.id, stage: th.stage } });
 }
 
-const roleName = (st: Staff) => ({ td: "technical director", designer: "chief designer", engineer: "race engineer", mechanic: "chief mechanic", aero: "head of aerodynamics", scout: "scout", coach: "coach" } as Record<string, string>)[st.role] ?? st.role;
+const roleName = (st: Staff) => ({ td: "technical director", designer: "chief designer", engineer: "race engineer", mechanic: "chief mechanic", aero: "head of aerodynamics", scout: "scout", coach: "coach", medic: "team doctor" } as Record<string, string>)[st.role] ?? st.role;
 
 /** Invented, senior and valued: the people a rival would approach. */
 function prizedStaff(s: CareerState): Staff | undefined {

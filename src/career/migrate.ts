@@ -51,6 +51,16 @@ export function upgradeState(s: CareerState): CareerState {
     }
     initAcademy(s);
   }
+  // every team gets a doctor and physio, as its own role
+  {
+    let n = Object.keys(s.staff).length + 900;
+    for (const id of Object.keys(s.teams)) {
+      if (Object.values(s.staff).some((x) => x.teamId === id && x.role === "medic")) continue;
+      let sid = `st-${++n}`;
+      while (s.staff[sid]) sid = `st-${++n}`;
+      s.staff[sid] = makeStaff(rng, sid, "medic", id, 58 + rng.gauss() * 6, s.year);
+    }
+  }
   if (!s.brand) s.brand = newBrand(s);
   if (!s.rift) s.rift = newRift();
   if (!s.press) s.press = newPress();

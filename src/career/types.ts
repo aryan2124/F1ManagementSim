@@ -144,7 +144,7 @@ export interface Project {
   lead?: string;
 }
 
-export type StaffRole = "td" | "designer" | "aero" | "power" | "data" | "strategy" | "mechanic" | "engineer" | "scout" | "coach";
+export type StaffRole = "td" | "designer" | "aero" | "power" | "data" | "strategy" | "mechanic" | "engineer" | "scout" | "coach" | "medic";
 export const STAFF_LABEL: Record<StaffRole, string> = {
   td: "Technical director",
   designer: "Chief designer",
@@ -156,6 +156,7 @@ export const STAFF_LABEL: Record<StaffRole, string> = {
   engineer: "Race engineer",
   scout: "Scout",
   coach: "Junior coach",
+  medic: "Team doctor and physio",
 };
 
 export interface Staff {

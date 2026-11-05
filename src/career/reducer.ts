@@ -288,7 +288,7 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       if (st.teamId && st.teamId !== s.teamId) return fail("Under contract with another team.");
       if (st.intern) return fail("Trainees are signed from the trainee list.");
       const bb = budgetBlock(s, "staff", a.offerSalary - (Object.values(s.staff).find((x) => x.teamId === s.teamId && x.role === st.role && (st.role !== "engineer" || x.driverId === a.forDriverId))?.salary ?? 0));
-      if (bb && st.role !== "scout" && st.role !== "coach") return fail(bb);
+      if (bb && st.role !== "scout" && st.role !== "coach" && st.role !== "medic") return fail(bb);
       if (a.forDriverId) st.driverId = a.forDriverId;
       const o = offerStaff(s, st, round2(a.offerSalary), a.years);
       return o.ok ? good(o.message) : fail(o.message);
