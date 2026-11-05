@@ -1,3 +1,4 @@
+import { caseFile } from "../../career/casefile";
 import { SCHOOL_NAME, SCHOOL_TRAITS, leadEngineer, schoolOf } from "../../career/schools";
 import { teamColour } from "../../career/brand";
 import { LabBay } from "./LabBay";
@@ -82,6 +83,7 @@ export function DesignLab({ s, d }: Props) {
             <button className="on" onClick={() => setMsg(d({ type: "setDesignNext", model }).message)}>COMMIT FOR JANUARY</button>
             {me.designNext && <button onClick={() => setMsg(d({ type: "setDesignNext", model: null }).message)}>CLEAR PLAN</button>}
           </div>
+          <CaseFilePanel s={s} />
           {(() => { const lead = leadEngineer(s, s.teamId); return lead ? <p className="small dim" data-testid="school">Lead engineer {lead.name} came up in the {SCHOOL_NAME[schoolOf(lead)]}: his readings are sharper on {SCHOOL_TRAITS[schoolOf(lead)].join(" and ")} and lean a little on the rest.</p> : null; })()}
           <p className="small dim">Now: {describeDesign(cur).join(", ") || "a balanced car"}. {me.designNext ? "A January shape is committed." : "No shape committed."}</p>
           {msg && <p className="small">{msg}</p>}
@@ -126,6 +128,21 @@ export function DesignLab({ s, d }: Props) {
           {rivals.map((t) => <p key={t.id} className="small"><b>{teamOf(t.id)?.short ?? t.id}</b>: {describeDesign(designOf(t)).join(", ") || "nothing unusual"}.</p>)}
         </section>
       </div>
+    </div>
+  );
+}
+
+const STATUS_WORD = { open: "OPEN", leaning: "LEANING", settled: "SETTLED", conflict: "CONFLICT" } as const;
+
+/** The case file: what the team believes about each trait, who has spoken, and where the evidence disagrees. */
+function CaseFilePanel({ s }: { s: Props["s"] }) {
+  const lines = caseFile(s, s.teamId);
+  const hot = lines.filter((l) => l.status === "conflict" || l.status === "open").slice(0, 4);
+  return (
+    <div data-testid="casefile">
+      <h4>CASE FILE</h4>
+      <p className="small dim">{lines.filter((l) => l.status === "settled").length} of {lines.length} questions settled, {lines.filter((l) => l.status === "conflict").length} in conflict.</p>
+      {hot.map((l) => <p key={l.trait} className="small"><b>{l.name}</b> <span className="dim">[{STATUS_WORD[l.status]}, believed {l.est >= 0 ? "+" : ""}{l.est.toFixed(2)} ± {l.err.toFixed(2)}]</span> {l.next}</p>)}
     </div>
   );
 }
