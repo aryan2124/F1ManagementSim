@@ -1,3 +1,4 @@
+import { reserveDuty } from "./health";
 import { auditMonthly, loopholesMonthly } from "./loopholes";
 import { delegated } from "./focus";
 import { campaignWeekly, resolveCampaign, campaignOpen } from "./campaign";
@@ -314,6 +315,7 @@ function monthly(s: CareerState, month: number) {
   aiMonthly(s);
   loopholesMonthly(s);
   auditMonthly(s);
+  reserveDuty(s);
   monthlyPlayer(s);
 }
 

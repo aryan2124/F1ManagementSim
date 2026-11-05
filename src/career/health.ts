@@ -114,9 +114,19 @@ export function rollHealth(s: CareerState, round: number): void {
   for (const id of ids) {
     const d = s.drivers[id];
     const r = rngFor(s, `ill:${round}:${id}`);
-    if (r.next() < illnessChance(d)) laidUp(s, d, "illness", r.next() < 0.8 ? 1 : 2, round, r.next() < 0.5 ? "a stomach bug" : "a fever");
+    const physio = Object.values(s.staff).some((x) => x.teamId === d.teamId && x.role === "coach") ? 0.85 : 1;
+    if (r.next() < illnessChance(d) * physio) laidUp(s, d, "illness", r.next() < 0.8 ? 1 : 2, round, r.next() < 0.5 ? "a stomach bug" : "a fever");
   }
   coverGaps(s);
+}
+
+/** A reserve on the books spends the month in the simulator: the team learns a little more about its own car. */
+export function reserveDuty(s: CareerState): void {
+  for (const t of Object.values(s.teams)) {
+    const has = Object.values(s.academy.prospects).some((p) => p.owner === t.id && p.status === "academy" && p.reserve);
+    if (!has) continue;
+    for (const k of Object.values(t.know)) k.err = Math.round(Math.max(0.03, k.err * 0.99) * 1000) / 1000;
+  }
 }
 
 /** After a race: heavy crashes may hurt, then one more race is ticked off for everyone who was out for this one. */

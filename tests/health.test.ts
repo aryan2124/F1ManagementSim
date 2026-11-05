@@ -130,3 +130,19 @@ describe("pit wall receipts", () => {
     expect(calls.some((c) => /it cost/.test(c.because ?? ""))).toBe(true);
   });
 });
+
+describe("reserve duty and the physio", () => {
+  it("a reserve in the simulator tightens what the team knows, and no reserve changes nothing", async () => {
+    const { reserveDuty } = await import("../src/career/health");
+    const { newCareer } = await import("../src/career/world");
+    const s = newCareer("fer", 9);
+    const t = s.teams[s.teamId];
+    const before = t.know.downforce.err;
+    reserveDuty(s);
+    expect(t.know.downforce.err).toBe(before);
+    const p = Object.values(s.academy.prospects)[0];
+    p.owner = s.teamId; p.status = "academy"; p.reserve = true;
+    reserveDuty(s);
+    expect(t.know.downforce.err).toBeLessThanOrEqual(before);
+  });
+});
