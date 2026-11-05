@@ -8,7 +8,7 @@ export function pushCard(
   title: string,
   body: string,
   options: CardOption[],
-  opts: { deadline?: number; defaultOption?: string; urgency?: 1 | 2 | 3; data?: Card["data"] } = {},
+  opts: { deadline?: number; defaultOption?: string; urgency?: 1 | 2 | 3; data?: Card["data"]; mandatory?: boolean; lapse?: "race" | "year" } = {},
 ): Card {
   const card: Card = {
     id: nextId(s),
@@ -22,6 +22,8 @@ export function pushCard(
     urgency: opts.urgency ?? 2,
     data: opts.data,
     notice: options.length <= 1,
+    mandatory: opts.mandatory ?? (kind === "firing" ? true : undefined),
+    lapse: opts.lapse ? { on: opts.lapse, round: s.round, year: s.year } : undefined,
   };
   s.cards.push(card);
   return card;

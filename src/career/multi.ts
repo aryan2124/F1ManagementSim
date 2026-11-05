@@ -32,7 +32,7 @@ import type { QualiConfig } from "../sim/qualifying";
 
 // ---------------------------------------------------------------- slices
 
-const TOP_KEYS = ["cards", "recap", "spendLog", "promises", "budgets", "weekend", "brand", "rift", "press", "owner", "story", "legacy", "fired", "stopReason", "rumours", "privNews", "privTicker", "talks", "nextCar", "nextCarLast", "letters", "guidance", "boardLog", "threads", "chronicle", "teller"] as const;
+const TOP_KEYS = ["cards", "recap", "spendLog", "promises", "budgets", "weekend", "brand", "rift", "press", "owner", "story", "legacy", "fired", "stopReason", "rumours", "privNews", "privTicker", "talks", "nextCar", "nextCarLast", "letters", "guidance", "boardLog", "threads", "chronicle", "teller", "standing", "away"] as const;
 const ACADEMY_KEYS = ["scouts", "shortlist", "decisions", "rookieNominee", "graduates", "trialDays", "devRep", "firstGradWin"] as const;
 const ERA_KEYS = ["influence", "tried"] as const;
 

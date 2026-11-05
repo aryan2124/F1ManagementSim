@@ -57,14 +57,36 @@ function takeDefault(s: CareerState, c: Card) {
 
 function expireCards(s: CareerState) {
   // C8: departments the player has delegated take their default on non-urgent decisions
+  // standing orders: a kind of decision the person has said to always answer the same way
   for (const c of [...s.cards]) {
-    if (!c.notice && !c.mail && c.options.length > 1 && delegated(s, c.kind, c.urgency)) {
+    const o = s.standing?.[c.kind];
+    if (o && !c.mandatory && !c.notice && c.options.length > 1 && c.options.some((x) => x.id === o)) {
+      recap(s, `Standing order: ${c.title}.`);
+      resolveCard(s, c.id, o, true);
+    }
+  }
+  for (const c of [...s.cards]) {
+    if (!c.notice && !c.mail && !c.mandatory && c.options.length > 1 && delegated(s, c.kind, c.urgency)) {
       recap(s, `Your team handled: ${c.title}.`);
       resolveCard(s, c.id, c.defaultOption ?? c.options[0].id, true);
     }
   }
   for (const c of [...s.cards]) {
+    if (c.mandatory && c.options.length > 1) continue; // waits for a person, however long
+    if (c.lapse) {
+      // lapses on its event, not on a day
+      const over = c.lapse.on === "race" ? s.round > c.lapse.round || s.year > c.lapse.year || !!(s.weekend && s.weekend.stage !== "done") : s.year > c.lapse.year;
+      if (over) {
+        if (c.options.length === 1) s.cards = s.cards.filter((x) => x.id !== c.id);
+        else takeDefault(s, c);
+      }
+      continue;
+    }
     if (c.deadline !== undefined && s.day > c.deadline) {
+      if (c.options.length > 1 && s.away && !c.notice) {
+        // the person is away: their letters wait instead of lapsing (up to two months)
+        if (s.day - c.created < 60) { c.deadline = s.day; continue; }
+      }
       if (c.options.length === 1) s.cards = s.cards.filter((x) => x.id !== c.id);
       else takeDefault(s, c);
     }
@@ -77,7 +99,7 @@ function expireCards(s: CareerState) {
   }
   let decisions = s.cards.filter((c) => !c.notice && !c.mail);
   while (decisions.length > 7) {
-    const minor = decisions.filter((c) => c.urgency === 1).sort((a, b) => a.created - b.created)[0];
+    const minor = decisions.filter((c) => c.urgency === 1 && !c.mandatory).sort((a, b) => a.created - b.created)[0];
     if (!minor) break;
     takeDefault(s, minor);
     decisions = s.cards.filter((c) => !c.notice && !c.mail);
@@ -786,6 +808,7 @@ export function stopNow(s: CareerState, before: number): string | null {
   if (s.weekend && s.weekend.stage !== "done") return "Race week";
   for (const c of s.cards) {
     if (c.notice && c.urgency < 3) continue;
+    if (c.mandatory && c.options.length > 1) return `Needs an answer: ${c.title}`;
     if (c.id > before && c.urgency >= 2) return c.title;
     if (c.deadline !== undefined && c.deadline <= s.day + 1 && c.urgency >= 2 && c.options.length > 1 && !c.warned) {
       c.warned = true;

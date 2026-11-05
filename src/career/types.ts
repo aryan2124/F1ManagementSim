@@ -514,6 +514,10 @@ export interface Card {
   mail?: { from: string; role: string };
   /** Set once the player has opened it in the inbox. */
   read?: boolean;
+  /** Never delegated, never answered by the clock: it waits for a person. */
+  mandatory?: boolean;
+  /** Lapses on an event instead of a day: when the next race weekend begins or the season turns. */
+  lapse?: { on: "race" | "year"; round: number; year: number };
 }
 
 export interface TickerItem {
@@ -812,6 +816,10 @@ export interface CareerState {
   /** The manager's weekly focus (Today screen). */
   /** Departments the team handles on its own (their non-urgent decisions take the default). */
   delegate?: Partial<Record<"rnd" | "people" | "money" | "academy", boolean>>;
+  /** Standing orders: for a kind of decision, the option to take without asking (never on mandatory cards). */
+  standing?: Record<string, string>;
+  /** The person is away: letters without a standing order wait for them instead of lapsing. */
+  away?: boolean;
   focus?: { kind: import("./focus").FocusKind; since: number };
   /** The last day the weekly plan stopped the clock to ask the player. */
   planAskedDay?: number;
@@ -1011,6 +1019,8 @@ export type Action =
   | { type: "runLab"; inst: import("./lab").InstId; model: import("./design").Design }
   | { type: "setDesignNext"; model: import("./design").Design | null }
   | { type: "setKeystone"; slot: number; id: string | null }
+  | { type: "standingOrder"; kind: string; option: string | null }
+  | { type: "setAway"; away: boolean }
   | { type: "promoteIntern"; staffId: string }
   | { type: "extend"; driverId: string; offer: Offer }
   | { type: "promise"; driverId: string; kind: PromiseKind }

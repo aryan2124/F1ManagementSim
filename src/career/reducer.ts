@@ -296,6 +296,15 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       const r = runLab(s, s.teamId, a.inst, a.model);
       return r.ok ? good(r.message) : fail(r.message);
     }
+    case "standingOrder": {
+      const so = { ...(s.standing ?? {}) };
+      if (a.option) so[a.kind] = a.option; else delete so[a.kind];
+      s.standing = so;
+      return good(a.option ? "From now on that kind of decision is answered that way." : "That standing order is cancelled.");
+    }
+    case "setAway":
+      s.away = a.away;
+      return good(a.away ? "Marked away: letters wait for you, and standing orders still apply." : "Welcome back.");
     case "setKeystone": {
       const r = setKeystone(s, s.teamId, a.slot, a.id);
       return r.ok ? good(r.message) : fail(r.message);

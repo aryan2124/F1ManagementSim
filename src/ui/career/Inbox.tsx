@@ -54,6 +54,10 @@ export function Inbox({ s, d }: Props) {
     <div className="c-cols">
       <section className="panel c-inbox">
         <h3>INBOX ({items.filter((x) => x.unread).length} UNREAD OF {items.length})</h3>
+        <p className="small" data-testid="away-line">
+          <label><input type="checkbox" checked={!!s.away} onChange={(e) => d({ type: "setAway", away: e.target.checked })} /> I am away: letters wait for me, standing orders still apply.</label>
+          {Object.keys(s.standing ?? {}).length > 0 && <span className="dim"> Standing orders: {Object.entries(s.standing ?? {}).map(([k, v]) => `${k} → ${v}`).join(", ")}. <button className="linkish" onClick={() => Object.keys(s.standing ?? {}).forEach((k) => d({ type: "standingOrder", kind: k, option: null }))}>cancel all</button></span>}
+        </p>
         {waiting.length > 0 && (
           <div className="c-card mail waiting">
             <h4>WAITING FOR YOU ({waiting.length})</h4>
@@ -102,8 +106,16 @@ export function Inbox({ s, d }: Props) {
                   {o.warn && <em className="warn">{o.warn}</em>}
                 </button>
               ))}
+              {!c.mandatory && c.options.length > 1 && (
+                <details className="small" data-testid="standing-order">
+                  <summary>Always answer this kind of letter the same way</summary>
+                  {c.options.map((o) => <button key={o.id} className="linkish" onClick={() => d({ type: "standingOrder", kind: c.kind, option: o.id })}>always: {o.label}</button>)}
+                </details>
+              )}
             </div>
-            {c.deadline !== undefined && <p className="dim small">Lapses on {fmtDay(c.deadline)} if you do not answer.</p>}
+            {c.mandatory && <p className="small"><b>This one waits for you.</b> Nothing answers it for you, however long it takes.</p>}
+            {!c.mandatory && c.lapse && <p className="dim small">Lapses {c.lapse.on === "race" ? "when the next race weekend begins" : "when the season turns"} if you do not answer.</p>}
+            {!c.mandatory && !c.lapse && c.deadline !== undefined && <p className="dim small">Lapses on {fmtDay(c.deadline)} if you do not answer.</p>}
           </div>
         )}
         {letter && (
