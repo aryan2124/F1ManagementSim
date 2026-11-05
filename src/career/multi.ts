@@ -290,6 +290,11 @@ export const careerEngine: CareerEngine<MultiState> & CareerEngineExtras = {
       t.designNext = undefined;
       t.corr = undefined;
       t.dev = undefined;
+      // keystone choices and the gaps in the rules a rival is working are theirs alone
+      t.keystones = undefined;
+      t.keystonesSet = undefined;
+      t.loops = undefined;
+      t.auditDay = undefined;
     }
     // private ledger lines (lab, trainees, stories, hires) belong to the team they happened to
     const PRIVATE = /^(thread:|lab$|intern$|promotion$|hire$)/;

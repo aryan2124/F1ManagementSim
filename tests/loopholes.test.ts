@@ -36,3 +36,18 @@ describe("loopholes", () => {
     for (const l of LOOPHOLES) expect(MODULE_BY_ID[l.mod], l.id).toBeTruthy();
   });
 });
+
+describe("AI teams in every loophole ruleset", () => {
+  for (const l of LOOPHOLES) {
+    it(`AI teams find the gap in ${l.mod}`, () => {
+      const s = withModule(l.mod);
+      let seen = false;
+      for (let i = 0; i < 24 && !seen; i++) {
+        s.day += 28;
+        loopholesMonthly(s);
+        seen = Object.values(s.teams).some((t) => t.id !== s.teamId && ((t.loops ?? []).includes(l.id) || loopState(s).patched.includes(l.id)));
+      }
+      expect(seen).toBe(true);
+    });
+  }
+});

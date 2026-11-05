@@ -113,3 +113,30 @@ describe("new systems in a league", () => {
     }
   });
 });
+
+describe("multiplayer: new overhaul state", () => {
+  it("a rival's keystones and worked loopholes stay hidden, your own show", () => {
+    let s = league();
+    const fer = s.slices.fer;
+    void fer;
+    s.world.teams.mcl.keystones = ["deep-floor"];
+    s.world.teams.mcl.loops = ["sandbag"];
+    s.world.teams.fer.keystones = ["high-rake"];
+    const v = E.view(s, "fer") as { teams: Record<string, { keystones?: string[]; loops?: string[] }> };
+    expect(v.teams.mcl.keystones).toBeUndefined();
+    expect(v.teams.mcl.loops).toBeUndefined();
+    expect(v.teams.fer.keystones).toEqual(["high-rake"]);
+    s = E.stepDay(s).state;
+  });
+  it("standing orders and away mode are per player", () => {
+    let s = league();
+    s = E.reduceAs(s, "fer", { type: "standingOrder", kind: "event", option: "a" }).state;
+    s = E.reduceAs(s, "mcl", { type: "setAway", away: true }).state;
+    const f = E.view(s, "fer") as { standing?: Record<string, string>; away?: boolean };
+    const m = E.view(s, "mcl") as { standing?: Record<string, string>; away?: boolean };
+    expect(f.standing).toEqual({ event: "a" });
+    expect(f.away).toBeFalsy();
+    expect(m.away).toBe(true);
+    expect(m.standing ?? {}).toEqual({});
+  });
+});
