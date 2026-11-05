@@ -111,7 +111,7 @@
 .ds-table td:first-child{white-space:nowrap}
 /* fit map */
 .fm-grid{display:grid;gap:3px;margin-top:8px}
-.fm-row{display:grid;grid-template-columns:170px minmax(160px,1fr) 70px minmax(120px,200px);align-items:center;gap:10px;font-size:14px}
+.fm-row{display:grid;grid-template-columns:236px minmax(160px,1fr) 70px minmax(120px,200px);align-items:center;gap:10px;font-size:14px}
 .fm-row.raced{opacity:.7}
 .fm-gp{font-family:var(--pix);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fm-bar{position:relative;height:14px;background:#1b1630}
@@ -121,3 +121,5 @@
 .fm-range{position:absolute;top:6px;height:2px;background:#fff}
 .fm-val{font-family:var(--pix);font-size:12px;text-align:right}
 @media (max-width:860px){.fm-row{grid-template-columns:120px 1fr 60px}.fm-lean{display:none}}
+.ks-chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.ks-chips button{font-size:11px;padding:4px 8px;letter-spacing:0}
+.app .ks-chips .btn{font-size:11px;padding:6px 10px;letter-spacing:0}

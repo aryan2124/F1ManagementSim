@@ -58,5 +58,7 @@ export function fitMap(s: CareerState, teamId: string, ghost?: string[]): FitRow
 /** The three tracks that suit the car best and the three that suit it worst, in plain words. */
 export function fitSummary(rows: FitRow[]): { best: FitRow[]; worst: FitRow[]; covered: number } {
   const sorted = [...rows].sort((a, b) => b.edge - a.edge);
-  return { best: sorted.slice(0, 3), worst: sorted.slice(-3).reverse(), covered: rows.filter((r) => r.edge > 0).length };
+  // a track "suits" the car when it is quicker there than the car's own average across the season
+  const mean = rows.reduce((a, r) => a + r.edge, 0) / Math.max(1, rows.length);
+  return { best: sorted.slice(0, 3), worst: sorted.slice(-3).reverse(), covered: rows.filter((r) => r.edge > mean).length };
 }

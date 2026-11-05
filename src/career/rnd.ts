@@ -1,3 +1,4 @@
+import { schoolDiscount } from "./schools";
 import { ideaDrag } from "./nextcar";
 import { logLedger } from "./ledger";
 import { setbackOf } from "./poach";
@@ -149,6 +150,7 @@ export function designPart(s: CareerState, teamId: string, area: Area, trait: Tr
   if (leadId && (!lead || lead.teamId !== teamId)) return { ok: false, why: "That person does not work for you." };
   const idea = makeIdea(s, t, area, rngFor(s, `design:${teamId}:${s.day}:${s.uid++}`), kind, { trait, lead, size });
   idea.name = `${idea.name} (${trait})`;
+  idea.cost = round2(idea.cost * schoolDiscount(s, teamId, trait));
   t.ideas.push(idea);
   return { ok: true, idea };
 }
@@ -188,7 +190,8 @@ export function proposeApproaches(s: CareerState, teamId: string, trait: Trait):
   re.side = { trait: partner, amount: round2(Math.max(0.01, 0.3 * mid)) };
   re.note = `A new concept for ${TRAIT_NAME[trait].toLowerCase()}. It could be big, do nothing, or go backwards, and it costs ${TRAIT_NAME[partner].toLowerCase()} for certain.`;
   out.push(re);
-  for (const i of out) { t.ideas.push(i); }
+  const disc = schoolDiscount(s, teamId, trait);
+  for (const i of out) { i.cost = round2(i.cost * disc); t.ideas.push(i); }
   return out;
 }
 

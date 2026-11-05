@@ -40,21 +40,28 @@ export function FitMapPanel({ s, d }: Props) {
             </label>
           );
         })}
-        <div className="row" style={{ flexWrap: "wrap", gap: 4 }}>
+        <div className="ks-chips">
           {KEYSTONES.filter((k) => !fittedIds.includes(k.id)).map((k) => (
-            <button key={k.id} className="btn small" title={k.blurb} onMouseEnter={() => setGhost([...fittedIds.slice(0, SLOTS - 1), k.id])} onMouseLeave={() => setGhost(null)} onFocus={() => setGhost([...fittedIds.slice(0, SLOTS - 1), k.id])} onBlur={() => setGhost(null)}>
+            <button key={k.id} className="btn" title={k.blurb} onMouseEnter={() => setGhost([...fittedIds.slice(0, SLOTS - 1), k.id])} onMouseLeave={() => setGhost(null)} onFocus={() => setGhost([...fittedIds.slice(0, SLOTS - 1), k.id])} onBlur={() => setGhost(null)}>
               {k.name}
             </button>
           ))}
         </div>
-        {ghost && base && <p className="small">Ghost: with {keystoneOf(ghost[ghost.length - 1])?.name} the car would suit {fitSummary(rows).covered} tracks instead of {fitSummary(base).covered}.</p>}
+        {ghost && base && (() => {
+          const k = keystoneOf(ghost[ghost.length - 1]);
+          const mean = (r: typeof rows) => r.reduce((a, x) => a + x.edge, 0) / Math.max(1, r.length);
+          const diffs = rows.map((r, i) => ({ gp: r.gp, d: r.edge - base[i].edge }));
+          const up = [...diffs].sort((a, b) => b.d - a.d)[0];
+          const down = [...diffs].sort((a, b) => a.d - b.d)[0];
+          return <p className="small" data-testid="ghost">Ghost: with {k?.name} the average edge goes from {fmt(mean(base))} to {fmt(mean(rows))}. Biggest gain at {up.gp} ({fmt(up.d)}), biggest loss at {down.gp} ({fmt(down.d)}).</p>;
+        })()}
         {activePairs(fittedIds).map((p) => <p key={p.a + p.b} className="small dim">{p.text}</p>)}
         {msg && <p className="small">{msg}</p>}
       </div>
       <div className="fm-grid">
         {rows.map((r) => (
           <div key={r.round} className={`fm-row ${r.raced ? "raced" : ""}`}>
-            <span className="fm-gp">R{r.round + 1} {r.gp}</span>
+            <span className="fm-gp" title={r.gp}>R{r.round + 1} {r.gp.replace(" Grand Prix", " GP")}</span>
             <span className="fm-bar" role="img" aria-label={`${r.gp}: ${fmt(r.edge)}, range ${fmt(r.low)} to ${fmt(r.high)}`}>
               <i className="fm-zero" />
               <i className={`fm-fill ${r.edge >= 0 ? "up" : "down"}`} style={{ left: `${Math.min(50, pct(r.edge))}%`, width: `${Math.abs(pct(r.edge) - 50)}%` }} />
