@@ -50,7 +50,7 @@ export function carSpec(s: CareerState, teamId: string, circuitId?: string, ks?:
     color: idn.color,
     aero: clamp(0.98 + CFG.specPerSecAero * (0.55 * c.aero + 0.45 * c.chassis), 0.93, 1.012),
     power: clamp(0.98 + CFG.specPerSecPower * c.power, 0.93, 1.012),
-    reliability: clamp(base.reliability + 0.012 * c.cooling + 0.004 * (c.power - powerInit), 0.9, 0.995),
+    reliability: clamp(base.reliability + (0.012 + 0.006 * (rulesOf(s).openCooling ?? 0)) * c.cooling + 0.004 * (c.power - powerInit), 0.9, 0.995),
     pitCrew: crew,
     pitFumble: clamp(fx.fumble - ((mech?.skill ?? 70) - 72) / 100 * 0.02, 0.008, 0.14),
   };

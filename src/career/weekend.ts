@@ -102,7 +102,7 @@ export function startWeekend(s: CareerState): WeekendState {
   if (s.round === s.calendar.length - 1) planRetirements(s);
   rollHealth(s, s.round);
   const rng = new Rng(hashSeed(`wk:${s.seed}:${s.year}:${s.round}`));
-  const sprint = race.sprint;
+  const sprint = race.sprint || !!rulesOf(s).allSprints;
   const aiQuality: Record<string, number> = {};
   for (const id of Object.keys(s.teams)) {
     if (id === s.teamId) continue;

@@ -1,6 +1,6 @@
 import { seasonTestDays } from "./dev";
 import { launchDay, summerEnd, summerStart, testDay, winterEnd, winterStart } from "./calendar";
-import { eraDates } from "./eras";
+import { eraDates, rulesOf } from "./eras";
 import { driversOf } from "./finance";
 import { nextAllowanceReset } from "./rnd";
 import { epochDay } from "./util";
@@ -24,7 +24,9 @@ export interface AgendaItem {
 export function agenda(s: CareerState): AgendaItem[] {
   const out: AgendaItem[] = [];
   const me = s.teams[s.teamId];
-  for (const r of s.calendar) {
+  const allSprints = !!rulesOf(s).allSprints;
+  for (const r0 of s.calendar) {
+    const r = { ...r0, sprint: r0.sprint || allSprints };
     let gp = r.circuitId;
     try {
       gp = loadCircuit(r.circuitId).meta.gp;

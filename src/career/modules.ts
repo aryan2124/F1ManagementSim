@@ -53,6 +53,14 @@ export interface Flags {
   /** Success ballast: seconds per lap for the leader, scaled by rank. */
   ballast?: number;
   handicapStart?: boolean;
+  /** Open cooling: cooling R&D is worth more and a good cooling package buys reliability. */
+  openCooling?: number;
+  /** Fixed attack zones: boost only on marked stretches. */
+  attackZones?: boolean;
+  /** Every weekend is a sprint weekend. */
+  allSprints?: boolean;
+  /** Cost audits: yearly R&D spend above this ($m) is fined. */
+  auditor?: number;
   reverseSprint?: boolean;
   bestCarOnly?: boolean;
   playoffCut?: boolean;
@@ -116,6 +124,7 @@ export interface ModuleDef {
 
 const lvl = (k: number, a: string, b: string, c: string) => (k < 0.4 ? a : k < 0.7 ? b : c);
 const M = (m: ModuleDef): ModuleDef => m;
+const round1 = (x: number) => Math.round(x * 10) / 10;
 
 export const MODULES: ModuleDef[] = [
   M({
@@ -233,6 +242,40 @@ export const MODULES: ModuleDef[] = [
     headline: ["spectacle", "power"], support: ["spectacle", "power"], intent: "Overtaking by choice",
     unknowns: ["Value of a token", "Defence against boost"], scale: "Tokens per race",
     flags: (k) => ({ pushToPass: Math.round(8 - 5 * k) }),
+  }),
+  M({
+    id: "openCooling", name: "Open cooling", category: "Aero", kind: "numbers", live: "career",
+    rule: "Cooling layouts are free: no homologated inlet sizes.",
+    change: "Cooling becomes a place to win, and a good package buys reliability.",
+    headline: ["power", "spectacle"], support: ["power", "aero"], intent: "Reward clever packaging",
+    unknowns: ["How much cooling is worth", "Drag price of big inlets"], scale: "How much cooling work is worth",
+    flags: (k) => ({ openCooling: round1(0.4 + 0.8 * k), areaMult: { cooling: 1.2 + 0.4 * k } }),
+  }),
+  M({
+    id: "attackZones", name: "Attack zones", category: "Race format", kind: "setting", live: "sim",
+    rule: "Boost can only be spent on marked stretches of each circuit.",
+    change: "Overtaking is steered to the zones and defence has to guess where.",
+    headline: ["spectacle"], support: ["spectacle", "power"], intent: "Overtaking in the right places",
+    unknowns: ["Which zones favour the attacker", "Cost of being passed there"], scale: "Tokens per race",
+    conflicts: ["pushToPass"],
+    flags: (k) => ({ pushToPass: Math.round(6 - 3 * k), attackZones: true }),
+  }),
+  M({
+    id: "twoRaceWeekend", name: "Two-race weekend", category: "Race format", kind: "setting", live: "career",
+    rule: "Every weekend is a sprint weekend: a short race and a full one.",
+    change: "More points to fight for and more tyre and parts wear every weekend.",
+    headline: ["spectacle"], support: ["spectacle"], intent: "Twice the racing for the same travel",
+    unknowns: ["Tyre sets needed", "How teams split their setup"], scale: "n/a",
+    conflicts: ["reverseGrid"],
+    flags: () => ({ allSprints: true }),
+  }),
+  M({
+    id: "auditor", name: "Cost auditor", category: "Financial", kind: "numbers", live: "career",
+    rule: "An auditor checks R&D spend against a cap each month.",
+    change: "Overspending is fined, and the cap is a hidden number until the first fine.",
+    headline: ["equaliser"], support: ["equaliser", "safety"], intent: "Keep spending honest",
+    unknowns: ["Where the cap really sits", "How creative accounting is read"], scale: "How tight the cap is",
+    flags: (k) => ({ auditor: Math.round(26 - 10 * k) }),
   }),
   M({
     id: "successBallast", name: "Success ballast", category: "Race format", kind: "numbers", live: "career",

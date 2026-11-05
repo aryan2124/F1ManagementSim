@@ -2,6 +2,7 @@ import { clamp, round2 } from "./util";
 import { news, sendLetter } from "./cards";
 import { logLedger } from "./ledger";
 import { rngFor } from "./util";
+import { rulesOf } from "./eras";
 import type { CareerState, Trait } from "./types";
 
 /**
@@ -24,6 +25,7 @@ export const LOOPHOLES: Loophole[] = [
   { id: "zonepark", mod: "pushToPass", name: "Park the boost in the zones", text: "Boost is free where the rule says it is, so the car is built around those stretches.", fx: { output: 0.1, efficiency: 0.05 } },
   { id: "twoheat-setup", mod: "twoHeat", name: "Swap setups between heats", text: "Nothing says the car must keep its setup between the two races.", fx: { grip: 0.08, platform: 0.04 } },
   { id: "creative-books", mod: "talentCap", name: "Creative accounting", text: "Driver pay is capped, so part of it is paid as consultancy.", fx: { packaging: 0.05, drive: 0.04 } },
+  { id: "consultancy", mod: "auditor", name: "Book R&D as consultancy", text: "The auditor reads the invoice, not the work.", fx: { downforce: 0.05, output: 0.04 } },
   { id: "tunnel-bank", mod: "tunnelBank", name: "Park hours in a partner", text: "Banked tunnel hours do not say whose tunnel.", fx: { downforce: 0.08 } },
 ];
 
@@ -63,6 +65,28 @@ export function setExploit(s: CareerState, teamId: string, id: string, on: boole
   if (on) cur.add(id); else cur.delete(id);
   t.loops = [...cur].sort();
   return { ok: true, message: on ? `You are working the gap: ${l.name}. The Commission may notice.` : `You stopped working the gap: ${l.name}.` };
+}
+
+/** Monthly cost audit: spend on R&D above the cap is fined, once a quarter at most per team. */
+export function auditMonthly(s: CareerState): void {
+  const cap = rulesOf(s).auditor;
+  if (!cap) return;
+  for (const id of Object.keys(s.teams).sort()) {
+    const t = s.teams[id];
+    if (t.ledger.rnd <= cap) continue;
+    if (t.auditDay !== undefined && s.day - t.auditDay < 84) continue;
+    t.auditDay = s.day;
+    const over = round2(t.ledger.rnd - cap);
+    const fine = round2(Math.min(2, 0.3 + 0.25 * over));
+    t.cash = round2(t.cash - fine);
+    t.ledger.costs += fine;
+    t.ledger.other += fine;
+    news(s, `${id.toUpperCase()} fined $${fine.toFixed(2)}m by the cost auditor.`, { importance: 2, cause: "Audit", tag: "rules" });
+    if (id === s.teamId) {
+      logLedger(s, { kind: "money", text: "Cost auditor fine", cost: fine, because: `R&D spend $${over.toFixed(1)}m over the cap` });
+      sendLetter(s, { from: "Cost auditor", role: "Audit", subject: `Fine: $${fine.toFixed(2)}m`, body: `Your R&D spend this year is $${over.toFixed(1)}m over the cap of $${cap}m. The cap was not published; this is how it is found out.` });
+    }
+  }
 }
 
 /** Monthly: AI teams pick gaps, heat moves, hints go out, patches land. */

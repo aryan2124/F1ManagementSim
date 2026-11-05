@@ -1,4 +1,4 @@
-import { loopholesMonthly } from "./loopholes";
+import { auditMonthly, loopholesMonthly } from "./loopholes";
 import { delegated } from "./focus";
 import { campaignWeekly, resolveCampaign, campaignOpen } from "./campaign";
 import { weekPlanCard, resolveWeekPlan, weekPlanOpen } from "./week";
@@ -313,6 +313,7 @@ function monthly(s: CareerState, month: number) {
   academyMonth(s, month);
   aiMonthly(s);
   loopholesMonthly(s);
+  auditMonthly(s);
   monthlyPlayer(s);
 }
 

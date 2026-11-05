@@ -375,6 +375,8 @@ export interface TeamState {
   keystonesSet?: boolean;
   /** Rule loopholes this team is working (see loopholes.ts). */
   loops?: string[];
+  /** Day of the last cost-audit fine. */
+  auditDay?: number;
   /** How well each lab instrument matches the track, 0 to 1, built up by running the car (see lab.ts). */
   corr?: Record<string, number>;
   /** The lab notebook, newest first. */

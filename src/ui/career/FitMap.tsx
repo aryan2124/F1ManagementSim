@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { fitMap, fitSummary } from "../../career/fitmap";
+import { carIdentity, compareCars } from "../../career/carsig";
 import { seasonMap } from "../../career/seasonmap";
 import { KEYSTONES, SLOTS, SWAP_HOURS, activePairs, keystoneOf } from "../../career/keystones";
 import { teamOf, type Props } from "./common";
@@ -14,6 +15,9 @@ export function FitMapPanel({ s, d }: Props) {
   const fittedIds = me.keystones ?? [];
   const rows = fitMap(s, s.teamId, ghost ?? undefined);
   const base = ghost ? fitMap(s, s.teamId) : null;
+  const ident = carIdentity(s, s.teamId);
+  const [rival, setRival] = useState("");
+  const guess = rival ? compareCars(s, rival) : [];
   const sum = fitSummary(rows);
   const span = Math.max(0.2, ...rows.map((r) => Math.max(Math.abs(r.low), Math.abs(r.high))));
   const pct = (x: number) => 50 + (x / span) * 48;
@@ -25,6 +29,7 @@ export function FitMapPanel({ s, d }: Props) {
       <p className="small">
         <b>Best:</b> {sum.best.map((r) => `${r.gp} ${fmt(r.edge)}`).join(", ")}. <b>Worst:</b> {sum.worst.map((r) => `${r.gp} ${fmt(r.edge)}`).join(", ")}.
       </p>
+      <p className="small" data-testid="identity"><b>{ident.name}.</b> Signature: {ident.signatureWord.toLowerCase()}. Famous at {ident.famous.join(", ")}.</p>
       <div className="panel" data-testid="keystones">
         <h4>KEYSTONES ({fittedIds.length}/{SLOTS})</h4>
         <p className="small dim">The big choices that define the car. A swap costs {SWAP_HOURS} tunnel hours and dents what the team knows about the car. Hover a choice to see the map as it would be.</p>
@@ -57,6 +62,14 @@ export function FitMapPanel({ s, d }: Props) {
         })()}
         {activePairs(fittedIds).map((p) => <p key={p.a + p.b} className="small dim">{p.text}</p>)}
         {msg && <p className="small">{msg}</p>}
+      </div>
+      <div className="panel" data-testid="compare">
+        <h4>COMPARE CARS (WHAT YOU HAVE INFERRED)</h4>
+        <select value={rival} onChange={(e) => setRival(e.target.value)}>
+          <option value="">Pick a rival</option>
+          {Object.keys(s.teams).filter((id) => id !== s.teamId).map((id) => <option key={id} value={id}>{teamOf(id)?.name ?? id}</option>)}
+        </select>
+        {guess.map((g) => <p key={g.trait} className="small">{g.name}: {g.gap >= 0 ? "they lead by" : "you lead by"} about {Math.abs(g.gap).toFixed(2)}s, give or take {g.range.toFixed(2)}.</p>)}
       </div>
       <div className="fm-grid">
         {rows.map((r) => (
