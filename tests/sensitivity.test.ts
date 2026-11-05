@@ -27,9 +27,9 @@ function run(seed: number, level: 0 | 1 | 2 | 3 | 4, laps = 20) {
 describe.skipIf(!process.env.SENS)("pace sensitivity", () => {
   it("measures", () => {
     const out: string[] = [];
-    for (const level of [0, 1, 2, 3, 4] as const) {
+    for (const level of [1, 3, 2] as const) {
       const ps: number[] = [];
-      for (let seed = 1; seed <= 8; seed++) ps.push(run(seed, level).pos);
+      for (let seed = 1; seed <= 20; seed++) ps.push(run(seed, level).pos);
       out.push(`level ${level}: mean finish ${(ps.reduce((a, b) => a + b, 0) / ps.length).toFixed(2)} (${ps.join(",")})`);
     }
     writeFileSync("/tmp/sens.txt", out.join("\n"));

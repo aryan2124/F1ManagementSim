@@ -101,8 +101,8 @@ describe("people and calendar", () => {
 });
 
 describe("eras", () => {
-  it("the module library has 54 modules and flags are well formed", () => {
-    expect(MODULES).toHaveLength(54);
+  it("the module library has 68 modules and flags are well formed", () => {
+    expect(MODULES).toHaveLength(68);
     const live = { sim: 0, career: 0, rules: 0 };
     for (const m of MODULES) {
       live[m.live]++;

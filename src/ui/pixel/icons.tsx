@@ -207,6 +207,62 @@ const DRAW: Record<string, Draw> = {
     g.r(2, 1, 9, 12, "w").r(3, 3, 7, 1, "d").r(3, 5, 7, 1, "d").r(3, 7, 5, 1, "d");
     g.disc(11, 11, 3, "y").ring(11, 11, 3, "h", 1);
   },
+  sixWheels: (g) => {
+    g.disc(7, 7, 6, "h").ring(7, 7, 6, "t", 1.2);
+    g.text(3, 5, "SI", "w");
+  },
+  computerCars: (g) => {
+    g.disc(7, 7, 6, "h").ring(7, 7, 6, "t", 1.2);
+    g.text(3, 5, "CO", "w");
+  },
+  fuelIsMoney: (g) => {
+    g.disc(7, 7, 6, "h").ring(7, 7, 6, "t", 1.2);
+    g.text(3, 5, "FU", "w");
+  },
+  grenadeEra: (g) => {
+    g.disc(7, 7, 6, "h").ring(7, 7, 6, "t", 1.2);
+    g.text(3, 5, "GR", "w");
+  },
+  freedomAuction: (g) => {
+    g.disc(7, 7, 6, "h").ring(7, 7, 6, "t", 1.2);
+    g.text(3, 5, "FR", "w");
+  },
+  rainOnDemand: (g) => {
+    g.disc(7, 7, 6, "h").ring(7, 7, 6, "t", 1.2);
+    g.text(3, 5, "RA", "w");
+  },
+  theDraft: (g) => {
+    g.disc(7, 7, 6, "h").ring(7, 7, 6, "t", 1.2);
+    g.text(3, 5, "TH", "w");
+  },
+  energyAuction: (g) => {
+    g.disc(7, 7, 6, "h").ring(7, 7, 6, "t", 1.2);
+    g.text(3, 5, "EN", "w");
+  },
+  twinChassis: (g) => {
+    g.disc(7, 7, 6, "h").ring(7, 7, 6, "t", 1.2);
+    g.text(3, 5, "TW", "w");
+  },
+  kitLibrary: (g) => {
+    g.disc(7, 7, 6, "h").ring(7, 7, 6, "t", 1.2);
+    g.text(3, 5, "KI", "w");
+  },
+  transparentPaddock: (g) => {
+    g.disc(7, 7, 6, "h").ring(7, 7, 6, "t", 1.2);
+    g.text(3, 5, "TR", "w");
+  },
+  relayEra: (g) => {
+    g.disc(7, 7, 6, "h").ring(7, 7, 6, "t", 1.2);
+    g.text(3, 5, "RE", "w");
+  },
+  tyreWars: (g) => {
+    g.disc(7, 7, 6, "h").ring(7, 7, 6, "t", 1.2);
+    g.text(3, 5, "TY", "w");
+  },
+  wingsBanned: (g) => {
+    g.disc(7, 7, 6, "h").ring(7, 7, 6, "t", 1.2);
+    g.text(3, 5, "WI", "w");
+  },
   pushToPass: (g) => {
     g.disc(7, 7, 6, "r").ring(7, 7, 6, "h", 1.2);
     g.l(3, 4, 6, 7, "w").l(6, 7, 3, 10, "w").l(7, 4, 10, 7, "w").l(10, 7, 7, 10, "w");
