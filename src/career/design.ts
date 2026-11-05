@@ -1,6 +1,7 @@
 import { hashSeed, Rng } from "../sim/rng";
 import { clamp, round2 } from "./util";
 import { solveSection, type Section } from "./airfoil";
+import { KEYSTONES } from "./keystones";
 import { TRAITS, type CareerState, type TeamState, type Trait } from "./types";
 
 /**
@@ -110,6 +111,16 @@ export function initDesigns(s: CareerState) {
     const d = { ...NEUTRAL };
     for (const k of DESIGN_KEYS) d[k] = clamp(round2(0.5 + rng.gauss() * 0.16), 0.1, 0.9);
     t.design = d;
+  }
+  // AI teams pick their keystones from the same list; the human team starts with a free choice
+  for (const t of Object.values(s.teams)) {
+    if (t.keystonesSet || t.id === s.teamId) continue;
+    const rng = new Rng(hashSeed(`keys0:${s.seed}:${t.id}`));
+    const ids = KEYSTONES.map((k) => k.id);
+    const pick: string[] = [];
+    while (pick.length < 2) { const id = ids[Math.floor(rng.next() * ids.length)]; if (!pick.includes(id)) pick.push(id); }
+    t.keystones = pick;
+    t.keystonesSet = true;
   }
 }
 

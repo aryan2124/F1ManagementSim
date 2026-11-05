@@ -1,11 +1,18 @@
+import { useState } from "react";
 import { fitMap, fitSummary } from "../../career/fitmap";
+import { KEYSTONES, SLOTS, SWAP_HOURS, activePairs, keystoneOf } from "../../career/keystones";
 import { teamOf, type Props } from "./common";
 
 const fmt = (x: number) => `${x >= 0 ? "+" : "-"}${Math.abs(x).toFixed(2)}s`;
 
 /** Your car laid over the calendar: seconds a lap gained or lost against the average car at every race, with a range. */
-export function FitMapPanel({ s }: Props) {
-  const rows = fitMap(s, s.teamId);
+export function FitMapPanel({ s, d }: Props) {
+  const [ghost, setGhost] = useState<string[] | null>(null);
+  const [msg, setMsg] = useState("");
+  const me = s.teams[s.teamId];
+  const fittedIds = me.keystones ?? [];
+  const rows = fitMap(s, s.teamId, ghost ?? undefined);
+  const base = ghost ? fitMap(s, s.teamId) : null;
   const sum = fitSummary(rows);
   const span = Math.max(0.2, ...rows.map((r) => Math.max(Math.abs(r.low), Math.abs(r.high))));
   const pct = (x: number) => 50 + (x / span) * 48;
@@ -17,6 +24,32 @@ export function FitMapPanel({ s }: Props) {
       <p className="small">
         <b>Best:</b> {sum.best.map((r) => `${r.gp} ${fmt(r.edge)}`).join(", ")}. <b>Worst:</b> {sum.worst.map((r) => `${r.gp} ${fmt(r.edge)}`).join(", ")}.
       </p>
+      <div className="panel" data-testid="keystones">
+        <h4>KEYSTONES ({fittedIds.length}/{SLOTS})</h4>
+        <p className="small dim">The big choices that define the car. A swap costs {SWAP_HOURS} tunnel hours and dents what the team knows about the car. Hover a choice to see the map as it would be.</p>
+        {Array.from({ length: SLOTS }, (_, i) => {
+          const cur = fittedIds[i] ?? "";
+          return (
+            <label key={i} className="small" style={{ display: "block" }}>
+              Slot {i + 1}:{" "}
+              <select value={cur} onChange={(e) => setMsg(d({ type: "setKeystone", slot: i, id: e.target.value || null }).message)}>
+                <option value="">(empty)</option>
+                {KEYSTONES.filter((k) => k.id === cur || !fittedIds.includes(k.id)).map((k) => <option key={k.id} value={k.id}>{k.name} ({k.area})</option>)}
+              </select>
+            </label>
+          );
+        })}
+        <div className="row" style={{ flexWrap: "wrap", gap: 4 }}>
+          {KEYSTONES.filter((k) => !fittedIds.includes(k.id)).map((k) => (
+            <button key={k.id} className="btn small" title={k.blurb} onMouseEnter={() => setGhost([...fittedIds.slice(0, SLOTS - 1), k.id])} onMouseLeave={() => setGhost(null)} onFocus={() => setGhost([...fittedIds.slice(0, SLOTS - 1), k.id])} onBlur={() => setGhost(null)}>
+              {k.name}
+            </button>
+          ))}
+        </div>
+        {ghost && base && <p className="small">Ghost: with {keystoneOf(ghost[ghost.length - 1])?.name} the car would suit {fitSummary(rows).covered} tracks instead of {fitSummary(base).covered}.</p>}
+        {activePairs(fittedIds).map((p) => <p key={p.a + p.b} className="small dim">{p.text}</p>)}
+        {msg && <p className="small">{msg}</p>}
+      </div>
       <div className="fm-grid">
         {rows.map((r) => (
           <div key={r.round} className={`fm-row ${r.raced ? "raced" : ""}`}>

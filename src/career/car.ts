@@ -28,11 +28,11 @@ export function teamStaff(s: CareerState, teamId: string): Staff[] {
 }
 
 /** The simulator's view of a team, built from its career state: the five area ratings plus staff and facilities. */
-export function carSpec(s: CareerState, teamId: string, circuitId?: string): TeamSpec {
+export function carSpec(s: CareerState, teamId: string, circuitId?: string, ks?: string[]): TeamSpec {
   const base = baseTeam(teamId);
   const t = s.teams[teamId];
   // the clock sees each area through the rulebook and (at a track) through that track
-  const c = effCar(s, t, circuitId);
+  const c = effCar(s, t, circuitId, ks);
   const powerInit = (base.power - 0.98) / CFG.specPerSecPower;
   const mech = staffOf(s, teamId, "mechanic");
   const squad = ensureCrew(s, teamId, base.pitCrew);

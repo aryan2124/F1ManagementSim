@@ -370,6 +370,9 @@ export interface TeamState {
   design?: import("./design").Design;
   /** A shape chosen in the lab for next year's car. It becomes the car in January. */
   designNext?: import("./design").Design;
+  /** Keystone choices fitted to the car (see keystones.ts). */
+  keystones?: string[];
+  keystonesSet?: boolean;
   /** How well each lab instrument matches the track, 0 to 1, built up by running the car (see lab.ts). */
   corr?: Record<string, number>;
   /** The lab notebook, newest first. */
@@ -1007,6 +1010,7 @@ export type Action =
   | { type: "signIntern"; staffId: string }
   | { type: "runLab"; inst: import("./lab").InstId; model: import("./design").Design }
   | { type: "setDesignNext"; model: import("./design").Design | null }
+  | { type: "setKeystone"; slot: number; id: string | null }
   | { type: "promoteIntern"; staffId: string }
   | { type: "extend"; driverId: string; offer: Offer }
   | { type: "promise"; driverId: string; kind: PromiseKind }

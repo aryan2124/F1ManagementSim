@@ -1,3 +1,4 @@
+import { keystoneTraits } from "./keystones";
 import { Rng, hashSeed } from "../sim/rng";
 import { CIRCUITS } from "../game/circuits";
 import { clamp, round2 } from "./util";
@@ -161,13 +162,15 @@ export function traitWeight(w: Record<Trait, number>, tr: Trait, need?: TrackNee
 }
 
 /** The worth of each area to the lap clock, given the rules and (optionally) the circuit. */
-export function effCar(s: CareerState, t: TeamState, circuitId?: string): Record<Area, number> {
+export function effCar(s: CareerState, t: TeamState, circuitId?: string, ks?: string[]): Record<Area, number> {
   const w = s.regW;
+  const kt = keystoneTraits(t, ks);
+  const dnaT = (tr: Trait) => t.dna[tr] + kt[tr];
   const need = circuitId ? trackNeed(circuitId) : undefined;
   const out = {} as Record<Area, number>;
   for (const a of AREAS) {
     const [x, y] = AREA_TRAITS[a];
-    if (!w && !need) {
+    if (!w && !need && !ks && !(t.keystones?.length)) {
       out[a] = t.car[a];
       continue;
     }
@@ -177,8 +180,8 @@ export function effCar(s: CareerState, t: TeamState, circuitId?: string): Record
     const ny = (2 * wy) / (wx + wy);
     // the pair's overall weight also counts: an area made of heavy traits is worth more than one made of light ones
     const sc = (wx + wy) / 2;
-    const flat = (t.dna[x] + t.dna[y]) / 2 - IMB * Math.abs(t.dna[x] - t.dna[y]);
-    const lean = (nx * t.dna[x] + ny * t.dna[y]) / 2 - IMB * Math.abs(t.dna[x] - t.dna[y]);
+    const flat = (dnaT(x) + dnaT(y)) / 2 - IMB * Math.abs(dnaT(x) - dnaT(y));
+    const lean = (nx * dnaT(x) + ny * dnaT(y)) / 2 - IMB * Math.abs(dnaT(x) - dnaT(y));
     out[a] = (flat + (need ? TRACK_BOOST : 1) * (lean - flat)) * (0.3 + 0.7 * sc);
   }
   return out;

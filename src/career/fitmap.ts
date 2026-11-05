@@ -25,19 +25,20 @@ export interface FitRow {
 }
 
 /** Lap-time worth of a team's spec, as the rating the game already uses. */
-const worth = (s: CareerState, teamId: string, circuitId: string) => {
-  const spec = carSpec(s, teamId, circuitId);
+const worth = (s: CareerState, teamId: string, circuitId: string, ks?: string[]) => {
+  const spec = carSpec(s, teamId, circuitId, ks);
   return (spec.aero - 0.98) / CFG.specPerSecAero * 0.55 + (spec.power - 0.98) / CFG.specPerSecPower * 0.45;
 };
 
-export function fitMap(s: CareerState, teamId: string): FitRow[] {
+/** `ghost` is a hypothetical set of keystones for your own car: the map then shows the car as it would be. */
+export function fitMap(s: CareerState, teamId: string, ghost?: string[]): FitRow[] {
   const ids = Object.keys(s.teams);
   const run = Math.max(0, Math.min(s.round, s.calendar.length));
   // before any race the picture is blurry; every race run sharpens it
   const sigma = 0.3 / (1 + 0.15 * run);
   return s.calendar.map((c) => {
-    const mine = worth(s, teamId, c.circuitId);
-    const avg = ids.reduce((a, id) => a + worth(s, id, c.circuitId), 0) / ids.length;
+    const mine = worth(s, teamId, c.circuitId, ghost);
+    const avg = ids.reduce((a, id) => a + worth(s, id, c.circuitId, id === teamId ? ghost : undefined), 0) / ids.length;
     const edge = Math.round((mine - avg) * 1000) / 1000;
     const need = trackNeed(c.circuitId);
     return {

@@ -1,3 +1,4 @@
+import { setKeystone } from "./keystones";
 import { setFocus, pepTalk, setDelegate } from "./focus";
 import { runLab } from "./lab";
 import { clampDesign } from "./design";
@@ -293,6 +294,10 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
     }
     case "runLab": {
       const r = runLab(s, s.teamId, a.inst, a.model);
+      return r.ok ? good(r.message) : fail(r.message);
+    }
+    case "setKeystone": {
+      const r = setKeystone(s, s.teamId, a.slot, a.id);
       return r.ok ? good(r.message) : fail(r.message);
     }
     case "setDesignNext": {
