@@ -1,5 +1,7 @@
 import { reserveDuty } from "./health";
 import { auditMonthly, loopholesMonthly } from "./loopholes";
+import { amendmentsMonthly } from "./amendments";
+import { formatsMonthly } from "./formats";
 import { delegated } from "./focus";
 import { campaignWeekly, resolveCampaign, campaignOpen } from "./campaign";
 import { weekPlanCard, resolveWeekPlan, weekPlanOpen } from "./week";
@@ -314,6 +316,8 @@ function monthly(s: CareerState, month: number) {
   academyMonth(s, month);
   aiMonthly(s);
   loopholesMonthly(s);
+  amendmentsMonthly(s);
+  formatsMonthly(s);
   auditMonthly(s);
   reserveDuty(s);
   monthlyPlayer(s);

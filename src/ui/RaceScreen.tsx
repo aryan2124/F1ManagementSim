@@ -698,6 +698,17 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
             </div>
           </div>
 
+          <div className="ctl">
+            <span>LAP BUDGET</span>
+            <div className="seg">
+              {[{ v: 0, l: "FREE" }, { v: 0.08, l: "LOW" }, { v: 0.16, l: "MID" }, { v: 0.25, l: "HIGH" }].map((b) => (
+                <button key={b.l} className={car.budget === b.v ? "on" : ""} title="Most charge attack may spend on one lap. Past it the car runs balanced until the next lap." onClick={() => sim.command({ type: "budget", carId: car.id, budget: b.v })}>
+                  {b.l}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {(rl?.pushToPass || rl?.defenceTokens) && (
             <div className="ctl">
               <span>RULES</span>

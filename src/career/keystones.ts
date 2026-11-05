@@ -1,5 +1,6 @@
 import { round2 } from "./util";
 import { loopholeTraits } from "./loopholes";
+import { formatTraits } from "./formats";
 import type { Area, CareerState, TeamState, Trait } from "./types";
 import { TRAITS } from "./types";
 
@@ -71,7 +72,8 @@ export function keystoneTraits(t: TeamState, override?: string[]): Record<Trait,
     if (ids.includes(p.a) && ids.includes(p.b)) for (const tr of TRAITS) out[tr] += p.fx[tr] ?? 0;
   }
   const lh = loopholeTraits(t);
-  for (const tr of TRAITS) out[tr] = round2(out[tr] + (lh[tr] ?? 0));
+  const fm = formatTraits(t);
+  for (const tr of TRAITS) out[tr] = round2(out[tr] + (lh[tr] ?? 0) + (fm[tr] ?? 0));
   return out;
 }
 
@@ -94,6 +96,7 @@ export function setKeystone(s: CareerState, teamId: string, slot: number, id: st
   const was = cur[slot] ?? null;
   if (was === id) return { ok: true, message: "Already fitted." };
   if (id && !keystoneOf(id)) return { ok: false, message: "Unknown keystone." };
+  if (id && (s.amend?.banned ?? []).includes(id)) return { ok: false, message: "The teams voted to ban that keystone." };
   if (id && cur.some((x, i) => x === id && i !== slot)) return { ok: false, message: "That keystone is already on the car." };
   const first = !was && cur.filter(Boolean).length === 0 && !t.keystonesSet;
   if (!first) {

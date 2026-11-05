@@ -1,4 +1,7 @@
 import { liveLoopholes, loopState } from "../../career/loopholes";
+import { formatState, liveAuctions, liveFormats } from "../../career/formats";
+import { amendState } from "../../career/amendments";
+import { KEYSTONES } from "../../career/keystones";
 import { useState } from "react";
 import { MODULES, MODULE_BY_ID, THEME_LABEL, describeIntensity, type Live } from "../../career/modules";
 import { planOf, routeEstimate, staffOpinions, PACKAGES } from "../../career/eras";
@@ -121,6 +124,58 @@ export function Rules({ s, d }: Props) {
             })}
           </section>
         )}
+        {(liveFormats(s).length > 0 || liveAuctions(s).length > 0) && (
+          <section className="panel" data-testid="formats">
+            <h3>YOUR CHOICES UNDER THESE RULES</h3>
+            {liveFormats(s).map((f) => {
+              const mine = s.teams[s.teamId].formats?.[f.moduleId];
+              return (
+                <div key={f.moduleId}>
+                  <p className="dim small"><b>{f.title}.</b> {mine ? "Fixed for the season." : "Pick once; it cannot change this season."}</p>
+                  <div className="seg">
+                    {f.options.map((o) => (
+                      <button key={o.id} className={mine === o.id ? "on" : ""} disabled={!!mine && mine !== o.id} title={o.blurb} onClick={() => setMsg(d({ type: "pickFormat", moduleId: f.moduleId, option: o.id }).message)}>{o.name}</button>
+                    ))}
+                  </div>
+                  {mine && <p className="dim small">{f.options.find((o) => o.id === mine)?.blurb}</p>}
+                </div>
+              );
+            })}
+            {liveAuctions(s).map((a) => {
+              const au = formatState(s).auctions[a.moduleId];
+              const mineBid = au?.bids[s.teamId] ?? 0;
+              return (
+                <p key={a.moduleId} className="c-line">
+                  <span><b>{a.title}</b> <span className="dim small">{!au ? "Opens at the next round." : au.done ? `Closed. Won by ${au.winners.map((x) => x.toUpperCase()).join(", ") || "nobody"}.` : `Sealed bids, top ${a.slots} win. Your bid: $${mineBid.toFixed(2)}m.`}</span></span>
+                  {au && !au.done && [0, 0.25, 0.5, 1].map((v) => <button key={v} className={`btn ${mineBid === v ? "on" : ""}`} onClick={() => setMsg(d({ type: "bid", moduleId: a.moduleId, amount: v }).message)}>{v ? `$${v}m` : "NO BID"}</button>)}
+                </p>
+              );
+            })}
+          </section>
+        )}
+        <section className="panel" data-testid="amendments">
+          <h3>AMENDMENTS</h3>
+          <p className="dim small">Any team can table a change; the teams vote at the next monthly round and a majority passes it. A team that benefits from the thing under attack votes against it. Filing costs $0.20m.</p>
+          {amendState(s).open ? (
+            <p className="c-line">
+              <span><b>On the table:</b> {amendState(s).open!.kind === "patch-gap" ? "close the gap " : "ban the keystone "}{amendState(s).open!.kind === "patch-gap" ? amendState(s).open!.target : KEYSTONES.find((k) => k.id === amendState(s).open!.target)?.name}, tabled by {amendState(s).open!.by.toUpperCase()}.</span>
+              <span>
+                <button className="btn" onClick={() => setMsg(d({ type: "voteAmendment", yes: true }).message)}>FOR</button>
+                <button className="btn" onClick={() => setMsg(d({ type: "voteAmendment", yes: false }).message)}>AGAINST</button>
+              </span>
+            </p>
+          ) : (
+            <>
+              {liveLoopholes(s).slice(0, 4).map((l) => (
+                <p key={l.id} className="c-line"><span>Close the gap: <b>{l.name}</b></span><button className="btn" onClick={() => setMsg(d({ type: "proposeAmendment", kind: "patch-gap", target: l.id }).message)}>TABLE IT</button></p>
+              ))}
+              {Object.values(s.teams).flatMap((t) => (t.id === s.teamId ? [] : t.keystones ?? [])).filter((k, i, a) => a.indexOf(k) === i).slice(0, 4).map((k) => (
+                <p key={k} className="c-line"><span>Ban the keystone: <b>{KEYSTONES.find((x) => x.id === k)?.name ?? k}</b> (a rival runs it)</span><button className="btn" onClick={() => setMsg(d({ type: "proposeAmendment", kind: "ban-keystone", target: k }).message)}>TABLE IT</button></p>
+              ))}
+            </>
+          )}
+          {amendState(s).history.slice(-3).map((h, i) => <p key={i} className="dim small">{h.passed ? "Passed" : "Defeated"}: {h.text}.</p>)}
+        </section>
         <section className="panel">
           <h3>REGULATIONS NOW</h3>
           {e.mode === "locked" && <p className="dim">This career uses locked rules. Only the modules you picked at the start are in force.</p>}

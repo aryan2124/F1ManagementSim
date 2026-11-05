@@ -23,6 +23,7 @@ import type {
 
 const KEY_KINDS = new Set<SimEventKind>(["overtake", "crash", "spin", "contact", "penalty", "failure", "sc_deployed", "vsc", "red_flag", "damage", "gravel", "wall", "lockup", "fastest_lap", "weather", "lightning"]);
 import { isWetCompound } from "./types";
+import { ClipRecorder } from "./clips";
 import { bestSet, cloneSets, findSet, freshCounts, type TyreSet } from "./tyreSets";
 
 /** Fixed simulation step in seconds. Everything is deterministic at this step. */
@@ -74,8 +75,8 @@ export function tyreLifeFor(laps: number, severity = 1): Record<Compound, number
   return { S: f("S", 3), M: f("M", 4.5), H: f("H", 6), I: f("I", 6), W: f("W", 8) };
 }
 
-const PUSH_GRIP = [0.99, 1.0, 1.007];
-const PUSH_WEAR = [0.7, 1.0, 1.45];
+const PUSH_GRIP = [0.987, 1.0, 1.012];
+const PUSH_WEAR = [0.65, 1.0, 1.35];
 const PUSH_FUEL = [0.94, 1.0, 1.06];
 /** Reads a pace table at a half step: the five steps are SAVE, SAVE+, STD, STD+ and PUSH. */
 function atPace(tab: number[], push: number, trim = 0): number {
@@ -111,6 +112,11 @@ export function speedFactor(
 }
 
 /** ERS deployment multiplier for the current mode on this part of the track. */
+/** The mode the car really runs: attack turns to balanced once the lap's energy budget is spent. */
+export function effMode(car: { mode: EnergyMode; budget: number; lapSoc: number; soc: number }): EnergyMode {
+  return car.mode === "attack" && car.budget > 0 && car.lapSoc - car.soc >= car.budget ? "balanced" : car.mode;
+}
+
 export function ersFactor(mode: EnergyMode, soc: number, straight: boolean): number {
   if (straight) {
     if (mode === "attack") return soc > 0.02 ? 1.022 : 0.995;
@@ -142,6 +148,8 @@ export class RaceSim {
   bestLapCar = "";
   bestSector: [number, number, number] = [Infinity, Infinity, Infinity];
   readonly commandLog: LoggedCommand[] = [];
+  /** Films of the crashes, spins and contacts, for the debrief. */
+  readonly clips = new ClipRecorder();
   private events: SimEvent[] = [];
   byId = new Map<string, CarState>();
   private ahead = new Map<string, CarState | null>();
@@ -226,6 +234,8 @@ export class RaceSim {
         tyre: { compound, wear: 0, ageLaps: 0 },
         fuel: cfg.startFuel ?? 1,
         soc: 0.8,
+        budget: 0,
+        lapSoc: 0.8,
         mode: "balanced",
         push: 1,
         trim: 0,
@@ -322,6 +332,7 @@ export class RaceSim {
     const ev: SimEvent = { tick: this.tick, kind, carId, otherId, text };
     this.events.push(ev);
     if (KEY_KINDS.has(kind) && this.keyEvents.length < 600) this.keyEvents.push({ ...ev, lap: this.leaderLap });
+    if (kind === "crash" || kind === "contact" || kind === "spin" || kind === "wall") this.clips.mark(this.tick, kind, text, [carId, otherId].filter((x): x is string => !!x));
     if (this.radio) this.radio.observe(ev);
   }
 
@@ -400,6 +411,9 @@ export class RaceSim {
       case "mode":
         car.mode = cmd.mode;
         break;
+      case "budget":
+        car.budget = Math.max(0, Math.min(1, cmd.budget));
+        break;
       case "push":
         car.push = cmd.push;
         car.trim = cmd.trim ?? 0;
@@ -423,6 +437,7 @@ export class RaceSim {
   step(): void {
     if (this.phase === "finished") return;
     this.tick++;
+    this.clips.frame(this.tick, () => Object.fromEntries(this.cars.map((c) => [c.id, c.s])));
     if (this.weather) this.stepWeather();
     if (this.phase === "grid") {
       this.updateOrder();
@@ -753,7 +768,8 @@ export class RaceSim {
     }
 
     // ---- ERS deployment on straights
-    const ers = ersFactor(car.mode, car.soc, straight);
+    const em = effMode(car);
+    const ers = ersFactor(em, car.soc, straight);
 
     const boosting = car.boostUntil > this.tick;
     const free = profV * factor * ers * (boosting ? 1.022 : 1);
@@ -974,8 +990,9 @@ export class RaceSim {
     // ---- ERS state of charge
     const braking = target < car.v - 1.2;
     if (straight) {
-      if (car.mode === "attack") car.soc -= 0.0165 * DT;
-      else if (car.mode === "balanced") car.soc -= 0.0055 * DT;
+      const dm = effMode(car);
+      if (dm === "attack") car.soc -= 0.0165 * DT;
+      else if (dm === "balanced") car.soc -= 0.0055 * DT;
       else car.soc += 0.0035 * DT;
     }
     if (braking) car.soc += (car.mode === "harvest" ? 0.022 : car.mode === "balanced" ? 0.012 : 0.009) * DT;
@@ -1088,6 +1105,7 @@ export class RaceSim {
     car.sectorStartTick = crossTick;
 
     car.lap = lapNo;
+    car.lapSoc = car.soc;
     car.lastLap = lapTime;
     car.lapStartTick = crossTick;
     car.tyre.ageLaps++;
@@ -1307,6 +1325,7 @@ export class RaceSim {
     else if (car.soc > 0.8) mode = "attack";
     car.mode = mode;
     car.push = car.tyre.wear > 0.75 ? 0 : remaining <= 2 ? 2 : 1;
+    car.trim = 0;
   }
 
   // ------------------------------------------------------------------ order, gaps, finish

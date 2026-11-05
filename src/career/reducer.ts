@@ -1,3 +1,5 @@
+import { pickFormat, placeBid } from "./formats";
+import { proposeAmendment, voteAmendment } from "./amendments";
 import { setExploit } from "./loopholes";
 import { setKeystone } from "./keystones";
 import { setFocus, pepTalk, setDelegate } from "./focus";
@@ -302,6 +304,22 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       if (a.option) so[a.kind] = a.option; else delete so[a.kind];
       s.standing = so;
       return good(a.option ? "From now on that kind of decision is answered that way." : "That standing order is cancelled.");
+    }
+    case "proposeAmendment": {
+      const r = proposeAmendment(s, s.teamId, a.kind, a.target);
+      return r.ok ? good(r.message) : fail(r.message);
+    }
+    case "voteAmendment": {
+      const r = voteAmendment(s, s.teamId, a.yes);
+      return r.ok ? good(r.message) : fail(r.message);
+    }
+    case "pickFormat": {
+      const r = pickFormat(s, s.teamId, a.moduleId, a.option);
+      return r.ok ? good(r.message) : fail(r.message);
+    }
+    case "bid": {
+      const r = placeBid(s, s.teamId, a.moduleId, a.amount);
+      return r.ok ? good(r.message) : fail(r.message);
     }
     case "exploit": {
       const r = setExploit(s, s.teamId, a.id, a.on);

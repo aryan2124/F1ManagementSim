@@ -270,6 +270,10 @@ export interface CarState {
   fuel: number; // 0..1
   soc: number; // battery 0..1
   mode: EnergyMode;
+  /** Most charge the car may spend attacking on one lap (0 = no limit). Past it attack runs as balanced until the next lap. */
+  budget: number;
+  /** Charge at the start of this lap. */
+  lapSoc: number;
   push: PushLevel;
   /** Half a step above the pace level: with SAVE/STD gives the in-between settings of the five step dial. */
   trim: 0 | 1;
@@ -459,6 +463,7 @@ export type Command =
   | { type: "defend"; carId: string }
   | { type: "cancelPit"; carId: string }
   | { type: "mode"; carId: string; mode: EnergyMode }
+  | { type: "budget"; carId: string; budget: number }
   | { type: "push"; carId: string; push: PushLevel; trim?: 0 | 1 }
   /** Timed release in the pit box: pressed in the last half second of the stop it saves that time, pressed early it costs a second. */
   /** A team order to one of the player's cars. */

@@ -295,7 +295,10 @@ export const careerEngine: CareerEngine<MultiState> & CareerEngineExtras = {
       t.keystonesSet = undefined;
       t.loops = undefined;
       t.auditDay = undefined;
+      t.formats = undefined;
     }
+    // sealed bids stay sealed until the auction closes
+    if (s.formats) for (const au of Object.values(s.formats.auctions)) if (!au.done) au.bids = Object.fromEntries(Object.entries(au.bids).filter(([id]) => id === teamId));
     // private ledger lines (lab, trainees, stories, hires) belong to the team they happened to
     const PRIVATE = /^(thread:|lab$|intern$|promotion$|hire$)/;
     s.facts = (s.facts ?? []).filter((f) => !PRIVATE.test(f.kind) || f.who.includes(teamId));

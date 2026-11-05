@@ -374,6 +374,9 @@ export interface TeamState {
   /** Keystone choices fitted to the car (see keystones.ts). */
   keystones?: string[];
   keystonesSet?: boolean;
+  /** Layout picks for combination rulesets (module id to option id) and auctions won this season. */
+  formats?: Record<string, string>;
+  auctionWins?: string[];
   /** Rule loopholes this team is working (see loopholes.ts). */
   loops?: string[];
   /** Day of the last cost-audit fine. */
@@ -824,6 +827,10 @@ export interface CareerState {
   /** Standing orders: for a kind of decision, the option to take without asking (never on mandatory cards). */
   standing?: Record<string, string>;
   /** Loophole heat, patched gaps and hints already sent. */
+  /** Sealed bid auctions by ruleset. */
+  formats?: { auctions: Record<string, { year: number; closes: number; bids: Record<string, number>; winners: string[]; done: boolean }> };
+  /** Amendments tabled and voted by the teams. */
+  amend?: { open?: { id: string; kind: "patch-gap" | "ban-keystone"; target: string; by: string; day: number; votes: Record<string, boolean> }; banned: string[]; history: { day: number; text: string; passed: boolean }[] };
   loops?: { heat: Record<string, number>; patched: string[]; hinted: string[] };
   /** The person is away: letters without a standing order wait for them instead of lapsing. */
   away?: boolean;
@@ -1029,6 +1036,10 @@ export type Action =
   | { type: "standingOrder"; kind: string; option: string | null }
   | { type: "setAway"; away: boolean }
   | { type: "exploit"; id: string; on: boolean }
+  | { type: "proposeAmendment"; kind: "patch-gap" | "ban-keystone"; target: string }
+  | { type: "voteAmendment"; yes: boolean }
+  | { type: "pickFormat"; moduleId: string; option: string }
+  | { type: "bid"; moduleId: string; amount: number }
   | { type: "promoteIntern"; staffId: string }
   | { type: "extend"; driverId: string; offer: Offer }
   | { type: "promise"; driverId: string; kind: PromiseKind }

@@ -931,7 +931,7 @@ export class RadioSystem {
           this.eng(car, ENG.stayOut);
           respond(-0.5 - (car.tyre.wear - 0.78));
         } else {
-          car.push = 0;
+          car.push = 0; car.trim = 0;
           this.active.set(car.id, { kind: "save", until: sim.tick + 1, untilLap: car.lap + 4 });
           this.suppress.set(car.id + "t", sim.tick + 1800);
           this.eng(car, ENG.saveTyres);
@@ -1078,7 +1078,7 @@ export class RadioSystem {
         if (mate) this.applyOrder(car, "free", mate);
         break;
       case "pushnow":
-        car.push = 2;
+        car.push = 2; car.trim = 0;
         this.active.set(car.id, { kind: "push", until: 0, untilLap: car.lap + 4 });
         this.eng(car, ENG.pushNow);
         {
@@ -1097,7 +1097,7 @@ export class RadioSystem {
         }
         break;
       case "savetyres":
-        car.push = 0;
+        car.push = 0; car.trim = 0;
         this.active.set(car.id, { kind: "save", until: 0, untilLap: car.lap + 4 });
         this.eng(car, ENG.saveTyres);
         {
@@ -1162,7 +1162,7 @@ export class RadioSystem {
         continue;
       }
       if ((a.kind === "push" || a.kind === "save") && car.lap >= a.untilLap) {
-        if (car.push === (a.kind === "push" ? 2 : 0)) car.push = 1;
+        if (car.push === (a.kind === "push" ? 2 : 0)) { car.push = 1; car.trim = 0; }
         this.active.delete(id);
       } else if ((a.kind === "hold" || a.kind === "letby") && sim.tick >= a.until) this.active.delete(id);
     }

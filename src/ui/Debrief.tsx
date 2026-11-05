@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Person } from "./career/DevRoom";
 import type { DevReact, Staff } from "../career/types";
 import "./career/devroom.css";
@@ -8,6 +8,9 @@ import { COMPOUNDS, fmtLap } from "../sim/engine";
 import { CompoundBadge } from "./Briefing";
 import type { SetupReview } from "../career/weekend";
 import { strategyReport } from "../game/strategyReport";
+import { forkRace, type Fork } from "../sim/whatif";
+import { DT } from "../sim/engine";
+import { sampleTrack } from "../sim/track";
 
 const hex = (c: number) => `#${c.toString(16).padStart(6, "0")}`;
 
@@ -137,6 +140,110 @@ function Highlights({ db, report }: { db: ReturnType<typeof buildDebrief>; repor
   );
 }
 
+
+/** The crashes and contacts of the race, replayed from above: ten seconds before, three after. */
+function IncidentReplay({ session }: { session: RaceSession }) {
+  const sim = session.sim;
+  const clips = sim.clips.clips;
+  const [pick, setPick] = useState(0);
+  const [at, setAt] = useState(0);
+  const ref = useRef<HTMLCanvasElement>(null);
+  const clip = clips[pick];
+  useEffect(() => { setAt(0); }, [pick]);
+  useEffect(() => {
+    if (!clip) return;
+    const id = setInterval(() => setAt((a) => (a + 1 >= clip.frames.length ? 0 : a + 1)), 140);
+    return () => clearInterval(id);
+  }, [clip]);
+  useEffect(() => {
+    const cv = ref.current;
+    if (!cv || !clip) return;
+    const ctx = cv.getContext("2d");
+    if (!ctx) return;
+    const t = sim.track;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (let i = 0; i < t.n; i++) { minX = Math.min(minX, t.x[i]); maxX = Math.max(maxX, t.x[i]); minY = Math.min(minY, t.y[i]); maxY = Math.max(maxY, t.y[i]); }
+    const W = cv.width, H = cv.height, k = Math.min((W - 20) / (maxX - minX), (H - 20) / (maxY - minY));
+    const px = (x: number) => 10 + (x - minX) * k, py = (y: number) => 10 + (y - minY) * k;
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = "#3a3566"; ctx.lineWidth = 4; ctx.beginPath();
+    for (let i = 0; i <= t.n; i++) { const j = i % t.n; if (i) ctx.lineTo(px(t.x[j]), py(t.y[j])); else ctx.moveTo(px(t.x[j]), py(t.y[j])); }
+    ctx.stroke();
+    const f = clip.frames[Math.min(at, clip.frames.length - 1)];
+    if (!f) return;
+    for (const c of sim.cars) {
+      const sv = f.s[c.id];
+      if (sv === undefined) continue;
+      const p = sampleTrack(t, sv);
+      const involved = clip.cars.includes(c.id);
+      ctx.fillStyle = involved ? "#ff4f4f" : hex(c.entry.team.color);
+      ctx.globalAlpha = involved ? 1 : 0.55;
+      ctx.beginPath(); ctx.arc(px(p.x), py(p.y), involved ? 6 : 3.5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }, [clip, at, sim]);
+  if (!clips.length) return null;
+  const secs = clip ? ((clip.frames[Math.min(at, clip.frames.length - 1)]?.tick ?? clip.tick) - clip.tick) * DT : 0;
+  return (
+    <section className="panel">
+      <h3>INCIDENT REPLAY</h3>
+      <div className="seg">
+        {clips.map((c, i) => <button key={i} className={i === pick ? "on" : ""} onClick={() => setPick(i)}>{c.kind.toUpperCase()} {Math.round(c.tick * DT / 60)}M</button>)}
+      </div>
+      <canvas ref={ref} width={420} height={260} style={{ maxWidth: "100%", background: "#14182a" }} />
+      <p className="dim small">{clip?.text} ({secs >= 0 ? "+" : ""}{secs.toFixed(1)} s). Red dots are the cars involved.</p>
+    </section>
+  );
+}
+
+/** Go back to a lap, change one call, and watch the same race (same seed) play out again. */
+function WhatIf({ session }: { session: RaceSession }) {
+  const sim = session.sim;
+  const id = session.humanIds[0];
+  const car = sim.cars.find((c) => c.id === id);
+  const total = sim.cfg.laps;
+  const [lap, setLap] = useState(Math.max(1, Math.floor(total / 3)));
+  const [out, setOut] = useState<{ name: string; place: number; time: number }[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  if (!car) return null;
+  const tickOfLap = (l: number) => {
+    const t = (sim.lapLog.get(id) ?? []).filter((r) => r.lap <= l).reduce((a, r) => a + r.time, 0);
+    return Math.max(1, Math.round(t / DT));
+  };
+  const run = () => {
+    setBusy(true);
+    setTimeout(() => {
+      const from = tickOfLap(lap);
+      const forks: Fork[] = [
+        { name: "Pit now for hards", fromTick: from, cmds: [{ type: "pit", carId: id, compound: "H" }] },
+        { name: "Pit now for softs", fromTick: from, cmds: [{ type: "pit", carId: id, compound: "S" }] },
+        { name: "Push from here", fromTick: from, cmds: [{ type: "push", carId: id, push: 2 }] },
+        { name: "Save tyres from here", fromTick: from, cmds: [{ type: "push", carId: id, push: 0 }] },
+      ];
+      const res = forkRace(sim.cfg, sim.commandLog, forks, [id]);
+      setOut(res.map((r) => ({ name: r.name, place: r.places[id], time: r.rows.find((x) => x.carId === id)?.totalTime ?? Infinity })));
+      setBusy(false);
+    }, 20);
+  };
+  return (
+    <section className="panel">
+      <h3>WHAT IF</h3>
+      <p className="dim small">Go back to a lap, change one call, and the same race plays out again with the same luck.</p>
+      <div className="ctl">
+        <span>FROM LAP</span>
+        <input type="range" min={1} max={Math.max(1, total - 1)} value={lap} onChange={(e) => { setLap(+e.target.value); setOut(null); }} />
+        <b>{lap}</b>
+        <button className="btn" disabled={busy} onClick={run}>{busy ? "REPLAYING..." : "RUN THE BRANCHES"}</button>
+      </div>
+      {out && (
+        <ul className="db-list">
+          {out.map((o) => <li key={o.name}>{o.name}: {o.place ? `P${o.place}` : "did not finish"}{isFinite(o.time) ? `, ${o.time.toFixed(1)} s` : ""}</li>)}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export function Debrief({ session, review }: { session: RaceSession; review?: SetupReview | null }) {
   const sim = session.sim;
   const db = useMemo(() => buildDebrief(sim, session.humanIds), [sim, session]);
@@ -146,6 +253,8 @@ export function Debrief({ session, review }: { session: RaceSession; review?: Se
     <div className="debrief">
       <Highlights db={db} report={report} />
       <EngineerReplay db={db} n={sim.cars.length} />
+      <IncidentReplay session={session} />
+      <WhatIf session={session} />
       <section className="panel">
         <h3>THE RACE IN ONE PICTURE</h3>
         <Trace cars={db.cars} rivals={db.rivals} n={sim.cars.length} />
