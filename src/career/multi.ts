@@ -375,7 +375,7 @@ export const careerEngine: CareerEngine<MultiState> & CareerEngineExtras = {
         } else {
           const moods: Record<string, { morale: number; trust: number; grievance: number; strat?: number }> = {};
           for (const id of own) if (res!.moods?.[id]) moods[id] = res!.moods[id];
-          recordSession(s, "race", res!.order, res!.points ?? {}, undefined, res!.dnf ?? [], moods, { skipWorld: !first, hurt: res!.hurt, crashes: res!.crashes });
+          recordSession(s, "race", res!.order, res!.points ?? {}, undefined, res!.dnf ?? [], moods, { skipWorld: !first, hurt: res!.hurt, crashes: res!.crashes, calls: res!.calls });
         }
       });
       shareArcs(ms, h);
@@ -407,6 +407,7 @@ export interface SessionResultIn {
   sets?: Record<string, import("../sim/tyreSets").TyreSet[]>;
   hurt?: Record<string, number>;
   crashes?: Record<string, { impact: number; pose: string }>;
+  calls?: NonNullable<Extract<import("./types").Action, { type: "recordSession" }>["calls"]>;
 }
 
 function ownDrivers(s: CareerState, teamId: string): string[] {

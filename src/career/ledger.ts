@@ -7,7 +7,7 @@ import type { CareerState } from "./types";
 export interface LedgerEntry {
   day: number;
   year: number;
-  kind: "part" | "driver" | "health" | "crash" | "money";
+  kind: "part" | "driver" | "health" | "crash" | "money" | "call";
   text: string;
   /** Cost in $m (negative for money that came in). */
   cost?: number;

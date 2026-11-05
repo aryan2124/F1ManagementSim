@@ -113,3 +113,20 @@ describe("verdict ledger", () => {
     expect(v.length).toBeLessThanOrEqual(300);
   });
 });
+
+describe("pit wall receipts", () => {
+  it("calls with a verdict land in the ledger, others are skipped", async () => {
+    const { logCalls } = await import("../src/career/weekend");
+    const { newCareer } = await import("../src/career/world");
+    const s = newCareer("fer", 2);
+    logCalls(s, [
+      { carId: "a", lap: 12, kind: "cover", text: "Covered NOR", verdict: "good", secs: 1.4 },
+      { carId: "a", lap: 30, kind: "tyres", text: "Kept him out", verdict: "bad", secs: -2.1 },
+      { carId: "a", lap: 40, kind: "pit", text: "Stopped" },
+    ]);
+    const calls = (s.verdicts ?? []).filter((v) => v.kind === "call");
+    expect(calls).toHaveLength(2);
+    expect(calls.some((c) => /it paid/.test(c.because ?? ""))).toBe(true);
+    expect(calls.some((c) => /it cost/.test(c.because ?? ""))).toBe(true);
+  });
+});

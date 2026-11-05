@@ -1,3 +1,4 @@
+import { logLedger } from "./ledger";
 import { onLanding } from "./dev";
 import { socialAfterRace, type RadioQuote } from "./social";
 import { planRetirements } from "./contracts";
@@ -801,7 +802,7 @@ function recordStandings(s: CareerState, kind: SessionKind, order: string[], poi
 /** Store a finished session. A finished Grand Prix closes the weekend and pays out. */
 const BASE_SETS = { normal: { S: 4, M: 5, H: 4 }, sprint: { S: 4, M: 4, H: 4 } } as const;
 
-export function recordSession(s: CareerState, kind: SessionKind, order: string[], points: Record<string, number>, grid: string[] | undefined, dnf: string[], moods?: Record<string, { morale: number; trust: number; grievance: number; strat?: number }>, extra?: { sets?: Record<string, TyreSet[]>; locks?: Record<string, "S" | "M" | "H">; used?: Record<string, Partial<Record<"S" | "M" | "H", number>>>; skipWorld?: boolean; failed?: Record<string, "pu" | "gb">; fastest?: string; pit?: { stops: number; slow: number; best?: number }; radio?: RadioQuote[]; duels?: { a: string; b: string; passes: number; contacts: number }[]; hurt?: Record<string, number>; crashes?: Record<string, { impact: number; pose: string }> }) {
+export function recordSession(s: CareerState, kind: SessionKind, order: string[], points: Record<string, number>, grid: string[] | undefined, dnf: string[], moods?: Record<string, { morale: number; trust: number; grievance: number; strat?: number }>, extra?: { sets?: Record<string, TyreSet[]>; locks?: Record<string, "S" | "M" | "H">; used?: Record<string, Partial<Record<"S" | "M" | "H", number>>>; skipWorld?: boolean; failed?: Record<string, "pu" | "gb">; fastest?: string; pit?: { stops: number; slow: number; best?: number }; radio?: RadioQuote[]; duels?: { a: string; b: string; passes: number; contacts: number }[]; hurt?: Record<string, number>; crashes?: Record<string, { impact: number; pose: string }>; calls?: { carId: string; lap: number; kind: string; text: string; verdict?: "good" | "bad" | "even"; secs?: number }[] }) {
   const ws = s.weekend;
   if (!ws) return;
   if (kind === "quali" || (kind === "sq" && !ws.sprint)) {
@@ -858,7 +859,7 @@ export function recordSession(s: CareerState, kind: SessionKind, order: string[]
   if (kind === "race") {
     if (!extra?.skipWorld) recordStandings(s, kind, order, points);
     finishRace(s, ws, res, !!extra?.skipWorld, extra?.radio, extra?.duels);
-    if (!extra?.skipWorld) { healthAfterRace(s, ws.round, extra?.hurt); crashBills(s, extra?.crashes); }
+    if (!extra?.skipWorld) { healthAfterRace(s, ws.round, extra?.hurt); crashBills(s, extra?.crashes); logCalls(s, extra?.calls); }
     ws.stage = "done";
     // whatever died is replaced at the factory; the penalty waits for the next race
     if (ws.dead) {
@@ -909,6 +910,13 @@ export function hurtOf(sim: { cars: { id: string; crash?: { impact: number; pose
   return { hurt, crashes };
 }
 
+/** The pit wall's calls become receipts in the verdict ledger: what was decided, and whether it paid. */
+export function logCalls(s: CareerState, calls: NonNullable<Parameters<typeof recordSession>[7]>["calls"] = []) {
+  for (const c of calls.filter((x) => x.verdict).slice(0, 12)) {
+    logLedger(s, { kind: "call", text: `Lap ${c.lap}: ${c.text}`, because: c.verdict === "good" ? `it paid${c.secs ? ` (${c.secs.toFixed(1)}s)` : ""}` : c.verdict === "bad" ? `it cost${c.secs ? ` (${Math.abs(c.secs).toFixed(1)}s)` : ""}` : "it made no difference" });
+  }
+}
+
 export function raceExtras(sim: RaceSim, mineIds: string[]) {
   const sets = sim.finalSets();
   const stops = sim.stopLog.filter((x) => mineIds.includes(x.carId));
@@ -920,6 +928,7 @@ export function raceExtras(sim: RaceSim, mineIds: string[]) {
     radio: (sim.radio?.quotes ?? []).filter((q) => mineIds.includes(q.carId)).map((q) => ({ ...q })),
     duels: duelsOf(sim, mineIds),
     ...hurtOf(sim),
+    calls: (sim.radio?.calls ?? []).filter((c) => mineIds.includes(c.carId)).map((c) => ({ carId: c.carId, lap: c.lap, kind: c.kind, text: c.text, verdict: c.verdict, secs: c.secs })),
   };
 }
 
