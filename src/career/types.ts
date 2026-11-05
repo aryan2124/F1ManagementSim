@@ -373,6 +373,8 @@ export interface TeamState {
   /** Keystone choices fitted to the car (see keystones.ts). */
   keystones?: string[];
   keystonesSet?: boolean;
+  /** Rule loopholes this team is working (see loopholes.ts). */
+  loops?: string[];
   /** How well each lab instrument matches the track, 0 to 1, built up by running the car (see lab.ts). */
   corr?: Record<string, number>;
   /** The lab notebook, newest first. */
@@ -818,6 +820,8 @@ export interface CareerState {
   delegate?: Partial<Record<"rnd" | "people" | "money" | "academy", boolean>>;
   /** Standing orders: for a kind of decision, the option to take without asking (never on mandatory cards). */
   standing?: Record<string, string>;
+  /** Loophole heat, patched gaps and hints already sent. */
+  loops?: { heat: Record<string, number>; patched: string[]; hinted: string[] };
   /** The person is away: letters without a standing order wait for them instead of lapsing. */
   away?: boolean;
   focus?: { kind: import("./focus").FocusKind; since: number };
@@ -1021,6 +1025,7 @@ export type Action =
   | { type: "setKeystone"; slot: number; id: string | null }
   | { type: "standingOrder"; kind: string; option: string | null }
   | { type: "setAway"; away: boolean }
+  | { type: "exploit"; id: string; on: boolean }
   | { type: "promoteIntern"; staffId: string }
   | { type: "extend"; driverId: string; offer: Offer }
   | { type: "promise"; driverId: string; kind: PromiseKind }

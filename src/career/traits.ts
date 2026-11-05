@@ -170,7 +170,7 @@ export function effCar(s: CareerState, t: TeamState, circuitId?: string, ks?: st
   const out = {} as Record<Area, number>;
   for (const a of AREAS) {
     const [x, y] = AREA_TRAITS[a];
-    if (!w && !need && !ks && !(t.keystones?.length)) {
+    if (!w && !need && !ks && !(t.keystones?.length) && !(t.loops?.length)) {
       out[a] = t.car[a];
       continue;
     }

@@ -1,3 +1,4 @@
+import { setExploit } from "./loopholes";
 import { setKeystone } from "./keystones";
 import { setFocus, pepTalk, setDelegate } from "./focus";
 import { runLab } from "./lab";
@@ -301,6 +302,10 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       if (a.option) so[a.kind] = a.option; else delete so[a.kind];
       s.standing = so;
       return good(a.option ? "From now on that kind of decision is answered that way." : "That standing order is cancelled.");
+    }
+    case "exploit": {
+      const r = setExploit(s, s.teamId, a.id, a.on);
+      return r.ok ? good(r.message) : fail(r.message);
     }
     case "setAway":
       s.away = a.away;

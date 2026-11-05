@@ -1,4 +1,5 @@
 import { round2 } from "./util";
+import { loopholeTraits } from "./loopholes";
 import type { Area, CareerState, TeamState, Trait } from "./types";
 import { TRAITS } from "./types";
 
@@ -69,7 +70,8 @@ export function keystoneTraits(t: TeamState, override?: string[]): Record<Trait,
   for (const p of PAIRS) {
     if (ids.includes(p.a) && ids.includes(p.b)) for (const tr of TRAITS) out[tr] += p.fx[tr] ?? 0;
   }
-  for (const tr of TRAITS) out[tr] = round2(out[tr]);
+  const lh = loopholeTraits(t);
+  for (const tr of TRAITS) out[tr] = round2(out[tr] + (lh[tr] ?? 0));
   return out;
 }
 

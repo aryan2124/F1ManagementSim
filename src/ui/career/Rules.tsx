@@ -1,3 +1,4 @@
+import { liveLoopholes, loopState } from "../../career/loopholes";
 import { useState } from "react";
 import { MODULES, MODULE_BY_ID, THEME_LABEL, describeIntensity, type Live } from "../../career/modules";
 import { planOf, routeEstimate, staffOpinions, PACKAGES } from "../../career/eras";
@@ -104,6 +105,22 @@ export function Rules({ s, d }: Props) {
   return (
     <div className="c-cols">
       <div>
+        {liveLoopholes(s).length > 0 && (
+          <section className="panel" data-testid="loopholes">
+            <h3>GAPS IN THE WORDING</h3>
+            <p className="dim small">Every rule can be read two ways. Working a gap makes the car quicker, but the Commission hears about it: at half heat it hints, at full heat it patches the rule and fines everyone who used it.</p>
+            {liveLoopholes(s).map((l) => {
+              const on = (s.teams[s.teamId].loops ?? []).includes(l.id);
+              const heat = loopState(s).heat[l.id] ?? 0;
+              return (
+                <p key={l.id} className="c-line">
+                  <span><b>{l.name}</b> <span className="dim small">{l.text} Heat {Math.round(heat * 100)}%.</span></span>
+                  <button className={on ? "on" : ""} onClick={() => setMsg(d({ type: "exploit", id: l.id, on: !on }).message)}>{on ? "STOP WORKING IT" : "WORK IT"}</button>
+                </p>
+              );
+            })}
+          </section>
+        )}
         <section className="panel">
           <h3>REGULATIONS NOW</h3>
           {e.mode === "locked" && <p className="dim">This career uses locked rules. Only the modules you picked at the start are in force.</p>}
