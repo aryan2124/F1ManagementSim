@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { fitMap, fitSummary } from "../../career/fitmap";
+import { seasonMap } from "../../career/seasonmap";
 import { KEYSTONES, SLOTS, SWAP_HOURS, activePairs, keystoneOf } from "../../career/keystones";
 import { teamOf, type Props } from "./common";
 
@@ -64,6 +65,27 @@ export function FitMapPanel({ s, d }: Props) {
           </div>
         ))}
       </div>
+    </section>
+  );
+}
+
+const READ = { above: "better than the car promised", "as expected": "about what the car promised", below: "worse than the car promised", "": "" } as const;
+
+/** One row a race: the promise, the result and what the team decided on the way. */
+export function SeasonMapPanel({ s }: Props) {
+  const rows = seasonMap(s);
+  return (
+    <section className="panel" data-testid="seasonmap">
+      <h3>SEASON MAP</h3>
+      <p className="small dim">Each race: what the Fit Map promised, what happened, and what you decided or paid on the way there.</p>
+      <ul className="c-notes">
+        {rows.map((r) => (
+          <li key={r.round}>
+            <b>R{r.round + 1} {r.gp}</b> <span className="dim">promise {fmt(r.edge)}{r.raced && r.best ? `, best finish P${r.best}${r.reading ? `, ${READ[r.reading]}` : ""}` : r.raced ? ", no finish" : ""}</span>
+            {r.events.map((e, i) => <div key={i} className="small dim">{e.text}{e.cost ? ` ($${e.cost.toFixed(2)}m)` : ""}{e.because ? `, ${e.because}` : ""}</div>)}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
