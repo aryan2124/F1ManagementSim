@@ -1,3 +1,7 @@
+import { keystoneTraits } from "./keystones";
+import { qualityFit } from "./schools";
+import { designTraits } from "./design";
+import { TRAITS } from "./types";
 import { ensureCrew, crewEffect } from "./pitcrew";
 import { wearFor } from "./powertrain";
 import { Rng, hashSeed } from "../sim/rng";
@@ -60,7 +64,10 @@ export function styleFit(s: CareerState, driverId: string, teamId: string): numb
   const dsg = designOf(t);
   const carStyle = (dsg.stiffness + dsg.rake + (1 - dsg.wheelbase)) / 3;
   const drv = (attributesOf(dr).aggression - 1) / 19;
-  return clamp(1 - Math.abs(carStyle - drv) * 1.4, 0, 1);
+  const kt = keystoneTraits(t);
+  const traits = designTraits(dsg);
+  for (const k of TRAITS) traits[k] += kt[k];
+  return clamp(0.7 * (1 - Math.abs(carStyle - drv) * 1.4) + 0.3 * qualityFit(dr, traits), 0, 1);
 }
 
 /** Heat and distance wear a driver down: a long hot race punishes the unfit. Returns the consistency lost. */

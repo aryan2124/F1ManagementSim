@@ -1,3 +1,4 @@
+import { schoolReading } from "./schools";
 import { Rng, hashSeed } from "../sim/rng";
 import { clamp, round2, rngFor, fmtMoney } from "./util";
 import { DESIGN_KEYS, NEUTRAL, clampDesign, designOf, designWorth, initDesigns, type Design } from "./design";
@@ -106,10 +107,11 @@ export function runLab(s: CareerState, teamId: string, inst: InstId, modelIn: Pa
   const readings: LabReading[] = [];
   for (const tr of I.reads) {
     const q = readerQuality(s, teamId, inst, tr);
-    const sigma = round2(I.sigma * (1.6 - 1.2 * q) / Math.max(0.8, fx.tools.value * fx.cohesion.value));
+    const sch = schoolReading(s, teamId, tr);
+    const sigma = round2(I.sigma * sch.sigma * (1.6 - 1.2 * q) / Math.max(0.8, fx.tools.value * fx.cohesion.value));
     const delta = truthNew[tr] - truthCur[tr];
     const lie = (1 - corr) * I.bias * habit(teamId, s.seed, inst, tr);
-    const value = round2(delta + lie + rng.gauss() * sigma);
+    const value = round2(delta + lie + sch.bias + rng.gauss() * sigma);
     readings.push({ trait: tr, value, err: round2(Math.max(0.01, sigma + (1 - corr) * I.bias * 0.5)) });
     // every logged test makes the team a little surer about the trait it touched
     const k = t.know[tr];

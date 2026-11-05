@@ -1,3 +1,4 @@
+import { SCHOOL_NAME, SCHOOL_TRAITS, leadEngineer, schoolOf } from "../../career/schools";
 import { teamColour } from "../../career/brand";
 import { LabBay } from "./LabBay";
 import { useMemo, useState } from "react";
@@ -81,6 +82,7 @@ export function DesignLab({ s, d }: Props) {
             <button className="on" onClick={() => setMsg(d({ type: "setDesignNext", model }).message)}>COMMIT FOR JANUARY</button>
             {me.designNext && <button onClick={() => setMsg(d({ type: "setDesignNext", model: null }).message)}>CLEAR PLAN</button>}
           </div>
+          {(() => { const lead = leadEngineer(s, s.teamId); return lead ? <p className="small dim" data-testid="school">Lead engineer {lead.name} came up in the {SCHOOL_NAME[schoolOf(lead)]}: his readings are sharper on {SCHOOL_TRAITS[schoolOf(lead)].join(" and ")} and lean a little on the rest.</p> : null; })()}
           <p className="small dim">Now: {describeDesign(cur).join(", ") || "a balanced car"}. {me.designNext ? "A January shape is committed." : "No shape committed."}</p>
           {msg && <p className="small">{msg}</p>}
         </section>

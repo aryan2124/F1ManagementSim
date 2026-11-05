@@ -40,3 +40,32 @@ describe("keystones", () => {
     expect(g.some((r, i) => r.edge !== real[i].edge)).toBe(true);
   });
 });
+
+import { schoolOf, schoolReading, leadEngineer, qualitiesOf, QUALITIES, carDemand, qualityFit, SCHOOL_TRAITS } from "../src/career/schools";
+import { driversOf } from "../src/career/finance";
+import { TRAITS } from "../src/career/types";
+
+describe("schools and qualities", () => {
+  it("the lead's school sharpens its own traits and leans on the rest, stable per man", () => {
+    const s = newCareer("fer", 3);
+    const lead = leadEngineer(s, s.teamId);
+    expect(lead).toBeTruthy();
+    const sc = schoolOf(lead!);
+    expect(schoolOf(lead!)).toBe(sc);
+    for (const tr of TRAITS) {
+      const r = schoolReading(s, s.teamId, tr);
+      if (SCHOOL_TRAITS[sc].includes(tr)) expect(r.sigma).toBeLessThan(1); else expect(r.sigma).toBeGreaterThanOrEqual(1);
+    }
+  });
+  it("six qualities in range and fit is 0..1", () => {
+    const s = newCareer("fer", 3);
+    const d = driversOf(s, s.teamId)[0];
+    const q = qualitiesOf(d);
+    expect(QUALITIES).toHaveLength(6);
+    for (const k of QUALITIES) { expect(q[k]).toBeGreaterThanOrEqual(1); expect(q[k]).toBeLessThanOrEqual(20); }
+    const t = {} as Record<(typeof TRAITS)[number], number>; for (const k of TRAITS) t[k] = 0.3;
+    const f = qualityFit(d, t);
+    expect(f).toBeGreaterThanOrEqual(0); expect(f).toBeLessThanOrEqual(1);
+    expect(Object.keys(carDemand(t))).toHaveLength(6);
+  });
+});

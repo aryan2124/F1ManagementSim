@@ -1,4 +1,5 @@
 import { Sub } from "../skin/Sub";
+import { QUALITIES, QUALITY_NAME, qualitiesOf } from "../../career/schools";
 import { useState } from "react";
 import { ageOf, staffAsk } from "../../career/contracts";
 import { TalkPanel, talkLabel } from "./Talks";
@@ -84,6 +85,14 @@ export function People({ s, d }: Props) {
             <p className="dim small">Replies take a day or two. Talks about replacing a driver can leak to the press, and the driver at risk reads it.</p>
           </section>
         )}
+                <section className="panel" data-testid="qualities">
+                  <h3>DRIVER QUALITIES</h3>
+                  {driversOf(s, s.teamId).map((x) => {
+                    const q = qualitiesOf(x);
+                    return <p key={x.id} className="small"><b>{x.spec.name}</b>: {QUALITIES.map((k) => `${QUALITY_NAME[k]} ${Math.round(q[k])}`).join(", ")}.</p>;
+                  })}
+                  <p className="dim small">The car asks for some of these more than others: a stiff, downforce-heavy car wants front-end bite and tolerance, a gentle one wants tyre kindness. The fit shows in how at home each driver is.</p>
+                </section>
                 {(() => {
                   const roster = rosterOf(s, s.teamId);
                   const laid = roster.filter((x) => x.out && x.out.races > 0);
