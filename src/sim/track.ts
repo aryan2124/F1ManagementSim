@@ -37,6 +37,8 @@ export interface TrackModel {
   /** Pit lane runs this far either side of the start/finish line. */
   pitIn: number;
   pitOut: number;
+  /** Pit lane speed limit in m/s; the lane is slower where the real one costs more time (default 22). */
+  pitLimit?: number;
   /** Distance past the line where cars stop in their box. */
   boxS: number;
   pitSide: 1 | -1;

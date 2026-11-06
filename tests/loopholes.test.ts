@@ -12,24 +12,24 @@ function withModule(id: string) {
 
 describe("loopholes", () => {
   it("a live rule exposes its gap and working it moves the clock", () => {
-    const s = withModule("playoff");
-    expect(liveLoopholes(s).map((l) => l.id)).toContain("sandbag");
+    const s = withModule("auditor");
+    expect(liveLoopholes(s).map((l) => l.id)).toContain("consultancy");
     const before = JSON.stringify(effCar(s, s.teams[s.teamId]));
-    expect(apply(s, { type: "exploit", id: "sandbag", on: true }).ok).toBe(true);
+    expect(apply(s, { type: "exploit", id: "consultancy", on: true }).ok).toBe(true);
     expect(JSON.stringify(effCar(s, s.teams[s.teamId]))).not.toBe(before);
-    expect(apply(s, { type: "exploit", id: "zonepark", on: true }).ok).toBe(false);
+    expect(apply(s, { type: "exploit", id: "sixWheels-gap", on: true }).ok).toBe(false);
   });
   it("heat brings a hint, then a patch and a fine, and the gain is gone", () => {
-    const s = withModule("playoff");
-    apply(s, { type: "exploit", id: "sandbag", on: true });
+    const s = withModule("auditor");
+    apply(s, { type: "exploit", id: "consultancy", on: true });
     const cash = s.teams[s.teamId].cash;
     for (let i = 0; i < 12; i++) { s.day += 28; loopholesMonthly(s); }
     const st = loopState(s);
-    expect(st.hinted).toContain("sandbag");
-    expect(st.patched).toContain("sandbag");
-    expect(s.teams[s.teamId].loops ?? []).not.toContain("sandbag");
+    expect(st.hinted).toContain("consultancy");
+    expect(st.patched).toContain("consultancy");
+    expect(s.teams[s.teamId].loops ?? []).not.toContain("consultancy");
     expect(s.teams[s.teamId].cash).toBeLessThan(cash);
-    expect(liveLoopholes(s).map((l) => l.id)).not.toContain("sandbag");
+    expect(liveLoopholes(s).map((l) => l.id)).not.toContain("consultancy");
   });
   it("every loophole names a real module", async () => {
     const { MODULE_BY_ID } = await import("../src/career/modules");

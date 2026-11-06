@@ -6,7 +6,7 @@ import { AREAS, TRAITS, type CareerState, type Trait } from "./types";
 
 /**
  * Tutorial only: switch the practice career to a big, simple rulebook right now.
- * THE ELECTRIC ERA: a much larger electric share of power (a new battery deployment setting) and push to pass boost tokens in the race.
+ * THE ATTACK ERA: boost tokens that can only be spent on marked stretches (attack zones) and free cooling layouts (open cooling).
  * What the old rules paid for is worth less and what they ignored is worth more, and every team's figures are pulled toward the middle.
  */
 export function launchTutorialEra(s: CareerState) {
@@ -15,8 +15,8 @@ export function launchTutorialEra(s: CareerState) {
   era.stage = 5;
   era.length = 4;
   era.modules = [
-    { id: "deployMaps", role: "headline", intensity: 0.8, lobby: 0 },
-    { id: "pushToPass", role: "support", intensity: 0.6, lobby: 0 },
+    { id: "attackZones", role: "headline", intensity: 0.8, lobby: 0 },
+    { id: "openCooling", role: "support", intensity: 0.6, lobby: 0 },
   ];
   era.unknowns = era.modules.flatMap((m) => MODULE_BY_ID[m.id].unknowns.map((label, i) => ({ id: `${m.id}:${i}`, moduleId: m.id, label, truth: 0.5 })));
   era.routes = era.routes.map((r) => ({ ...r, weights: {} }));

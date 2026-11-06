@@ -890,10 +890,10 @@ export class RaceSim {
       const boxAbs = k * L + boxS;
       const dist = boxAbs - car.s;
       if (lapPos < L / 2) {
-        pitCap = PIT_LIMIT;
+        pitCap = (T.pitLimit ?? PIT_LIMIT);
       } else {
         const dLim = L - 110 - lapPos;
-        pitCap = Math.sqrt(PIT_LIMIT * PIT_LIMIT + 2 * 40 * Math.max(0, dLim));
+        pitCap = Math.sqrt((T.pitLimit ?? PIT_LIMIT) * (T.pitLimit ?? PIT_LIMIT) + 2 * 40 * Math.max(0, dLim));
       }
       // double stack: one box per team. The second car queues a car length behind unless the first will be gone by the time he arrives
       let stopDist = dist;
@@ -901,7 +901,7 @@ export class RaceSim {
       const mate = this.cars.find((m) => m !== car && m.entry.team.id === e.team.id && (m.status === "pit_stop" || m.status === "pit_in"));
       if (mate) {
         const mateLeft = mate.status === "pit_stop" ? (mate.pitTimer * DT) : mate.status === "pit_in" && (mate.s - car.s) > 0 && (mate.s - car.s) < 120 ? 4 + (mate.stopSecs ?? 3) : 0;
-        const eta = dist / Math.max(8, Math.min(car.v + 6, PIT_LIMIT));
+        const eta = dist / Math.max(8, Math.min(car.v + 6, (T.pitLimit ?? PIT_LIMIT)));
         if (mateLeft > 0.05 && mateLeft > eta - 0.2) {
           queued = true;
           stopDist = dist - STACK_GAP;
@@ -978,7 +978,7 @@ export class RaceSim {
         this.emit("pit_out", car.id, undefined, `${e.driver.code}: Box complete. On ${COMPOUNDS[nc].name}s, stop number ${car.stops}.`);
       }
     } else if (car.status === "pit_out") {
-      pitCap = PIT_LIMIT;
+      pitCap = (T.pitLimit ?? PIT_LIMIT);
       if (lapPos > T.pitOut && lapPos < L / 2) car.status = "racing";
     }
     if (pitCap < Infinity) target = Math.min(target, pitCap);

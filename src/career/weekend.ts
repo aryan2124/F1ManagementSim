@@ -1,5 +1,5 @@
 import { logLedger } from "./ledger";
-import { filePractice, recordTreeRun, treeFailures } from "./treeplay";
+import { carLapGain, carOf, filePractice, recordTreeRun, treeFailures } from "./treeplay";
 import { onLanding } from "./dev";
 import { socialAfterRace, type RadioQuote } from "./social";
 import { planRetirements } from "./contracts";
@@ -402,7 +402,9 @@ export function practiceRun(s: CareerState, programme: Programme, setup: SetupVe
   const runs = (ws.runs ??= []);
   let delta: number | null = null;
   if (timed && drv) {
-    const raw = lapLossSecs(ws, setupFor(ws, driverId, used), poleRef, drv, programme === "raceSim" ? "race" : "quali") + rng.gauss() * runNoise(eng, fresh, wetRun, programme) * (programme === "raceSim" ? 1 : 1 + worn);
+    // the parts on this driver's own car are in the lap: a faster part shows up in the clock, car by car
+    const partGain = carLapGain(t, carOf(s, t.id, driverId), ws.circuitId);
+    const raw = lapLossSecs(ws, setupFor(ws, driverId, used), poleRef, drv, programme === "raceSim" ? "race" : "quali") - partGain + rng.gauss() * runNoise(eng, fresh, wetRun, programme) * (programme === "raceSim" ? 1 : 1 + worn);
     const first = runs.find((r) => r.delta !== null);
     const base = first?.raw ?? raw;
     delta = round2(raw - base);
@@ -459,7 +461,7 @@ export function practiceRun(s: CareerState, programme: Programme, setup: SetupVe
     weekendRead(s, s.teamId, focus, 0.6 + 0.4 * eng);
     out.push(`The data tightened the engineers' numbers on ${focus.map((x) => TRAIT_NAME[x].toLowerCase()).join(", ")}.`);
   }
-  recordTreeRun(s, Math.max(0, ws.sessions0 - ws.sessionsLeft));
+  if (timed) recordTreeRun(s, Math.max(0, ws.sessions0 - ws.sessionsLeft), driverId, runNoise(eng, fresh, wetRun, programme) * (programme === "raceSim" ? 1 : 1 + worn));
   ws.notes.unshift(...out);
   ws.notes = ws.notes.slice(0, 30);
   if (ws.runsLeft <= 0) {

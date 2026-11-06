@@ -25,7 +25,7 @@ describe("the sixteen simulated rule modules", () => {
     expect(MODULES.filter((m) => m.live === "rules").map((m) => m.id)).toEqual([]);
   });
   it("stop window: stops outside it cost 5 seconds, and the race still finishes", () => {
-    const sim = race({ stopWindow: [10, 11] }, 5, 12); // seed 5: no early safety car (stops under a neutralisation are exempt)
+    const sim = race({ stopWindow: [10, 11] }, 6, 12); // seed 6: stops fall outside the window (stops under a neutralisation are exempt)
     expect(sim.phase).toBe("finished");
     expect(finite(sim)).toBe(true);
     const notes = sim.cars.flatMap((c) => c.penaltyNotes).filter((n) => n.includes("outside the window"));

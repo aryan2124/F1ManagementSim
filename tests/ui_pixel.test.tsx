@@ -15,8 +15,8 @@ async function raw(name: string): Promise<string> {
 }
 
 describe("module icons", () => {
-  it("covers all 68 module ids with a non-fallback icon", () => {
-    expect(MODULES.length).toBe(68);
+  it("covers all 18 module ids with a non-fallback icon", () => {
+    expect(MODULES.length).toBe(18);
     for (const m of MODULES) {
       expect(hasIcon(m.id), m.id).toBe(true);
       const html = render(<ModuleIcon id={m.id} />);

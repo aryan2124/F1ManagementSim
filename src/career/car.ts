@@ -33,11 +33,11 @@ export function teamStaff(s: CareerState, teamId: string): Staff[] {
 }
 
 /** The simulator's view of a team, built from its career state: the five area ratings plus staff and facilities. */
-export function carSpec(s: CareerState, teamId: string, circuitId?: string, ks?: string[]): TeamSpec {
+export function carSpec(s: CareerState, teamId: string, circuitId?: string, ks?: string[], car?: "A" | "B"): TeamSpec {
   const base = baseTeam(teamId);
   const t = s.teams[teamId];
   // the clock sees each area through the rulebook and (at a track) through that track
-  const c = effCar(s, t, circuitId, ks);
+  const c = effCar(s, t, circuitId, ks, car);
   const powerInit = (base.power - 0.98) / CFG.specPerSecPower;
   const mech = staffOf(s, teamId, "mechanic");
   const squad = ensureCrew(s, teamId, base.pitCrew);
@@ -135,8 +135,8 @@ export function entriesFor(s: CareerState, confidence: Record<string, number> = 
   const rules = rulesOf(s);
   const order = standingsRank(s);
   const dw = rules.driverWeight ?? 1;
-  for (const teamId of Object.keys(s.teams)) {
-    const team = carSpec(s, teamId, circuitId);
+  const perCar = (teamId: string, car: "A" | "B") => {
+    const team = carSpec(s, teamId, circuitId, undefined, car);
     if (rules.ballast) {
       // the leaders carry weight: seconds per lap, largest for the top of the table
       const r = order.indexOf(teamId);
@@ -149,7 +149,15 @@ export function entriesFor(s: CareerState, confidence: Record<string, number> = 
       team.aero = clamp(team.aero + fx.aero, 0.93, 1.012);
       team.power = clamp(team.power + fx.power, 0.93, 1.012);
     }
-    for (const id of activeDrivers(s, teamId)) {
+    return team;
+  };
+  for (const teamId of Object.keys(s.teams)) {
+    // car A is the first driver in the garage and car B the second: each runs the parts fitted to its own car
+    const specs: Partial<Record<"A" | "B", TeamSpec>> = {};
+    const fx = setupEffect?.[teamId];
+    for (const [i, id] of activeDrivers(s, teamId).entries()) {
+      const car = i % 2 === 0 ? "A" : "B";
+      const team = (specs[car] ??= perCar(teamId, car));
       const driver = driverSpecFor(s, id, teamId, confidence[id] ?? 0.6, circuitId);
       driver.consistency = clamp(driver.consistency - fatigueOf(s, id, circuitId) - (s.drivers[id]?.sub?.cold ? 0.05 : 0), 0.3, 0.97);
       if (dw !== 1) driver.pace = clamp(0.985 + (driver.pace - 0.985) * dw, 0.93, 1.002);

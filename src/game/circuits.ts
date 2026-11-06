@@ -1,5 +1,6 @@
 import { CIRCUIT_GEO } from "./circuitGeo.generated";
 import { buildTrack, type TrackModel } from "../sim/track";
+import { trackRow } from "./trackdata";
 
 /** How the world around a circuit is drawn. Purely visual. */
 export type ThemeId =
@@ -165,10 +166,24 @@ export function buildCircuit(id: string, override?: { gripScale?: number; vmax?:
 }
 
 /** Build (and cache) the physics model for a circuit. */
+/**
+ * The pit lane speed limit that makes a stop here cost the sourced number of seconds. The lane is the same length
+ * everywhere in the model, so the limit does the work: a slow lane and a long walk to the box cost more. The 1.2 s
+ * is what the simulator measures over its own estimate, from timing a car through the lane and past it. A track whose
+ * real stop costs less than a limit of 22 m/s can give is left at 22.
+ */
+export function pitLimitFor(T: Pick<TrackModel, "length" | "nominalLap" | "pitIn" | "pitOut">, seconds: number): number {
+  const lane = Math.max(150, T.pitIn + T.pitOut);
+  const avg = T.length / T.nominalLap;
+  const room = seconds - 1.2 - 2.6 + lane / avg;
+  return Math.min(22, Math.max(13, lane / Math.max(1, room)));
+}
+
 export function loadCircuit(id: string): { meta: CircuitMeta; track: TrackModel } {
   const hit = cache.get(id);
   if (hit) return hit;
   const out = buildCircuit(id);
+  out.track.pitLimit = pitLimitFor(out.track, trackRow(id).pit);
   cache.set(id, out);
   return out;
 }

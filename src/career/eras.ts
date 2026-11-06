@@ -266,13 +266,13 @@ export function designEra(s: CareerState, startYear: number, number: number): Er
   const kinds = () => chosen.map((c) => MODULE_BY_ID[c.id].kind);
   if (!kinds().includes("setting")) {
     const idx = chosen.length - 1;
-    const pick = pickWeighted(rng, MODULES.filter((m) => m.kind === "setting" && !chosen.some((c) => c.id === m.id) && !clash(m.id)), live);
-    chosen[idx] = { id: pick.id, role: "extra" };
+    const pool = MODULES.filter((m) => m.kind === "setting" && !chosen.some((c) => c.id === m.id) && !clash(m.id));
+    if (pool.length) chosen[idx] = { id: pickWeighted(rng, pool, live).id, role: "extra" };
   }
   if (!kinds().includes("control")) {
     const idx = Math.max(1, chosen.length - 2);
-    const pick = pickWeighted(rng, MODULES.filter((m) => m.kind === "control" && !chosen.some((c) => c.id === m.id) && !clash(m.id)), live);
-    chosen[idx] = { id: pick.id, role: chosen[idx].role };
+    const pool = MODULES.filter((m) => m.kind === "control" && !chosen.some((c) => c.id === m.id) && !clash(m.id));
+    if (pool.length) chosen[idx] = { id: pickWeighted(rng, pool, live).id, role: chosen[idx].role };
   }
   const modules: EraModule[] = chosen.map((c) => ({ id: c.id, role: c.role, intensity: round2(0.2 + rng.next() * 0.8), lobby: 0 }));
   const unknowns: EraUnknown[] = [];
@@ -607,7 +607,7 @@ export function launchEra(s: CareerState) {
     if (!isHuman(s, id) && p.route === null) aiPickRoute(s, id, era);
     if (!p.package) p.package = "balanced";
   }
-  const hasPkg = era.modules.some((m) => m.id === "enginePackages");
+  const hasPkg = false; // engine packages were an old rule module and are gone
   for (const area of AREAS) {
     const ts = Object.values(s.teams);
     const mean = ts.reduce((x, t) => x + t.car[area], 0) / ts.length;
@@ -740,3 +740,19 @@ export function eraDates(s: CareerState): { day: number; label: string }[] {
 }
 
 export { standingsRank };
+
+/** Old saves may name rule modules that no longer exist: swap those eras' rules for a fresh set and forget the dead ids. */
+export function pruneEras(s: CareerState): void {
+  const e = s.era;
+  if (!e) return;
+  for (const def of [e.current, e.next]) {
+    if (!def || def.modules.every((m) => MODULE_BY_ID[m.id])) continue;
+    const fresh = designEra(s, def.startYear, def.number);
+    def.theme = fresh.theme;
+    def.modules = fresh.modules;
+    def.unknowns = fresh.unknowns;
+    def.routes = fresh.routes;
+  }
+  e.lockedModules = (e.lockedModules ?? []).filter((id) => MODULE_BY_ID[id]);
+  for (const p of e.past ?? []) p.modules = p.modules.filter((id) => MODULE_BY_ID[id]);
+}

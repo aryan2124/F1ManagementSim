@@ -4,7 +4,7 @@ import { initRecords } from "./records";
 import { newBrand } from "./brand";
 import { newPress, newRift } from "./dressing";
 import { initAcademy, newAcademy } from "./academy";
-import { initEras, newEraState } from "./eras";
+import { initEras, newEraState, pruneEras } from "./eras";
 import { defaultBudgets } from "./finance";
 import { makeOwner } from "./people";
 import { Rng, hashSeed } from "../sim/rng";
@@ -38,6 +38,7 @@ export function upgradeState(s: CareerState): CareerState {
     s.era = newEraState("natural");
     initEras(s);
   }
+  pruneEras(s);
   if (!s.academy) {
     s.academy = newAcademy();
     // scouts and coaches for every team so the new roles exist

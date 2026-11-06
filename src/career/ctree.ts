@@ -258,14 +258,15 @@ function scaled(nd: TreeNode, m: number): Partial<Record<Trait, number>> {
 }
 
 /** What fitted parts do to the car, as trait deltas. Half a part on one car is half the effect on the team's number. */
-export function treeTraits(t: TeamState): Partial<Record<Trait, number>> {
+export function treeTraits(t: TeamState, car?: "A" | "B"): Partial<Record<Trait, number>> {
   const out: Partial<Record<Trait, number>> = {};
   const tr = t.tree;
   if (!tr) return out;
   for (const p of Object.values(tr.parts)) {
     const nd = nodeOf(tr, p.id);
     if (!nd) continue;
-    const on = (p.onA ? 0.5 : 0) + (p.onB ? 0.5 : 0);
+    // for one car: the full gain if the part is on that car; with no car named, the team average of the two
+    const on = car ? ((car === "A" ? p.onA : p.onB) ? 1 : 0) : (p.onA ? 0.5 : 0) + (p.onB ? 0.5 : 0);
     if (on <= 0) continue;
     const f = scaled(nd, nd.mult * (tr.mods?.gain[nd.comp] ?? 1));
     for (const k of TRAITS) if (f[k] !== undefined) out[k] = round2((out[k] ?? 0) + (f[k] as number) * on);

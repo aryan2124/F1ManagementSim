@@ -101,14 +101,14 @@ describe("people and calendar", () => {
 });
 
 describe("eras", () => {
-  it("the module library has 68 modules and flags are well formed", () => {
-    expect(MODULES).toHaveLength(68);
+  it("the module library has 18 modules and flags are well formed", () => {
+    expect(MODULES).toHaveLength(18);
     const live = { sim: 0, career: 0, rules: 0 };
     for (const m of MODULES) {
       live[m.live]++;
       expect(typeof m.flags(0.5)).toBe("object");
     }
-    expect(live.sim + live.career).toBeGreaterThanOrEqual(30);
+    expect(live.sim + live.career).toBeGreaterThanOrEqual(17);
   });
   it("a season plays through with the era engine and nothing goes NaN", () => {
     const s = mk(11);

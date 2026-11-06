@@ -20,11 +20,6 @@ export interface Loophole {
 }
 
 export const LOOPHOLES: Loophole[] = [
-  { id: "sandbag", mod: "playoff", name: "Sandbag the regular season", text: "Points before the cut barely matter, so the car is run light on tyres and wear all year.", fx: { wear: 0.1, warmup: 0.04 } },
-  { id: "slowqual", mod: "handicapStart", name: "Slow in qualifying on purpose", text: "The weakest start ahead, so a fast car can look slow on Saturday.", fx: { drive: 0.06, efficiency: 0.06 } },
-  { id: "zonepark", mod: "pushToPass", name: "Park the boost in the zones", text: "Boost is free where the rule says it is, so the car is built around those stretches.", fx: { output: 0.1, efficiency: 0.05 } },
-  { id: "twoheat-setup", mod: "twoHeat", name: "Swap setups between heats", text: "Nothing says the car must keep its setup between the two races.", fx: { grip: 0.08, platform: 0.04 } },
-  { id: "creative-books", mod: "talentCap", name: "Creative accounting", text: "Driver pay is capped, so part of it is paid as consultancy.", fx: { packaging: 0.05, drive: 0.04 } },
   { id: "consultancy", mod: "auditor", name: "Book R&D as consultancy", text: "The auditor reads the invoice, not the work.", fx: { downforce: 0.05, output: 0.04 } },
   { id: "sixWheels-gap", mod: "sixWheels", name: "Counts sets, not tyres", text: "The allocation counts sets, so extra wheels are free.", fx: {wear: 0.08, platform: 0.04} },
   { id: "computerCars-gap", mod: "computerCars", name: "Clever logic on other sensors", text: "A driver aid is defined by its sensors, so logic on other sensors may pass.", fx: {drive: 0.07, platform: 0.04} },
@@ -40,7 +35,6 @@ export const LOOPHOLES: Loophole[] = [
   { id: "relayEra-gap", mod: "relayEra", name: "The swap clock starts at the stop", text: "The swap clock starts when the car stops, not when the driver is ready.", fx: {drive: 0.06, packaging: 0.03} },
   { id: "tyreWars-gap", mod: "tyreWars", name: "Testing limited unless labelled supplier development", text: "Tyre testing is limited unless labelled supplier development.", fx: {wear: 0.06, warmup: 0.05} },
   { id: "wingsBanned-gap", mod: "wingsBanned", name: "A wing is defined by an angle", text: "A wing is defined by the angle of an element above the floor.", fx: {platform: 0.07, downforce: 0.04} },
-  { id: "tunnel-bank", mod: "tunnelBank", name: "Park hours in a partner", text: "Banked tunnel hours do not say whose tunnel.", fx: { downforce: 0.08 } },
 ];
 
 export const loopholeOf = (id: string) => LOOPHOLES.find((l) => l.id === id);

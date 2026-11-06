@@ -1,13 +1,15 @@
 import { Rng, hashSeed } from "../sim/rng";
 import { pushCard, recap, sendLetter } from "./cards";
-import { activeDrivers } from "./car";
-import { install, lapOf, lockOf, nodeOf, priceOf, slotsOf, startBuild, tickTree, treeOf, type CompId, type TreeNode } from "./ctree";
+
+import { install, lockOf, nodeOf, priceOf, slotsOf, startBuild, tickTree, treeOf, type CompId, type TreeNode, type TreeState } from "./ctree";
 import { CARDS, assignCards, cardMods, promoteSpark, sparkWeekly } from "./leadcards";
 import { rulesOf } from "./eras";
 import { round2, clamp } from "./util";
 import { trackRow } from "../game/trackdata";
 import { loadCircuit } from "../game/circuits";
-import type { Card, CareerState, DriverState, TeamState } from "./types";
+import { AREAS, TRAITS } from "./types";
+import { activeDrivers, baseTeam } from "./car";
+import type { Card, CareerState, DriverState, TeamState, Trait, Area } from "./types";
 
 const FROM = "Drawing office";
 
@@ -46,8 +48,8 @@ export function treeDaily(s: CareerState) {
       continue;
     }
     pushCard(s, "treePart", `Ready: ${nd.name}`, `Built for both cars. Where does it go?`, [
-      { id: "both", label: "On both cars", detail: "Full effect, nothing to compare against", fx: { car: { v: 0.8, say: "full gain" }, mood: { v: 0, say: "" } } },
-      { id: "A", label: "Car A only", detail: "Half the gain, and car B is the control", fx: { car: { v: 0.4, say: "half the gain, a clean comparison" } } },
+      { id: "both", label: "On both cars", detail: "Both cars get the gain, nothing to compare against", fx: { car: { v: 0.8, say: "full gain" }, mood: { v: 0, say: "" } } },
+      { id: "A", label: "Car A only", detail: "Only that car gets the gain, and the other car is your control", fx: { car: { v: 0.4, say: "one car quicker, a clean comparison" } } },
       { id: "later", label: "Choose later", detail: "It waits in the parts menu" },
     ], { urgency: 1, deadline: s.day + 6, defaultOption: "later", data: { id: id } });
   }
@@ -134,23 +136,75 @@ export function onPromote(s: CareerState, stId: string): string | undefined {
 // ---------------------------------------------------------------- practice
 
 /** Measure the fitted tree parts during a practice run: expected against actual, per session. */
-export function recordTreeRun(s: CareerState, session: number) {
+/** How much this circuit cares about a trait, 1 being an ordinary track (from the sourced track table). */
+export function trackFactor(trait: Trait, circuitId: string): number {
+  const x = trackRow(circuitId);
+  const sev = loadCircuit(circuitId).meta.tyreSeverity;
+  switch (trait) {
+    case "downforce": return x.df / 3;
+    case "efficiency": case "output": case "drive": return x.pow / 3;
+    case "capacity": case "packaging": return x.cool / 3;
+    case "grip": case "platform": return (x.df + x.brk) / 6;
+    case "wear": case "warmup": return clamp(sev / 1.2, 0.5, 1.6);
+    default: return 1;
+  }
+}
+
+/** What one built part is really worth on this circuit's lap, seconds gained (positive is faster). */
+export function partTrackGain(tr: TreeState, nd: TreeNode, circuitId: string): number {
+  const m = nd.mult * (tr.mods?.gain[nd.comp] ?? 1);
+  let v = 0;
+  for (const k of TRAITS) v += (nd.fx[k] ?? 0) * m * trackFactor(k, circuitId);
+  return round2(v);
+}
+
+/** What the staff expect the part to give on this circuit, before any running. */
+export function partTrackExpect(nd: TreeNode, circuitId: string): number {
+  let v = 0;
+  for (const k of TRAITS) v += (nd.fx[k] ?? 0) * trackFactor(k, circuitId);
+  return round2(v);
+}
+
+/** Which car a driver sits in: the first in the garage is A, the second is B. */
+export function carOf(s: CareerState, teamId: string, driverId: string): "A" | "B" {
+  return activeDrivers(s, teamId).indexOf(driverId) === 1 ? "B" : "A";
+}
+
+/** The lap time the parts fitted to one car are worth at this circuit, seconds. */
+export function carLapGain(t: TeamState, car: "A" | "B", circuitId: string): number {
+  const tr = t.tree;
+  if (!tr) return 0;
+  let v = 0;
+  for (const p of Object.values(tr.parts)) {
+    if (!(car === "A" ? p.onA : p.onB)) continue;
+    const nd = nodeOf(tr, p.id);
+    if (nd) v += partTrackGain(tr, nd, circuitId);
+  }
+  return round2(v);
+}
+
+/**
+ * One timed practice run. Each part on the driver's car is measured by that run's lap: its true worth at this
+ * circuit read through the run's noise (a worn set, rain or a thin sim crew blur it). Each column is one session.
+ */
+export function recordTreeRun(s: CareerState, session: number, driverId: string, noise: number) {
   const ws = s.weekend;
   const t = s.teams[s.teamId];
   const tr = t.tree;
   if (!ws || !tr) return;
+  const car = carOf(s, t.id, driverId);
   const tp = (ws.tp ??= { cols: [] });
   while (tp.cols.length <= session) tp.cols.push({});
   const col = tp.cols[session];
-  const rng = new Rng(hashSeed(`tprun:${ws.seed}:${session}:${(col && Object.keys(col).length) || 0}:${ws.runsLeft}`));
+  const rng = new Rng(hashSeed(`tprun:${ws.seed}:${session}:${driverId}:${ws.runsLeft}`));
   for (const p of Object.values(tr.parts)) {
-    if (!(p.onA || p.onB)) continue;
+    if (!(car === "A" ? p.onA : p.onB)) continue;
     const nd = nodeOf(tr, p.id);
     if (!nd) continue;
-    const exp = -lapOf(nd);
-    const truth = -lapOf(nd, Object.fromEntries(Object.entries(nd.fx).map(([k, v]) => [k, (v as number) * nd.mult * (tr.mods?.gain[nd.comp] ?? 1)])));
+    const exp = -partTrackExpect(nd, ws.circuitId);
+    const truth = -partTrackGain(tr, nd, ws.circuitId);
     const prev = col[p.id] ?? { exp, act: 0, n: 0 };
-    const shot = truth + rng.gauss() * 0.03;
+    const shot = truth + rng.gauss() * Math.max(0.01, noise * 0.5);
     const n = prev.n + 1;
     col[p.id] = { exp, act: round2((prev.act * prev.n + shot) / n), n };
   }
@@ -200,6 +254,41 @@ export function sendSeasonReport(s: CareerState) {
   sendLetter(s, { from: "Race engineers", role: "Track report", subject: `${s.year} track report`, body: "Plan the order of your upgrades from this. A ~ means an estimate, not a measured figure. We will write again when something changes.", folder: "track", table: seasonTable(s) });
 }
 
+const AREA_WORD: Record<string, string> = { aero: "aero", chassis: "chassis and braking", power: "power", cooling: "cooling", tyres: "tyre handling" };
+/** The track column each car area pays at, so a rival's step can be set against the next circuit. */
+function areaPays(area: string, circuitId: string): boolean {
+  const x = trackRow(circuitId);
+  return area === "aero" ? x.df >= 4 : area === "power" ? x.pow >= 4 : area === "cooling" ? x.cool >= 4 : area === "chassis" ? x.brk >= 4 : loadCircuit(circuitId).meta.tyreSeverity >= 1.4;
+}
+
+/**
+ * Lines about rivals whose cars have moved since the last update. The engineers only see it from the outside, so
+ * the size is a rough guess (the real step is blurred), and a rival's name appears only when the step is real.
+ */
+export function rivalMoves(s: CareerState, circuitId: string): string[] {
+  const snap = (s.rivalSnap ??= {});
+  const prev = { ...snap };
+  const lines: { gain: number; text: string }[] = [];
+  for (const [id, t] of Object.entries(s.teams)) {
+    const now: Record<string, number> = {};
+    for (const a of AREAS) now[a] = t.car[a];
+    snap[id] = now;
+    if (id === s.teamId || (s.humans ?? []).includes(id) || !prev[id]) continue;
+    let best: Area | null = null;
+    let gain = 0;
+    for (const a of AREAS) {
+      const g = now[a] - (prev[id][a] ?? now[a]);
+      if (g > gain) { gain = g; best = a; }
+    }
+    if (!best || gain < 0.1) continue;
+    const rng = new Rng(hashSeed(`rival:${s.seed}:${s.year}:${s.round}:${id}`));
+    const seen = round2(gain * (0.7 + rng.next() * 0.6));
+    const pays = areaPays(best, circuitId);
+    lines.push({ gain, text: `${baseTeam(id).name} have brought an upgrade to their ${AREA_WORD[best]}: our guess is ${seen.toFixed(2)} s a lap, from the outside.${pays ? " It pays at this track." : ""}` });
+  }
+  return lines.sort((a, b) => b.gain - a.gain).slice(0, 2).map((l) => l.text);
+}
+
 /** Between races: a forecast or heat change on the next circuit, or a rival's big step. Only when something has actually moved. */
 export function trackUpdates(s: CareerState, rainOf: (circuitId: string) => number) {
   const race = s.calendar[s.round];
@@ -212,8 +301,10 @@ export function trackUpdates(s: CareerState, rainOf: (circuitId: string) => numb
   const x = trackRow(race.circuitId);
   const rain = rainOf(race.circuitId);
   const hint = x.df >= 4 ? "Downforce parts pay here." : x.pow >= 4 ? "Power and low-drag parts pay here." : x.cool >= 4 ? "Cooling parts pay here." : "A balanced weekend; nothing stands out.";
-  const body = rain >= 0.35 ? `Forecast change: ${Math.round(rain * 100)} percent chance of rain at ${m.short}. Wet running favours platform and mechanical grip over peak downforce. ${hint}` : `${m.short} is nine days away. ${hint}`;
-  sendLetter(s, { from: "Race engineers", role: "Track update", subject: `Update: ${m.short}${rain >= 0.35 ? " (rain risk up)" : ""}`, body, folder: "track" });
+  const moves = rivalMoves(s, race.circuitId);
+  const body0 = rain >= 0.35 ? `Forecast change: ${Math.round(rain * 100)} percent chance of rain at ${m.short}. Wet running favours platform and mechanical grip over peak downforce. ${hint}` : `${m.short} is nine days away. ${hint}`;
+  const body = moves.length ? `${body0}\n${moves.join("\n")}` : body0;
+  sendLetter(s, { from: "Race engineers", role: "Track update", subject: `Update: ${m.short}${rain >= 0.35 ? " (rain risk up)" : ""}${moves.length ? " (a rival has moved)" : ""}`, body, folder: "track" });
 }
 
 export function newEraLetter(s: CareerState) {

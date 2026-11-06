@@ -788,6 +788,8 @@ export interface RivalCamp {
 }
 
 export interface CareerState {
+  /** Each rival's car by area when the last track update was written, so the next one can say who has moved. */
+  rivalSnap?: Record<string, Record<string, number>>;
   campaign?: Campaign;
   rivalCamps?: RivalCamp[];
   /** What last week's choice did, shown on the next weekly plan card. */

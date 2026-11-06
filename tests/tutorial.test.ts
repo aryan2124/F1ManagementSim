@@ -26,14 +26,13 @@ describe("tutorial", () => {
 
 import { launchTutorialEra } from "../src/career/tutorialEra";
 import { rulesOf } from "../src/career/eras";
-import { axesFor } from "../src/career/weekend";
 
 describe("tutorial era", () => {
-  it("adds the battery deployment setting and push to pass tokens", () => {
+  it("switches on attack zones and open cooling", () => {
     const s = tutorialCareer();
-    expect(axesFor(s).some((a) => a.id === "deploy")).toBe(false);
+    expect(rulesOf(s).openCooling ?? 0).toBe(0);
     launchTutorialEra(s);
-    expect(axesFor(s).some((a) => a.id === "deploy")).toBe(true);
+    expect(rulesOf(s).openCooling).toBeGreaterThan(0);
     expect(rulesOf(s).pushToPass).toBeGreaterThan(0);
   });
 });

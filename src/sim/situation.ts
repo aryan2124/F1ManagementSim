@@ -16,7 +16,7 @@ export function pitLossOf(sim: RaceSim): number {
   const T = sim.track;
   // the lane runs from pitIn metres before the line to pitOut metres after it
   const lane = Math.max(150, T.pitIn + T.pitOut);
-  return lane / 22 - lane / (T.length / T.nominalLap) + 2.6;
+  return lane / (T.pitLimit ?? 22) - lane / (T.length / T.nominalLap) + 2.6;
 }
 
 /** Seconds per lap that tyres `fresh` on car x gain over the tyres car y is wearing now. Negative: no gain. */

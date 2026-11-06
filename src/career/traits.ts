@@ -162,15 +162,15 @@ export function traitWeight(w: Record<Trait, number>, tr: Trait, need?: TrackNee
 }
 
 /** The worth of each area to the lap clock, given the rules and (optionally) the circuit. */
-export function effCar(s: CareerState, t: TeamState, circuitId?: string, ks?: string[]): Record<Area, number> {
+export function effCar(s: CareerState, t: TeamState, circuitId?: string, ks?: string[], car?: "A" | "B"): Record<Area, number> {
   const w = s.regW;
-  const kt = keystoneTraits(t, ks);
+  const kt = keystoneTraits(t, ks, car);
   const dnaT = (tr: Trait) => t.dna[tr] + kt[tr];
   const need = circuitId ? trackNeed(circuitId) : undefined;
   const out = {} as Record<Area, number>;
   for (const a of AREAS) {
     const [x, y] = AREA_TRAITS[a];
-    if (!w && !need && !ks && !(t.keystones?.length) && !(t.loops?.length)) {
+    if (!w && !need && !ks && !car && !(t.keystones?.length) && !(t.loops?.length)) {
       out[a] = t.car[a];
       continue;
     }

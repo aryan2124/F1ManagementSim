@@ -578,7 +578,7 @@ export class QualiSim {
   runTimeToLine(): number {
     const T = this.track;
     const avg = T.length / T.nominalLap;
-    return (T.pitOut - T.boxS) / (PIT_LIMIT * 0.9) + (T.length - T.pitOut) / (avg * OUT_PACE) + 6;
+    return (T.pitOut - T.boxS) / ((T.pitLimit ?? PIT_LIMIT) * 0.9) + (T.length - T.pitOut) / (avg * OUT_PACE) + 6;
   }
 
   // ------------------------------------------------------------------ AI
@@ -686,7 +686,7 @@ export class QualiSim {
       const stopS = T.pitOut - 3;
       const dist = stopS - car.s;
       // follow the car ahead in the lane
-      let cap = PIT_LIMIT;
+      let cap = (T.pitLimit ?? PIT_LIMIT);
       for (const o of this.cars) {
         if (o === car || o.phase !== "queue") continue;
         const gap = o.s - car.s - CAR_LEN;
@@ -694,7 +694,7 @@ export class QualiSim {
       }
       const light = this.tick >= this.exitReadyTick && !this.red.active && !this.chequered;
       const vStop = Math.sqrt(2 * 6 * Math.max(0, dist));
-      target = Math.min(cap, light ? PIT_LIMIT : vStop);
+      target = Math.min(cap, light ? (T.pitLimit ?? PIT_LIMIT) : vStop);
       if (dist <= 0.5 && light) {
         // released onto the track
         car.phase = "out";
@@ -713,10 +713,10 @@ export class QualiSim {
       const boxAbs = k * L + boxS;
       const dist = boxAbs - car.s;
       let cap: number;
-      if (lapPos < L / 2) cap = PIT_LIMIT;
+      if (lapPos < L / 2) cap = (T.pitLimit ?? PIT_LIMIT);
       else {
         const dLim = L - 110 - lapPos;
-        cap = Math.sqrt(PIT_LIMIT * PIT_LIMIT + 2 * 40 * Math.max(0, dLim));
+        cap = Math.sqrt((T.pitLimit ?? PIT_LIMIT) * (T.pitLimit ?? PIT_LIMIT) + 2 * 40 * Math.max(0, dLim));
       }
       const vBox = Math.sqrt(2 * 7 * Math.max(0, dist));
       cap = Math.min(cap, Math.max(1.2, vBox));

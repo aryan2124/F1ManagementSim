@@ -61,7 +61,7 @@ export function fitted(t: TeamState): Keystone[] {
 }
 
 /** Total trait overlay from the fitted keystones and any pairs among them. */
-export function keystoneTraits(t: TeamState, override?: string[]): Record<Trait, number> {
+export function keystoneTraits(t: TeamState, override?: string[], car?: "A" | "B"): Record<Trait, number> {
   const ids = override ?? t.keystones ?? [];
   const out = {} as Record<Trait, number>;
   for (const tr of TRAITS) out[tr] = 0;
@@ -74,7 +74,7 @@ export function keystoneTraits(t: TeamState, override?: string[]): Record<Trait,
   }
   const lh = loopholeTraits(t);
   const fm = formatTraits(t);
-  const tt = treeTraits(t);
+  const tt = treeTraits(t, car);
   for (const tr of TRAITS) out[tr] = round2(out[tr] + (lh[tr] ?? 0) + (fm[tr] ?? 0) + (tt[tr] ?? 0));
   return out;
 }
