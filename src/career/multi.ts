@@ -293,6 +293,8 @@ export const careerEngine: CareerEngine<MultiState> & CareerEngineExtras = {
       // keystone choices and the gaps in the rules a rival is working are theirs alone
       t.keystones = undefined;
       t.keystonesSet = undefined;
+      // the tree of parts, what is being built and which parts are on which car are a rival's own business
+      t.tree = undefined;
       t.loops = undefined;
       t.auditDay = undefined;
       t.formats = undefined;

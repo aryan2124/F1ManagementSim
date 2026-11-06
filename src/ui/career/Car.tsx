@@ -1,37 +1,19 @@
-import { OfficeFloor } from "./DevRoom";
-import { AREAS, AREA_LABEL, type Delegation, type Level } from "../../career/types";
-import { CFG } from "../../career/config";
-import { facilityCost } from "../../career/finance";
-import { maxConcurrent } from "../../career/rnd";
-import { factoryClosed } from "../../career/calendar";
-import { fmtMoney, fmtRange, fmtDay, lapDelta } from "../../career/util";
-import { Bar, Tip, type Props } from "./common";
 import { useState } from "react";
-import { Sub } from "../skin/Sub";
-import { AREA_DOES, committedTunnel, ideaFacts } from "../../career/ideas";
-import { nextAllowanceReset } from "../../career/rnd";
-import { FOCUS_TEXT, KIND_LABEL, KIND_TEXT, STANCE_TEXT, focusLabel, planOf } from "../../career/rndplan";
-import { BenchGauge } from "./PartBench";
 import { CarSprite } from "../pixel/CarSprite";
 import { teamColour } from "../../career/brand";
-import { teamOf } from "./common";
-import type { RndPlan } from "../../career/types";
-import { NextCarPanel } from "./NextCar";
-import { DesignLab } from "./Lab";
-import { FitMapPanel, SeasonMapPanel } from "./FitMap";
-import { ConceptPanel, DesignPanel, GuidancePanel, RulebookPanel, TraitPanel } from "./Engineering";
-import { ask } from "../Confirm";
-import { CarTree } from "./CarTree";
+import { COMPS, branchName, isBuilding, isBuilt, lapOf, nodeOf, slotsOf, buildSpeed, skillOfFactory, treeOf, type CompDef, type CompId } from "../../career/ctree";
+import { rulesOf } from "../../career/eras";
+import { facilityCost } from "../../career/finance";
+import { fmtDay, fmtMoney, lapDelta } from "../../career/util";
+import { CARDS, isPromising } from "../../career/leadcards";
+import { teamOf, type Props } from "./common";
+import { SkillTree } from "./SkillTree";
+import { activeDrivers } from "../../career/car";
+import type { Delegation, Level } from "../../career/types";
 
-const FAC = { tunnel: "Wind tunnel", sim: "Simulator", factory: "Factory", academy: "Academy" } as const;
-const DEL: { k: keyof Delegation; label: string }[] = [
-  { k: "rnd", label: "R&D choices" },
-  { k: "setup", label: "Weekend setup" },
-  { k: "parts", label: "Fitting parts" },
-];
 const LEVELS: { k: Level; label: string }[] = [
-  { k: "advise", label: "ADVISE" },
-  { k: "do", label: "DO IT" },
+  { k: "advise", label: "ME" },
+  { k: "do", label: "THEM" },
   { k: "hands", label: "HANDS OFF" },
 ];
 
@@ -45,7 +27,6 @@ export function SpendLog({ s }: { s: Props["s"] }) {
       <div className="seg">
         {(["cap", "tunnel", "cash"] as const).map((k) => <button key={k} className={kind === k ? "on" : ""} onClick={() => setKind(k)}>{k === "cap" ? "CAP ROOM" : k === "tunnel" ? "TUNNEL HOURS" : "CASH"}</button>)}
       </div>
-      <p className="dim small">{kind === "cap" ? "Every dollar of cap room used or returned." : kind === "tunnel" ? "Allowance resets, loans, and each finished project's total use." : "Monthly books and one-off payments."}</p>
       {rows.length === 0 && <p className="dim">Nothing logged yet.</p>}
       <ul className="c-notes small">
         {rows.map((e, i) => (
@@ -56,202 +37,134 @@ export function SpendLog({ s }: { s: Props["s"] }) {
   );
 }
 
+/** The car and its six main components, one card each. Tap a card to open that component's skill tree. */
 export function Car({ s, d }: Props) {
   const me = s.teams[s.teamId];
-  const closed = factoryClosed(s.day, s.year);
-  const active = me.projects.filter((p) => p.status === "building" || p.status === "ready");
-  const plan = planOf(me);
-  const recent = me.projects.filter((p) => p.status === "fitted").slice(-5).reverse();
+  const tr = treeOf(s, me);
+  const flags = rulesOf(s);
+  const [comp, setComp] = useState<CompId | null>(null);
+  const [parts, setParts] = useState(false);
+  const [msg, setMsg] = useState("");
+  const slots = slotsOf(me);
+  const busy = tr.builds.length;
+  const skill = Math.round(skillOfFactory(s, s.teamId));
+  const speed = buildSpeed(s, s.teamId);
+  const leads = Object.values(s.staff).filter((x) => x.teamId === s.teamId && !x.intern && x.card);
+  const promising = Object.values(s.staff).filter((x) => x.teamId === s.teamId && isPromising(x));
+  const built = Object.values(tr.parts);
+  const drivers = activeDrivers(s, s.teamId).map((id) => s.drivers[id]?.spec.code ?? id);
+
+  if (comp) return <SkillTree s={s} d={d} comp={comp} onBack={() => setComp(null)} />;
+
+  const card = (c: CompDef) => {
+    const nodes = tr.nodes.filter((n) => n.comp === c.id);
+    const done = nodes.filter((n) => isBuilt(tr, n.id));
+    const working = nodes.filter((n) => isBuilding(tr, n.id));
+    const frozen = (flags.freezeAreas ?? []).includes(c.area);
+    let gain = 0;
+    for (const p of built) {
+      const nd = nodeOf(tr, p.id);
+      if (nd?.comp === c.id) gain += lapOf(nd) * ((p.onA ? 0.5 : 0) + (p.onB ? 0.5 : 0));
+    }
+    const prog = working.length ? tr.builds.find((b) => b.id === working[0].id) : undefined;
+    return (
+      <button key={c.id} className={`bal ${frozen ? "frozen" : ""} ${working.length ? "work" : ""}`} onClick={() => setComp(c.id)} aria-label={`${c.name}, open its tree`} data-comp={c.id}>
+        <span className="bal-corner">{done.length}</span>
+        <b className="bal-name">{c.name.toUpperCase()}</b>
+        <span className="bal-rows">
+          {[0, 1, 2].map((b) => (
+            <span className="bal-row" key={b} title={branchName(c.id, b)}>
+              {[1, 2, 3, 4].map((t) => {
+                const n = nodes.find((x) => x.branch === b && x.tier === t)!;
+                return <i key={t} className={isBuilt(tr, n.id) ? "on" : isBuilding(tr, n.id) ? "work" : ""} />;
+              })}
+            </span>
+          ))}
+        </span>
+        <em className={gain > 0 ? "up" : "dim"}>{gain === 0 ? "no change yet" : `${lapDelta(gain)} s fitted`}</em>
+        {prog && <i className="bal-prog" style={{ width: `${Math.min(100, (prog.progress / prog.days) * 100)}%` }} />}
+        <small>{frozen ? "FROZEN BY THE RULES" : working.length ? `BUILDING ${working.length}` : "OPEN TREE"}</small>
+      </button>
+    );
+  };
+  const left: CompId[] = ["fw", "floor", "susp"];
+  const right: CompId[] = ["rw", "pu", "cool"];
+  const byId = (id: CompId) => COMPS.find((c) => c.id === id)!;
+
   return (
-    <Sub id="car" tabs={[
-      { k: "tree", label: "CAR TREE", n: me.ideas.length },
-      { k: "overview", label: "OVERVIEW" },
-      { k: "study", label: "STUDY" },
-      { k: "build", label: "DIRECTION" },
-      { k: "fit", label: "FIT MAP" },
-      { k: "season", label: "SEASON MAP" },
-      { k: "lab", label: "DESIGN LAB" },
-      { k: "next", label: "NEXT YEAR'S CAR" },
-      { k: "money", label: "FACILITIES AND CONTROL" },
-    ]}>
-      {(tab) => (
-        <>
-          {tab === "tree" && <CarTree s={s} d={d} />}
-          {tab === "overview" && (
-            <div className="c-cols">
-              <div>
-                <OfficeFloor s={s} />
-                <section className="panel c-carbay">
-          <h3>YOUR CAR</h3>
-          <CarSprite teamColor={teamColour(s)} accent={teamOf(s.teamId)?.accent ?? 0xffffff} size={420} slots={Object.fromEntries(AREAS.map((a) => [a, Math.max(0, Math.min(1, (me.believed[a] + 0.6) / 1.2))]))} highlight={plan.focus !== "balanced" && plan.focus !== "bank" ? plan.focus : null} />
-          <p className="dim small">The gauges show what you believe about each area. A glowing part is where the factory is pushing.</p>
-        </section>
-                <section className="panel">
-          <h3>THE CAR (WHAT YOU BELIEVE)</h3>
-          <p className="dim small">Lap time against an average car, like a timing screen: a minus number means faster than average, a plus number slower. These are your engineers' estimates, not the truth. Race weekends correct them.</p>
-          {AREAS.map((a) => (
-            <div className="c-row" key={a}>
-              <span>{AREA_LABEL[a]}</span>
-              <b>{lapDelta(me.believed[a])}s</b>
-              <Bar v={me.believed[a] + 1} max={2} />
-            </div>
-          ))}
-          <div className="c-row">
-            <span>Wind tunnel hours <Tip text="Parts for aero, chassis and cooling need wind tunnel time. Each running project draws its share every working day. When the hours run out those projects stall until the allowance refills." /></span>
-            <b>{Math.round(me.tunnelLeft)} / {Math.round(me.tunnelTotal)}</b>
-            <Bar v={me.tunnelLeft} max={me.tunnelTotal || 1} color="var(--teal)" />
-          </div>
-          <p className="dim small">Already promised to running projects: {committedTunnel(s, s.teamId)} h. Refills on {fmtDay(nextAllowanceReset(s))}.</p>
-          {me.tunnelLeft <= 150 && <button className="btn" onClick={() => d({ type: "borrowTunnel" })}>BORROW 60 HOURS ($1.5m cap room, taken off the next allowance)</button>}
-          {closed && <p className="warn">The factory is shut for the break. Nothing progresses until it reopens.</p>}
-        </section>
-              </div>
-              <div>
-                <section className="panel">
-          <h3>IN PROGRESS ({active.length}/{maxConcurrent(me)})</h3>
-          {active.length === 0 && <p className="dim">No projects running.</p>}
-          {active.map((p) => (
-            <div className="c-item" key={p.id}>
-              <b>{p.name}</b> <em className="tag">{p.size}</em> <span className="dim">{AREA_LABEL[p.area]}</span>
-              <p className="small">Staff expect your lap time to change by about {fmtRange(p.predLo, p.predHi)} (minus is faster). {p.status === "ready" ? (p.hold ? "Held back in the garage." : "Ready, goes on the car at the next race.") : `${Math.round((p.progress / p.days) * 100)}% built, ${Math.max(0, Math.ceil(p.days - p.progress))} days to go.`}</p>
-              {p.tunnelHours > 0 && p.status === "building" && <p className="dim small">Draws {(p.tunnelHours / p.days).toFixed(1)} tunnel hours a day. Used so far: {Math.round(p.tunnelUsed ?? 0)} of {p.tunnelHours}.</p>}
-              {p.status === "building" && <Bar v={p.progress} max={p.days} />}
-              {p.status === "ready" && p.hold && <BenchGauge p={p} />}
-              {p.status === "ready" && !p.hold && p.kind === "gamble" && <p className="warn small">A gamble part can come in below the staff's guess, even slower than your current car. Holding it back lets practice test it first.</p>}
-              <div className="row-btns">
-                {p.status === "ready" && (
-                  <button className="btn" onClick={() => d({ type: "holdPart", id: p.id, hold: !p.hold })} title="A held part stays in the garage. Practice can test it on a bench so you learn what it really does before you fit it.">
-                    {p.hold ? "FIT AT NEXT RACE" : "HOLD BACK FOR A TEST"}
-                  </button>
-                )}
-                <button className="btn" onClick={() => ask("The money is spent and the people who built it will remember.", () => d({ type: "scrapProject", id: p.id }), { title: `SCRAP "${p.name.toUpperCase()}"?`, yes: "SCRAP IT" })}>SCRAP</button>
-              </div>
-            </div>
-          ))}
-          {recent.length > 0 && (
-            <>
-              <h4>RECENTLY FITTED</h4>
-              <ul className="small">
-                {recent.map((p) => (
-                  <li key={p.id}>{p.name}: predicted {fmtRange(p.predLo, p.predHi)}, delivered {p.delivered !== undefined ? `${lapDelta(p.delivered)} s` : "unknown"}</li>
-                ))}
-              </ul>
-            </>
-          )}
-        </section>
-              </div>
-            </div>
-          )}
-          {tab === "study" && (
-            <div className="c-cols">
-              <div>
-                <GuidancePanel s={s} d={d} />
-                <TraitPanel s={s} d={d} />
-              </div>
-              <div>
-                <RulebookPanel s={s} d={d} />
-              </div>
-            </div>
-          )}
-          {tab === "build" && (
-            <div className="c-cols">
-              <div>
-                <section className="panel">
-          <h3>IDEAS FROM THE FACTORY</h3>
-          <p className="dim small">Pick the ones worth the money. The lap time is how much the part changes a lap: a minus number is faster, and it is only the staff's guess until the part runs at a track. Choosing is a real trade: when the dashboard card offers a batch of these and you pick one (or none), the rest are shelved for good and their authors feel it. Money and cap room limit how many you can build.</p>
-          {me.ideas.length === 0 && <p className="dim">No ideas on the table. New ones arrive weekly.</p>}
-          {me.ideas.map((i) => {
-            const f = ideaFacts(s, i);
+    <div className="car2" data-testid="car-screen">
+      <section className="panel car2-fac">
+        <div className="car2-slots" aria-label={`${busy} of ${slots} factory slots busy`}>
+          <b>FACTORY</b>
+          {Array.from({ length: slots }, (_, i) => <i key={i} className={i < busy ? "on" : ""} />)}
+          <span className="dim small">{busy} of {slots} slots</span>
+        </div>
+        <span className="sk-chip" title="Average skill of your technical director, designer and the aero and power heads">SKILLED LABOUR {skill}</span>
+        <span className="sk-chip" title="Days of work done per day">BUILD SPEED x{speed.toFixed(2)}</span>
+        {leads.map((l) => {
+          const c = CARDS.find((x) => x.id === l.card);
+          const shown = c && (!c.hidden || l.cardSeen);
+          return <span key={l.id} className={`sk-chip lead ${shown ? "" : "secret"}`} title={shown ? `${l.name}: ${c!.text}` : `${l.name} carries a card nobody has seen yet`}>{shown ? c!.name.toUpperCase() : "? ? ?"}</span>;
+        })}
+        {promising.map((p) => <span key={p.id} className="sk-chip promising" title={`${p.name} has something. Keep him working.`}>PROMISING: {p.name.split(" ").slice(-1)[0]}</span>)}
+        <span className="car2-grow" />
+        <button className={`btn ${parts ? "primary" : ""}`} onClick={() => setParts(!parts)}>PARTS MENU ({built.length})</button>
+      </section>
+
+      {parts && (
+        <section className="panel car2-parts" data-testid="parts-menu">
+          <h3>PARTS MENU</h3>
+          <p className="dim small">One build covers both cars. Pick where each part goes. Locked from qualifying until the race is over.</p>
+          {built.length === 0 && <p className="dim">Nothing built yet.</p>}
+          {built.map((p) => {
+            const nd = nodeOf(tr, p.id)!;
             return (
-              <div className="c-item" key={i.id}>
-                <div className="c-line">
-                  <div>
-                    <b>{i.name}</b> <em className="tag">{i.size}</em> {i.kind && <em className={`tag k-${i.kind}`} title={KIND_TEXT[i.kind]}>{KIND_LABEL[i.kind]}</em>} <span className="dim">{AREA_LABEL[i.area]}</span>
-                    {i.note && <p className="small">{i.note}</p>}
-                    <p className="dim small">{AREA_DOES[i.area]}</p>
-                    <ul className="c-facts">{f.lines.map((l, k) => <li key={k}>{l}</li>)}</ul>
-                    {f.warn && <p className="warn small">{f.warn}</p>}
-                    <p className="dim small">Offer ends {fmtDay(i.expires)}.</p>
-                  </div>
-                  <button className="btn primary" onClick={() => d({ type: "startProject", ideaId: i.id })}>START</button>
+              <div className="car2-part" key={p.id}>
+                <div><b>{nd.name}</b><small className="dim"> {byId(nd.comp).name} · {branchName(nd.comp, nd.branch)}{p.tested ? " · tested" : ""}{p.copies < 2 ? " · ONE LEFT" : ""}</small></div>
+                <div className="seg">
+                  <button className={p.onA ? "on" : ""} onClick={() => setMsg(d({ type: "treeInstall", id: p.id, car: "A", on: !p.onA }).message)}>{drivers[0] ?? "A"}</button>
+                  <button className={p.onB ? "on" : ""} onClick={() => setMsg(d({ type: "treeInstall", id: p.id, car: "B", on: !p.onB }).message)}>{drivers[1] ?? "B"}</button>
+                  {!p.tested && <button onClick={() => setMsg(d({ type: "treeTest", id: p.id }).message)}>TEST</button>}
                 </div>
               </div>
             );
           })}
+          {msg && <p className="c-msg">{msg}</p>}
         </section>
-              </div>
-              <div>
-                <DesignPanel s={s} d={d} />
-                <section className="panel">
-          <h3>FACTORY DIRECTION</h3>
-          <p className="dim small">Steer where the next ideas come from. Pushing one area starves the others, and a bold stance trades sure gains for big swings.</p>
-          <div className="seg" style={{ flexWrap: "wrap" }}>
-            {(["balanced", ...AREAS, "bank"] as RndPlan["focus"][]).map((f) => <button key={f} className={plan.focus === f ? "on" : ""} onClick={() => d({ type: "rndPlan", focus: f })}>{focusLabel(f).toUpperCase()}</button>)}
-          </div>
-          <p className="dim small">{plan.focus === "balanced" || plan.focus === "bank" ? FOCUS_TEXT[plan.focus] : `More ${AREA_LABEL[plan.focus].toLowerCase()} ideas until ${fmtDay(plan.until)}, fewer in every other area.`}</p>
-          <div className="seg">
-            {(["safe", "balanced", "bold"] as const).map((x) => <button key={x} className={plan.stance === x ? "on" : ""} onClick={() => d({ type: "rndPlan", stance: x })}>{x.toUpperCase()}</button>)}
-          </div>
-          <p className="dim small">{STANCE_TEXT[plan.stance]}</p>
-          {AREAS.some((a) => (plan.synergy[a] ?? 0) > 0) && <p className="small">Groundwork laid: {AREAS.filter((a) => (plan.synergy[a] ?? 0) > 0).map((a) => `${AREA_LABEL[a]} +${Math.round((plan.synergy[a] ?? 0) * 100)}%`).join(", ")} on the next part fitted there.</p>}
-          {s.day <= plan.cheapUntil && <p className="small warn">Cheap supplier deal running until {fmtDay(plan.cheapUntil)}: parts cost 15 percent less and may underdeliver.</p>}
-        </section>
-              </div>
-            </div>
-          )}
-          {tab === "fit" && <FitMapPanel s={s} d={d} />}
-          {tab === "season" && <SeasonMapPanel s={s} d={d} />}
-          {tab === "lab" && <DesignLab s={s} d={d} />}
-          {tab === "next" && (
-            <div className="c-cols">
-              <div>
-                <NextCarPanel s={s} d={d} />
-              </div>
-              <div>
-                <ConceptPanel s={s} d={d} />
-              </div>
-            </div>
-          )}
-          {tab === "money" && (
-            <div className="c-cols">
-              <div>
-                <section className="panel">
-          <h3>FACILITIES</h3>
-          {(Object.keys(FAC) as (keyof typeof FAC)[]).map((k) => (
-            <div className="c-row" key={k}>
-              <span>{FAC[k]} L{me.facilities[k]}</span>
-              <button className="tiny" disabled={me.facilities[k] >= 5 || !!me.facilities.building} onClick={() => d({ type: "upgradeFacility", which: k })}>
-                {me.facilities[k] >= 5 ? "MAX" : `UPGRADE ${fmtMoney(facilityCost(me.facilities[k]))}`}
-              </button>
-            </div>
-          ))}
-          {me.facilities.building && <p className="small">Building: {FAC[me.facilities.building.which]}, done {fmtDay(me.facilities.building.done)}.</p>}
-        </section>
-                <section className="panel">
-          <h3>WHO DECIDES</h3>
-          <p className="dim small">Advise: they suggest, you choose. Do it: they act and tell you. Hands off: they act and you hear nothing. R&D choices: the head of R&D picks the focus and starts projects, without your brief, so what they start gives up about a quarter of its gain. Weekend setup: the race engineers run practice and save their best setup (hands off also closes practice). Fitting parts: every finished part is bench tested, ones that would not make the car faster are scrapped, the rest are fitted even if you were holding them.</p>
-          {DEL.map(({ k, label }) => (
-            <div className="c-row" key={k}>
-              <span>{label}</span>
-              <div className="seg">
-                {LEVELS.map((l) => (
-                  <button key={l.k} className={me.delegation[k] === l.k ? "on" : ""} onClick={() => d({ type: "delegate", area: k, level: l.k })}>
-                    {l.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-          <p className="dim small">Allowance resets each January and after the summer break. Base: {CFG.tunnelBaseHours} h, scaled by championship position.</p>
-        </section>
-              </div>
-              <div>
-                <SpendLog s={s} />
-              </div>
-            </div>
-          )}
-        </>
       )}
-    </Sub>
+
+      <div className="car2-stage">
+        <div className="car2-col">{left.map((id) => card(byId(id)))}</div>
+        <div className="car2-mid">
+          <CarSprite teamColor={teamColour(s)} accent={teamOf(s.teamId)?.accent ?? 0xffffff} size={380} />
+          <p className="dim small">Tap a card to open its tree. The dots are the 3 lanes of 4 parts each.</p>
+        </div>
+        <div className="car2-col">{right.map((id) => card(byId(id)))}</div>
+      </div>
+
+      <section className="panel car2-set">
+        <FactoryControls s={s} d={d} />
+      </section>
+    </div>
+  );
+}
+
+function FactoryControls({ s, d }: Props) {
+  const me = s.teams[s.teamId];
+  const fac = me.facilities;
+  return (
+    <>
+      <div className="c-row">
+        <span>Factory level {fac.factory} <span className="dim small">(more slots, faster builds)</span></span>
+        <button className="tiny" disabled={fac.factory >= 5 || !!fac.building} onClick={() => d({ type: "upgradeFacility", which: "factory" })}>{fac.factory >= 5 ? "MAX" : `UPGRADE ${fmtMoney(facilityCost(fac.factory))}`}</button>
+      </div>
+      {fac.building && <p className="small">Building: {fac.building.which}, done {fmtDay(fac.building.done)}.</p>}
+      {(["rnd", "parts"] as (keyof Delegation)[]).map((k) => (
+        <div className="c-row" key={k}>
+          <span>{k === "rnd" ? "Who picks what to build" : "Who fits new parts"}</span>
+          <div className="seg">{LEVELS.map((l) => <button key={l.k} className={me.delegation[k] === l.k ? "on" : ""} onClick={() => d({ type: "delegate", area: k, level: l.k })}>{l.label}</button>)}</div>
+        </div>
+      ))}
+    </>
   );
 }

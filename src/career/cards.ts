@@ -71,8 +71,8 @@ export function sendMail(
 }
 
 /** A message from a person that needs no answer. It sits in the inbox, read or unread. */
-export function sendLetter(s: CareerState, m: { from: string; role: string; subject: string; body: string; read?: boolean }) {
+export function sendLetter(s: CareerState, m: { from: string; role: string; subject: string; body: string; read?: boolean; folder?: "practice" | "track"; table?: { head: string[]; rows: string[][] } }) {
   const list = (s.letters ??= []);
-  list.unshift({ id: nextId(s), day: s.day, from: m.from, role: m.role, subject: m.subject, body: m.body, read: m.read ?? false });
-  if (list.length > 60) list.length = 60;
+  list.unshift({ id: nextId(s), day: s.day, from: m.from, role: m.role, subject: m.subject, body: m.body, read: m.read ?? false, ...(m.folder ? { folder: m.folder } : {}), ...(m.table ? { table: m.table } : {}) });
+  if (list.length > 120) list.length = 120;
 }

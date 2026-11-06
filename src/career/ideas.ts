@@ -1,4 +1,3 @@
-import { KIND_LABEL, KIND_TEXT } from "./rndplan";
 import { nextAllowanceReset, capRoom } from "./rnd";
 import { fmtDay, fmtMoney, fmtRange } from "./util";
 import { TRAIT_NAME } from "./traits";
@@ -51,7 +50,7 @@ export function ideaFacts(s: CareerState, i: Idea): { lines: string[]; warn?: st
 export function ideaOptions(s: CareerState, ideas: Idea[]): CardOption[] {
   return ideas.map((i) => {
     const f = ideaFacts(s, i);
-    return { id: `idea:${i.id}`, label: `${i.kind ? KIND_LABEL[i.kind] + ": " : ""}${i.name} (${AREA_LABEL[i.area]})`, detail: `${fmtRange(i.predLo, i.predHi)} a lap, ${fmtMoney(i.cost)}, ${i.days} days`, lines: [...(i.kind ? [KIND_TEXT[i.kind]] : []), AREA_DOES[i.area], ...f.lines], warn: f.warn };
+    return { id: `idea:${i.id}`, label: `${i.name} (${AREA_LABEL[i.area]})`, detail: `${fmtRange(i.predLo, i.predHi)} a lap, ${fmtMoney(i.cost)}, ${i.days} days`, lines: [AREA_DOES[i.area], ...f.lines], warn: f.warn };
   });
 }
 

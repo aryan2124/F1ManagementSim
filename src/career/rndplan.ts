@@ -39,13 +39,6 @@ export function pickKind(plan: RndPlan, r: number): NonNullable<Idea["kind"]> {
   return r < w[0] ? "safe" : r < w[0] + w[1] ? "gamble" : "enabler";
 }
 
-export const KIND_LABEL: Record<NonNullable<Idea["kind"]>, string> = { safe: "SURE THING", gamble: "GAMBLE", enabler: "GROUNDWORK" };
-export const KIND_TEXT: Record<NonNullable<Idea["kind"]>, string> = {
-  safe: "A solid, well understood change. The range is narrow.",
-  gamble: "A radical idea. It could be big, it could do nothing, and it could make the car slower.",
-  enabler: "Little gain on its own, but the next part you fit in this area gains about 35 percent more.",
-};
-
 /** The head of R&D's view of where the car is weakest. A sharper head reads it correctly more often. */
 export function weakestArea(s: CareerState, teamId: string): Area {
   const t = s.teams[teamId];

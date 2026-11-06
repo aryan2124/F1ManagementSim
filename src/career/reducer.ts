@@ -3,6 +3,7 @@ import { pickFormat, placeBid } from "./formats";
 import { proposeAmendment, voteAmendment } from "./amendments";
 import { setExploit } from "./loopholes";
 import { setKeystone } from "./keystones";
+import { install, scrapBuild, startBuild, startTest } from "./ctree";
 import { setFocus, pepTalk, setDelegate } from "./focus";
 import { runLab } from "./lab";
 import { clampDesign } from "./design";
@@ -126,6 +127,27 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
     case "scrapProject":
       scrapProject(s, s.teamId, a.id);
       return good("Project scrapped.");
+    case "treeBuild": {
+      const r = startBuild(s, me, a.id, rulesOf(s));
+      return r.ok ? good(r.message) : fail(r.message);
+    }
+    case "treeScrap":
+      scrapBuild(me, a.id);
+      return good("Build cancelled. The money is gone.");
+    case "treeTest": {
+      const r = startTest(s, me, a.id);
+      return r.ok ? good(r.message) : fail(r.message);
+    }
+    case "treeInstall": {
+      const r = install(s, me, a.id, a.car, a.on);
+      return r.ok ? good(r.message) : fail(r.message);
+    }
+    case "treeKeep": {
+      const r1 = install(s, me, a.id, "A", a.keep);
+      if (!r1.ok) return fail(r1.message);
+      install(s, me, a.id, "B", a.keep);
+      return good(a.keep ? "Kept on both cars." : "Taken off both cars.");
+    }
     case "holdPart": {
       const p = me.projects.find((x) => x.id === a.id);
       if (p && p.status === "ready") p.hold = a.hold;

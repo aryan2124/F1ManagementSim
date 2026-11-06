@@ -526,13 +526,14 @@ function TimingTower({ session }: { session: RaceSession }) {
               key={c.id}
               className={`${(moved.current.get(c.id)?.until ?? 0) > now ? (moved.current.get(c.id)!.dir > 0 ? "gain" : "lose") : ""} ${c.entry.human ? "mine" : ""} ${session.followId === c.id ? "follow" : ""} ${c.status === "dnf" ? "out" : ""}`}
               style={{ ["--team" as string]: hex(c.entry.team.color) }}
-              onClick={() => { session.followId = c.id; setStatsId(c.id); }}
-              title="Click for full stats"
+              onClick={() => { session.followId = c.id; }}
+              title="Click to move the camera to this driver"
             >
               <span className="p">{c.position}</span>
               <b className="arr">{(moved.current.get(c.id)?.until ?? 0) > now ? (moved.current.get(c.id)!.dir > 0 ? "▲" : "▼") : ""}</b>
               <i className="chip" />
               <span className="code">{c.entry.driver.code}</span>
+              <button className="tiny" aria-label={`${c.entry.driver.code} stats`} title="Full stats and compare" onClick={(e) => { e.stopPropagation(); setStatsId(c.id); }}>i</button>
               <span className="secs">
                 {[0, 1, 2].map((i) => (
                   <u key={i} style={{ background: SECTOR_COLORS[cols[i]] }} />

@@ -1,4 +1,5 @@
 import { internYearEnd } from "./hiring";
+import { onNewSeason } from "./treeplay";
 import { initRoles } from "./status";
 import { settleTitles } from "./records";
 import { boardMove } from "./board";
@@ -207,6 +208,7 @@ export function newSeason(s: CareerState) {
 /** The start of a season for one person: owner goals, sponsors, a clean story and the board's brief. */
 export function newSeasonPlayer(s: CareerState) {
   applyNextCar(s);
+  onNewSeason(s);
   const rng = rngFor(s, `newseason:${s.teamId}`);
   for (const k of Object.keys(s.story.arcs)) if (k.startsWith("out:")) delete s.story.arcs[k];
   const me0 = s.teams[s.teamId];

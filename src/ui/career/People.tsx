@@ -8,6 +8,7 @@ import { driversOf, rosterOf } from "../../career/finance";
 import { STAFF_LABEL } from "../../career/types";
 import { fmtMoney, round2 } from "../../career/util";
 import { StaffFit } from "./Engineering";
+import { LeadChip } from "./LeadChip";
 import { Bar, Tip, paceRank, paceWord, staffWords, teamOf, type Props } from "./common";
 import { CAUSE_LABEL, G_STAGE, PROMISE_JUDGE, PROMISE_TEXT } from "../../career/people";
 import { fmtDay } from "../../career/util";
@@ -193,6 +194,7 @@ export function People({ s, d }: Props) {
                   <b><PLink kind="staff" id={x.id}>{x.name}</PLink></b> <span className="dim">{STAFF_LABEL[x.role]}{x.driverId ? ` for ${s.drivers[x.driverId]?.spec.code}` : ""}</span>
                   <p className="small">{staffWords(s, x)} | {x.traits.join(", ") || "no standout traits"} | {fmtMoney(x.salary)} until {x.endYear} | mood {x.mood > 0.65 ? "good" : x.mood > 0.45 ? "fair" : "low"}</p>
                   {x.role !== "mechanic" && x.role !== "strategy" && x.role !== "scout" && x.role !== "coach" && x.role !== "medic" && <StaffFit s={s} st={x} />}
+                  <LeadChip st={x} />
                 </div>
                 <div className="c-acts">
                   {x.intern && <button className="btn" title="Make him a permanent member of the department" onClick={() => setSaid((p) => ({ ...p, [`staff:${x.id}`]: d({ type: "promoteIntern", staffId: x.id }).message }))}>PROMOTE</button>}
@@ -295,6 +297,7 @@ export function People({ s, d }: Props) {
                   <b><PLink kind="staff" id={x.id}>{x.name}</PLink></b> <span className="dim">{STAFF_LABEL[x.role]}, age {x.age}</span>
                   <p className="small">{staffWords(s, x)} | {x.traits.join(", ") || "no standout traits"} | asks {fmtMoney(staffAsk(x))} | chance they accept {Math.round(readOffer(s, s.teamId, x, round2(staffAsk(x) * bid), yrs).chance * 100)}%</p>
                   {x.role !== "mechanic" && x.role !== "strategy" && x.role !== "scout" && x.role !== "coach" && x.role !== "medic" && <StaffFit s={s} st={x} />}
+                  <LeadChip st={x} />
                   {said[`staff:${x.id}`] && <p className="small c-bubble them">{said[`staff:${x.id}`]}</p>}
                 </div>
                 <div className="c-acts"><button className="btn" onClick={() => setSaid((p) => ({ ...p, [`staff:${x.id}`]: d({ type: "signStaff", staffId: x.id, offerSalary: round2(staffAsk(x) * bid), years: yrs, forDriverId: x.role === "engineer" ? fd || undefined : undefined }).message }))}>OFFER {fmtMoney(staffAsk(x) * bid)}</button></div>

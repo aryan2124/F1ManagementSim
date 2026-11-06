@@ -372,15 +372,16 @@ describe("who decides: delegation really does something", () => {
     expect(me.car.power).toBeGreaterThan(before + 0.03);
   }, 60000);
 
-  it("R&D delegation: do and hands both get projects started, hands says nothing about it", () => {
+  it("R&D delegation: do and hands both get parts started, hands says nothing about it", () => {
     const started: Record<string, number> = {};
     const said: Record<string, number> = {};
     for (const level of ["advise", "do", "hands"] as const) {
       const s = newCareer("wil", 3);
       s.teams[s.teamId].delegation.rnd = level;
       quiet(s, 60);
-      started[level] = s.teams[s.teamId].projects.length;
-      said[level] = s.recap.filter((l) => l.includes("designers started")).length;
+      const tr = s.teams[s.teamId].tree;
+      started[level] = (tr?.builds.length ?? 0) + Object.keys(tr?.parts ?? {}).length;
+      said[level] = s.recap.filter((l) => l.includes("head of R&D started")).length;
     }
     expect(started.advise).toBe(0);
     expect(started.do).toBeGreaterThan(0);

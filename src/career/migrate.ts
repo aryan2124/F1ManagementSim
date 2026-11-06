@@ -51,8 +51,8 @@ export function upgradeState(s: CareerState): CareerState {
     }
     initAcademy(s);
   }
-  // every team gets a doctor and physio, as its own role
-  {
+  // every team gets a doctor and physio, as its own role (only old saves have none anywhere: a team whose doctor left is not refilled by a load)
+  if (!Object.values(s.staff).some((x) => x.role === "medic")) {
     let n = Object.keys(s.staff).length + 900;
     for (const id of Object.keys(s.teams)) {
       if (Object.values(s.staff).some((x) => x.teamId === id && x.role === "medic")) continue;

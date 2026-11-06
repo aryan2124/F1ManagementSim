@@ -1,4 +1,7 @@
 import { PEP, type PepTone } from "../../career/focus";
+import { nodeOf } from "../../career/ctree";
+import { visibleCard } from "../../career/leadcards";
+import { activeDrivers } from "../../career/car";
 import type { CareerState } from "../../career/types";
 import { donutDrivers } from "../../career/sendoff";
 import { useMusic } from "../../audio/useMusic";
@@ -86,6 +89,7 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
     <div className={`theme-garage c-garage${net ? "" : " screen"}`}>
       <ScreenBanner theme="garage" />
       <PartsPanel s={s} d={d} />
+      <TreeLive s={s} d={d} />
       <section className="panel found">
         <h3>SETUP FOUND</h3>
         <div className="found-bar"><i style={{ width: `${Math.round(Math.max(0, Math.min(1, knownAvg)) * 100)}%` }} /></div>
@@ -573,4 +577,56 @@ function rivalLines(s: CareerState, mine: string[], grid: string[]): string[] {
     out.push(`RIVAL: ${md.spec.name} and ${od.spec.name} have history${r.heat > 0.8 ? " (bitter)" : r.heat > 0.5 ? " (heated)" : ""}${gi >= 0 ? `. ${od.spec.code} starts P${gi + 1}` : ""}.`);
   }
   return out.slice(0, 3);
+}
+
+
+/** The tree parts on the cars, measured as practice goes: what the staff expected against what the stopwatch says, one column per session. */
+export function TreeLive({ s, d }: Props) {
+  const ws = s.weekend;
+  const me = s.teams[s.teamId];
+  const tr = me.tree;
+  if (!ws || !tr) return null;
+  const fitted = Object.values(tr.parts).filter((p) => p.onA || p.onB);
+  if (!fitted.length) return null;
+  const nSess = Math.max(1, ws.sessions0);
+  const names = activeDriverCodes(s);
+  const f = (v: number) => `${v > 0 ? "+" : v < 0 ? "-" : ""}${Math.abs(v).toFixed(2)}`;
+  const locked = ws.stage !== "practice";
+  return (
+    <section className="panel" data-testid="tree-live">
+      <h3>PARTS ON THE CARS</h3>
+      {Object.values(s.staff).filter((x) => x.teamId === s.teamId && !x.intern && x.card).map((x) => { const c = visibleCard(x); return c ? <p key={x.id} className="small"><span className="sk-chip lead">{c.name.toUpperCase()}</span> <span className="dim">{c.flavour}</span></p> : null; })}
+      <p className="dim small">Lap time against the old part, minus is faster. The yellow mark is what the staff expected. Keep what delivers, take off what does not. Locked once qualifying starts.</p>
+      <div className="tp-live">
+        {fitted.map((p) => {
+          const nd = nodeOf(tr, p.id)!;
+          return (
+            <div className="tp-row" key={p.id}>
+              <span><b>{nd.name}</b><small className="dim"> {p.onA ? names[0] : ""}{p.onA && p.onB ? " + " : ""}{p.onB ? names[1] : ""}</small></span>
+              {Array.from({ length: Math.min(3, nSess) }, (_, i) => {
+                const c = ws.tp?.cols[i]?.[p.id];
+                const pos = (v: number) => Math.max(0, Math.min(100, 50 - (v / 0.2) * 50));
+                return (
+                  <span className="tp-cell" key={i}>
+                    <small className="dim">FP{i + 1}</small>
+                    {c ? (
+                      <>
+                        <span className="tp-bar"><i style={{ left: `${pos(c.exp)}%` }} /><b className={c.act > c.exp + 0.02 ? "bad" : ""} style={{ left: `${Math.min(50, pos(c.act))}%`, width: `${Math.abs(pos(c.act) - 50)}%` }} /></span>
+                        <small>{f(c.exp)} / {f(c.act)}</small>
+                      </>
+                    ) : <small className="dim">not run</small>}
+                  </span>
+                );
+              })}
+              <button className="tiny" disabled={locked} onClick={() => d({ type: "treeKeep", id: p.id, keep: false })}>REMOVE</button>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function activeDriverCodes(s: Props["s"]): string[] {
+  return activeDrivers(s, s.teamId).map((id) => s.drivers[id]?.spec.code ?? id);
 }

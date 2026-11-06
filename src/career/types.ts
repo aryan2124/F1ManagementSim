@@ -184,6 +184,11 @@ export interface Staff {
   phil?: Phil;
   /** Set for a trainee: someone learning the job whose `role` is the job they are learning. */
   intern?: { potential: number; since: number };
+  /** A lead engineer's special card (see leadcards.ts), and a trainee's hidden spark (0..1) that can grow into one. */
+  card?: string;
+  spark?: number;
+  /** The player has seen this card work (hidden cards stay secret until then). */
+  cardSeen?: boolean;
 }
 
 export type DriverRole = "equal" | "number1" | "number2";
@@ -371,6 +376,8 @@ export interface TeamState {
   design?: import("./design").Design;
   /** A shape chosen in the lab for next year's car. It becomes the car in January. */
   designNext?: import("./design").Design;
+  /** The car as a skill tree for the current regulation era (see ctree.ts). */
+  tree?: import("./ctree").TreeState;
   /** Keystone choices fitted to the car (see keystones.ts). */
   keystones?: string[];
   keystonesSet?: boolean;
@@ -450,6 +457,8 @@ export type CardKind =
   | "welcome"
   | "debrief"
   | "projectReady"
+  | "treePart"
+  | "treeFail"
   | "ideaBatch"
   | "partReveal"
   | "sponsorOffer"
@@ -590,6 +599,8 @@ export interface WeekendState {
   confidence: Record<string, number>;
   /** Setup quality for AI teams. */
   aiQuality: Record<string, number>;
+  /** The tree parts measured in practice: per session, per part, what the staff expected against what the stopwatch said. */
+  tp?: { cols: Record<string, { exp: number; act: number; n: number }>[] };
   /** Parts fitted for this weekend (project ids). */
   fitted: number[];
   /** True once qualifying is done and setup is locked. */
@@ -922,6 +933,10 @@ export interface Letter {
   subject: string;
   body: string;
   read: boolean;
+  /** Inbox folder; none means Other. */
+  folder?: "practice" | "track";
+  /** A small table drawn under the text. */
+  table?: { head: string[]; rows: string[][] };
 }
 
 export interface NextCarPlan {
@@ -1017,6 +1032,11 @@ export type Action =
   | { type: "scrapProject"; id: number }
   | { type: "testPart"; id: number; plan: "quick" | "compare" | "longrun" }
   | { type: "holdPart"; id: number; hold: boolean }
+  | { type: "treeBuild"; id: string }
+  | { type: "treeScrap"; id: string }
+  | { type: "treeTest"; id: string }
+  | { type: "treeInstall"; id: string; car: "A" | "B"; on: boolean }
+  | { type: "treeKeep"; id: string; keep: boolean }
   | { type: "upgradeFacility"; which: keyof Omit<Facilities, "building"> }
   | { type: "delegate"; area: keyof Delegation; level: Level }
   | { type: "setDelegate"; dept: import("./focus").Dept; on: boolean }

@@ -1,4 +1,5 @@
 import { logLedger } from "./ledger";
+import { filePractice, recordTreeRun, treeFailures } from "./treeplay";
 import { onLanding } from "./dev";
 import { socialAfterRace, type RadioQuote } from "./social";
 import { planRetirements } from "./contracts";
@@ -88,6 +89,10 @@ function rookieWeekend(s: CareerState): boolean {
 }
 
 /** The heaviest rain at any point of the race, 0..1, so the weather card can be drawn from the real forecast. */
+export function rainForecast(s: CareerState, circuitId: string): number {
+  return raceRainPeak(s, circuitId, hashSeed(`weekend:${s.seed}:${s.year}:${s.round}`) % 90000 + SESSION_OFFSET.race);
+}
+
 function raceRainPeak(s: CareerState, circuitId: string, seed: number): number {
   const settings: WeekendSettings = { teamId: s.teamId, circuitId, distance: "full", seed, weather: "random", difficulty: s.difficulty };
   const w = makeWeather(raceWeather(settings), 60);
@@ -454,6 +459,7 @@ export function practiceRun(s: CareerState, programme: Programme, setup: SetupVe
     weekendRead(s, s.teamId, focus, 0.6 + 0.4 * eng);
     out.push(`The data tightened the engineers' numbers on ${focus.map((x) => TRAIT_NAME[x].toLowerCase()).join(", ")}.`);
   }
+  recordTreeRun(s, Math.max(0, ws.sessions0 - ws.sessionsLeft));
   ws.notes.unshift(...out);
   ws.notes = ws.notes.slice(0, 30);
   if (ws.runsLeft <= 0) {
@@ -478,6 +484,7 @@ export function endPractice(s: CareerState) {
   if (!ws || ws.stage !== "practice") return;
   ws.sessionsLeft = 0;
   ws.runsLeft = 0;
+  filePractice(s);
   ws.stage = ws.sprint ? "sq" : "quali";
 }
 
@@ -848,6 +855,7 @@ export function recordSession(s: CareerState, kind: SessionKind, order: string[]
   if (kind === "sprint" || kind === "race") {
     const mine = driversOf(s, s.teamId).map((d) => d.id);
     wearAfterRace(s, mine, kind);
+    if (kind === "race") treeFailures(s);
     for (const [id, part] of Object.entries(extra?.failed ?? {})) if (mine.includes(id)) markDead(s, id, part);
   }
   if (kind === "sprint") {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { lockOf, startBuild, treeOf } from "../src/career/ctree";
 import { newCareer } from "../src/career/world";
 import { reduce } from "../src/career/reducer";
 import { advanceDay, resolveCard } from "../src/career/tick";
@@ -149,28 +150,37 @@ describe("development record", () => {
 });
 
 describe("development in real play", () => {
-  it("four seasons of backing, holding, scrapping and answering notices stay consistent", () => {
+  it("four seasons of building, fitting, failing parts and answering notices stay consistent", () => {
     const s = newCareer("fer", 77);
     s.teller = "steady";
     let k = 0;
-    const seen = new Set<string>();
+    let most = 0;
     for (let d = 0; d < 365 * 4; d++) {
       s.weekend = null;
+      most = Math.max(most, Object.keys(treeOf(s, s.teams[s.teamId]).parts).length);
+      // the player keeps the factory busy, one cheap open part at a time
+      const t = s.teams[s.teamId];
+      if (d % 9 === 0) {
+        const tr = treeOf(s, t);
+        const open = tr.nodes.filter((n) => lockOf(s, t, n).ok);
+        if (open.length) startBuild(s, t, open[k++ % open.length].id);
+      }
       for (const c of [...s.cards]) {
         if (c.options.length < 2) continue;
         let opt = c.defaultOption ?? c.options[0].id;
-        if (c.kind === "ideaBatch") { const o = c.options.find((x) => x.id.startsWith("idea:")); if (o && k++ % 3 !== 0) opt = o.id; }
-        if (c.kind === "projectReady") { opt = k++ % 3 === 0 ? "hold" : "fit"; if (k % 7 === 0) { reduce(s, { type: "scrapProject", id: Number(c.data?.projectId) }); } }
+        if (c.kind === "treePart") opt = ["both", "A", "later"][k++ % 3];
+        if (c.kind === "treeFail") opt = k++ % 2 ? "A" : "B";
         if (c.kind === "staffNotice") opt = k++ % 2 ? "go" : "listen";
         if (c.kind === "devCrisis") opt = ["all", "back", "hard"][k++ % 3];
         resolveCard(s, c.id, opt);
       }
       advanceDay(s);
     }
-    const log = devOf(s.teams[s.teamId]).log;
-    for (const e of log) { seen.add(e.kind); expect(/—/.test(e.text)).toBe(false); }
-    expect(seen.has("backed")).toBe(true);
-    expect(seen.has("fitted") || seen.has("scrapped") || seen.has("held")).toBe(true);
+    const tr = treeOf(s, s.teams[s.teamId]);
+    expect(tr.nodes.length).toBe(72);
+    expect(most).toBeGreaterThan(3);
+    for (const p of Object.values(tr.parts)) { expect(p.copies === 1 || p.copies === 2).toBe(true); }
+    for (const l of s.letters ?? []) expect(/—/.test(l.subject + l.body)).toBe(false);
     for (const st of Object.values(s.staff)) { expect(st.mood).toBeGreaterThanOrEqual(0); expect(st.mood).toBeLessThanOrEqual(1); }
   }, 240000);
 });

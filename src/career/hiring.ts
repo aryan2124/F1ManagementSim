@@ -1,4 +1,6 @@
 import { Rng, hashSeed } from "../sim/rng";
+import { onPromote } from "./treeplay";
+import { sendLetter } from "./cards";
 import { clamp, fmtMoney, isHuman, nextId, rngFor, round2 } from "./util";
 import { multiply, whyText } from "./factors";
 import { hireStaff, staffAsk } from "./contracts";
@@ -123,6 +125,8 @@ export function promoteIntern(s: CareerState, id: string): { ok: boolean; messag
   const salary = round2(Math.max(staffAsk(st), 0.3));
   const notes = hireStaff(s, s.teamId, st.id, salary, 3);
   delete st.intern;
+  const cardLine = onPromote(s, st.id);
+  if (cardLine) sendLetter(s, { from: "Human resources", role: "Promotion", subject: `${st.name} has a special card`, body: cardLine });
   addFact(s, "promotion", `${st.name} was promoted from trainee to ${st.role} at ${s.teamId.toUpperCase()}.`, [st.id, s.teamId], 2);
   return { ok: true, message: notes.join(" ") };
 }

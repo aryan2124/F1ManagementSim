@@ -1,4 +1,6 @@
 import { reserveDuty } from "./health";
+import { resolveTreeCard, trackUpdates, treeDaily, treeWeekly } from "./treeplay";
+import { rainForecast } from "./weekend";
 import { auditMonthly, loopholesMonthly } from "./loopholes";
 import { amendmentsMonthly } from "./amendments";
 import { formatsMonthly } from "./formats";
@@ -9,10 +11,8 @@ import { weekPlanCard, resolveWeekPlan, weekPlanOpen } from "./week";
 import { socialWeekly } from "./social";
 import { boardMove } from "./board";
 import { CFG } from "./config";
-import { passiveRead, study } from "./know";
+import { passiveRead } from "./know";
 import { TRAIT_AREA, TRAIT_NAME } from "./traits";
-import { diagnose, type Problem } from "./brief";
-import { wantsAdvice } from "./guide";
 import { resolveMail, mailWeekly } from "./mail";
 import { storiesDaily, storiesWeekly } from "./stories";
 import { threadsWeekly } from "./threads";
@@ -23,13 +23,13 @@ import { factoryClosed, launchDay, summerEnd, summerStart, testDay, winterStart 
 import { pushCard, ticker, news, recap } from "./cards";
 import { askingSalary, extendDriver, hireStaff, signDriver, staffAsk } from "./contracts";
 import { tickTalks } from "./talks";
-import { budgetBlock, driversOf, monthlyBooks, startFacility, tickFacility } from "./finance";
-import { aiResearch, capRoom, fitParts, generateIdeas, maxConcurrent, resetAllowance, scrapProject, startProject, tickRnd, wearOutParts } from "./rnd";
+import { driversOf, monthlyBooks, startFacility, tickFacility } from "./finance";
+import { aiResearch, capRoom, fitParts, resetAllowance, scrapProject, startProject, tickRnd, wearOutParts } from "./rnd";
 import { devEventsWeekly, resolveDevEvent } from "./crises";
 import { endOfSeason, isWeakestTeam, newSeason, newSeasonPlayer, playerRank, switchTeam, yearEndPlayer } from "./season";
 import { clamp, isHuman, epochDay, fmtMoney, fmtRange, rngFor, round2, ymd } from "./util";
 import { autoPractice, delegatedParts, simulateWeekend, startWeekend } from "./weekend";
-import { AREAS, AREA_LABEL, TRAITS, type Card, type CardOption, type CareerState, type Idea, type Project, type Trait, type TeamState, type WeekendState } from "./types";
+import { type Card, type CareerState, type Project, type Trait, type WeekendState } from "./types";
 import { baseTeam } from "./car";
 import { brandWeekly, offerSponsors, resolveBacklash, resolveSponsorPick } from "./brand";
 import { eraDaily, eraStory, eraStoryCard, eraSummer, eraWeekly } from "./eras";
@@ -42,8 +42,7 @@ import { devWeekly, resolveTestDay, seasonTestDays, testDayCard, onBatchDecided,
 import { fadeSlights } from "./status";
 import { aiMonthly, driverRumours, pressConference, resolveMedia, settlePromises, weeklyPeople } from "./people";
 import { eventsWeekly, resolveEvent } from "./events";
-import { ideaBody, ideaOptions } from "./ideas";
-import { FOCUS_TEXT, activePlan, focusLabel, ideaScore, planOf, weakestArea } from "./rndplan";
+import { focusLabel, planOf } from "./rndplan";
 import { logSpend } from "./log";
 
 const seasonOver = (s: CareerState) => s.round >= s.calendar.length;
@@ -161,6 +160,10 @@ export function resolveCard(s: CareerState, id: number, option: string, auto = f
       break;
     case "devEvent":
       resolveDevEvent(s, c, option);
+      break;
+    case "treePart":
+    case "treeFail":
+      resolveTreeCard(s, c, option);
       break;
     case "ideaBatch": {
       const offered = String(d.offered ?? "").split(",").filter(Boolean).map(Number);
@@ -447,93 +450,7 @@ export function weeklyPlayer(s: CareerState, first: boolean) {
   if (!closed) { campaignWeekly(s); weekPlanCard(s); }
   devEventsWeekly(s);
   passiveRead(s, s.teamId);
-  generateIdeas(s, s.teamId);
-  if (closed) return;
-  rndManage(s);
-}
-
-/** The factory's rhythm: ideas arrive weekly, and every fourth week the player steers. The head of R&D acts for the player when delegated. */
-function rndManage(s: CareerState) {
-  const me = s.teams[s.teamId];
-  const lvl = me.delegation.rnd;
-  const monthly = s.day % 28 === 2;
-  const plan = activePlan(s, me);
-  if (lvl === "do" || lvl === "hands") {
-    // "do it": they act and tell you; "hands off": they act and you hear nothing
-    const say = (m: string) => {
-      if (lvl === "do") recap(s, m);
-    };
-    if (monthly) delegatedEngineering(s, me, say);
-    if (monthly && plan.focus === "balanced") {
-      // delegation is a gamble on the people: a weak head of R&D or a sour office sometimes picks the wrong area
-      const dq = clamp(designQuality(s) * 0.85 + 0.2, 0.3, 1);
-      plan.focus = rngFor(s, `deleg:${s.day}`).chance(dq) ? weakestArea(s, s.teamId) : (AREAS[Math.floor(rngFor(s, `delegw:${s.day}`).next() * AREAS.length)] ?? weakestArea(s, s.teamId));
-      plan.until = s.day + 28;
-      say(`Your head of R&D put the effort into ${focusLabel(plan.focus).toLowerCase()} for the month.`);
-    }
-    let n = 0;
-    while (n++ < 2 && capRoom(me) > 3 && me.projects.filter((p) => p.status === "building").length < maxConcurrent(me) && me.ideas.length) {
-      const best = [...me.ideas].sort((a, b) => ideaScore(s, me, b) - ideaScore(s, me, a))[0];
-      if (capRoom(me) < best.cost || budgetBlock(s, "rnd", best.cost)) break;
-      const started = startProject(s, s.teamId, best.id);
-      if (started.ok) {
-        const pr = me.projects.find((q) => q.id === best.id);
-        if (pr) pr.unbriefed = true;
-      }
-      say(`Your designers started "${best.name}".`);
-    }
-    return;
-  }
-  if (lvl !== "advise" || !monthly) return;
-  // the engineers' report: where is the car losing time? The answer is a brief, and the design office answers it with approaches
-  const lapsed = !plan.brief || s.day > plan.brief.until;
-  if (lapsed && !s.cards.some((c) => c.kind === "rndDirection") && s.day - (plan.asked ?? -999) >= 42) {
-    plan.asked = s.day;
-    const probs = diagnose(s);
-    const advice = wantsAdvice(s);
-    const mkp = (p: Problem, i: number): CardOption => ({
-      id: `brief:${p.trait}`,
-      label: `${TRAIT_NAME[p.trait]}${advice && i === 0 ? " (engineers' top pick)" : ""}`,
-      detail: `${p.gap >= 0 ? "about " + p.gap.toFixed(2) + " s behind the average car" : "ahead of the average car, but it pays at the coming tracks"} (give or take ${p.unsure.toFixed(2)})`,
-      lines: [
-        `Pays most at: ${[...p.races].sort((a, b) => b.f - a.f).slice(0, 3).map((r) => r.gp).join(", ")}`,
-        `Sits in the ${AREA_LABEL[p.area].toLowerCase()} department. The design office will come back in a week with a quick fix, a proper job and a rethink.`,
-        "This is the staff's reading from your own numbers and a rough picture of the other cars. It can be wrong.",
-      ],
-    });
-    pushCard(
-      s,
-      "rndDirection",
-      "Where are we losing time?",
-      `The engineers have gone through the data and the next five races. Pick the problem the design office attacks for the next six weeks. Everything they pitch will be a way of solving that one problem, so choosing means turning down the others for now.`,
-      [...probs.map(mkp), { id: "focus:balanced", label: "Let the office choose", detail: "No brief: a spread of ideas across the car, nobody briefed", lines: ["Parts built without a brief give up a little."] }, { id: "focus:bank", label: "Hold back, save money", detail: FOCUS_TEXT.bank }],
-      { urgency: 2, deadline: s.day + 6, defaultOption: "focus:balanced", data: { probs: probs.map((p) => p.trait).join(",") } },
-    );
-  }
-  // the card offers every idea on the table (the same list as the Car screen), best first within each kind of bet
-  const order = { safe: 0, gamble: 1, enabler: 2 } as const;
-  const appr = { quick: 0, proper: 1, rethink: 2 } as const;
-  const rank = (i: Idea) => (i.approach ? appr[i.approach] : 5 + (order[i.kind ?? "safe"] ?? 0));
-  const onBrief = plan.brief && s.day <= plan.brief.until;
-  const pool = onBrief ? me.ideas.filter((i) => i.approach || i.rookie || i.lab || i.offBrief) : me.ideas;
-  const sorted = [...pool].sort((a, b) => rank(a) - rank(b) || (b.predLo + b.predHi) / 2 - (a.predLo + a.predHi) / 2);
-  const picks = sorted.slice(0, 8);
-  const fresh = picks.some((i) => !(plan.offered ?? []).includes(i.id));
-  if (picks.length && fresh && !s.cards.some((c) => c.kind === "ideaBatch")) {
-    plan.offered = picks.map((i) => i.id);
-    pushCard(s, "ideaBatch", "What should the factory build?", ideaBody(s, picks.length, sorted.length), [...ideaOptions(s, picks), { id: "none", label: "Not now", detail: "Every idea on the table is shelved for good" }], { urgency: 2, deadline: s.day + 6, defaultOption: "none", data: { offered: picks.map((i) => i.id).join(",") } });
-  }
-}
-
-/** A delegated head of R&D reads some of the data (studies the loosest number) but does not commission work, pick leads or read the rulebook: that stays with a person. */
-function delegatedEngineering(s: CareerState, me: TeamState, say: (m: string) => void) {
-  if (me.tunnelLeft > 0.35 * me.tunnelTotal) {
-    const loosest = [...TRAITS].sort((a, b) => me.know[b].err - me.know[a].err)[0];
-    if (me.know[loosest].err > 0.1) {
-      const r = study(s, s.teamId, loosest, 2);
-      if (r.ok) say(`Your engineers ran a study on ${TRAIT_NAME[loosest].toLowerCase()}.`);
-    }
-  }
+  treeWeekly(s);
 }
 
 function summerBegin(s: CareerState) {
@@ -714,6 +631,8 @@ export function advanceDay(s: CareerState): void {
     dayCtx.facility[id] = f;
     if (f && id === s.teamId) facilityNotice(s, f);
   }
+  treeDaily(s);
+  trackUpdates(s, (c) => rainForecast(s, c));
   storiesDaily(s);
   if (!closedYear(s)) raceWeek(s);
   if (seasonOver(s) && !closedYear(s) && !s.weekend && s.day >= s.calendar[s.calendar.length - 1].day + 2) { dayCtx.endOfSeason = true; endOfSeason(s); checkFired(s); }
@@ -782,6 +701,8 @@ export function playerDay(s: CareerState): void {
     eraStoryCard(s);
     testDayCard(s);
   }
+  treeDaily(s);
+  trackUpdates(s, (c) => rainForecast(s, c));
   if (s.day % 7 === 2 && !closedYear(s)) {
     weeklyPeople(s, s.teamId);
     fadeSlights(s);

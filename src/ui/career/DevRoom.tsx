@@ -296,7 +296,6 @@ function Briefing({ s, card, res, setAfter, skip }: { s: CareerState; card: Card
   );
 }
 
-const KIND_WORD: Record<string, string> = { safe: "SAFE", gamble: "GAMBLE", enabler: "GROUNDWORK" };
 const APPROACH_WORD: Record<string, string> = { quick: "QUICK FIX", proper: "PROPER JOB", rethink: "RETHINK" };
 
 function Pitches({ s, d, card, res, setAfter, skip, mute }: { s: CareerState; d: Dispatch; card: Card; res: (o: string) => unknown; setAfter: (a: After) => void; skip: () => void; mute: React.MutableRefObject<boolean> }) {
@@ -379,7 +378,7 @@ function Pitches({ s, d, card, res, setAfter, skip, mute }: { s: CareerState; d:
           const who = i.lead ? s.staff[i.lead] : undefined;
           const pv = pvOf(i);
           const p = profileOf(s, { ...i, ...pv }, max);
-          const word = i.rookie ? "ROOKIE PITCH" : i.lab ? "YOUR LAB" : i.offBrief ? "OFF-BRIEF" : i.approach ? APPROACH_WORD[i.approach] : KIND_WORD[i.kind ?? "safe"];
+          const word = i.rookie ? "ROOKIE PITCH" : i.lab ? "YOUR LAB" : i.offBrief ? "OFF-BRIEF" : i.approach ? APPROACH_WORD[i.approach] : "IDEA";
           return (
             <button key={i.id} className={`dr-pitch card ${i.id === cur?.i.id ? "on" : ""} ${i.rookie ? "rookie" : ""} a-${i.approach ?? i.kind ?? "safe"}`} onClick={() => { sfx.play("click"); setFoc(i.id); }}>
               <span className="pc-top">{who && <StaffPortrait seed={who.id} role={who.role} size={30} />}<i className={`k-${i.kind ?? "safe"}`}>{word}</i></span>

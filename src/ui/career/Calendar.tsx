@@ -3,6 +3,8 @@ import { agenda, type AgendaItem } from "../../career/agenda";
 import { skipTarget } from "../../career/autoplay";
 import { epochDay, fmtDay, MONTH_NAMES, ymd } from "../../career/util";
 import type { Props } from "./common";
+import { seasonTable } from "../../career/treeplay";
+import { LetterTable } from "./Inbox";
 
 const KIND_LABEL: Record<AgendaItem["kind"], string> = {
   race: "Race",
@@ -138,6 +140,11 @@ export function Calendar({ s, d, net }: Props & { net?: boolean }) {
           </div>
         ))}
         <p className="dim small">Highlighted rows need an answer from you before the date shown. Rival teams and the rule makers keep their own dates; only the ones that affect you are listed.</p>
+      </section>
+      <section className="panel" data-testid="track-report">
+        <h3>TRACK REPORT</h3>
+        <p className="dim small">What each track asks of the car. A ~ is an estimate, not a measured figure.</p>
+        <LetterTable table={seasonTable(s)} />
       </section>
     </div>
   );

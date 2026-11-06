@@ -1,4 +1,5 @@
 import { keystoneTraits } from "./keystones";
+import { cardMods } from "./leadcards";
 import { qualityFit } from "./schools";
 import { designTraits } from "./design";
 import { TRAITS } from "./types";
@@ -52,7 +53,7 @@ export function carSpec(s: CareerState, teamId: string, circuitId?: string, ks?:
     power: clamp(0.98 + CFG.specPerSecPower * c.power, 0.93, 1.012),
     reliability: clamp(base.reliability + (0.012 + 0.006 * (rulesOf(s).openCooling ?? 0)) * c.cooling + 0.004 * (c.power - powerInit), 0.9, 0.995),
     pitCrew: crew,
-    pitFumble: clamp(fx.fumble - ((mech?.skill ?? 70) - 72) / 100 * 0.02, 0.008, 0.14),
+    pitFumble: clamp(fx.fumble - ((mech?.skill ?? 70) - 72) / 100 * 0.02 - cardMods(s, teamId).pit, 0.008, 0.14),
   };
 }
 

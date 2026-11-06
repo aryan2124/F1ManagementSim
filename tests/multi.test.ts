@@ -88,29 +88,22 @@ describe("new systems in a league", () => {
     expect((theirs.teams.fer?.notebook ?? []).length).toBe(0);
     expect(E.reduceAs(s, "mcl", { type: "setTeller", teller: "chaos" }).ok).toBe(true);
   });
-  it("the development record is private per manager and test runs work for each", () => {
+  it("the tree of parts is private per manager and builds work for each", () => {
     let s = league();
-    // let ideas appear for both
+    for (let i = 0; i < 5; i++) s = E.stepDay(s).state;
+    let r = E.reduceAs(s, "fer", { type: "treeBuild", id: "fw01" });
+    expect(r.ok, r.message).toBe(true);
+    s = r.state;
+    const mine = E.view(s, "fer") as { teams: Record<string, { tree?: { builds: unknown[] } }> };
+    const theirs = E.view(s, "mcl") as { teams: Record<string, { tree?: unknown }> };
+    expect(mine.teams.fer.tree?.builds.length).toBe(1);
+    expect(theirs.teams.fer.tree).toBeUndefined();
+    r = E.reduceAs(s, "mcl", { type: "treeBuild", id: "rw11" });
+    expect(r.ok, r.message).toBe(true);
+    s = r.state;
     for (let i = 0; i < 40; i++) s = E.stepDay(s).state;
-    const mineF = E.view(s, "fer") as { teams: Record<string, { ideas: { id: number }[] }>; day: number };
-    const idea = mineF.teams.fer.ideas[0];
-    expect(idea).toBeTruthy();
-    let r = E.reduceAs(s, "fer", { type: "startProject", ideaId: idea.id });
-    expect(r.ok).toBe(true);
-    s = r.state;
-    r = E.reduceAs(s, "fer", { type: "scrapProject", id: idea.id });
-    s = r.state;
-    const mine = E.view(s, "fer") as { teams: Record<string, { dev?: { log: unknown[] } }> };
-    const theirs = E.view(s, "mcl") as { teams: Record<string, { dev?: unknown }> };
-    expect((mine.teams.fer.dev?.log ?? []).length).toBeGreaterThan(0);
-    expect(theirs.teams.fer.dev).toBeUndefined();
-    const other = (E.view(s, "mcl") as { teams: Record<string, { ideas: { id: number }[] }> }).teams.mcl.ideas[0];
-    if (other) {
-      const a = E.reduceAs(s, "mcl", { type: "startProject", ideaId: other.id });
-      expect(a.ok).toBe(true);
-      const t = E.reduceAs(a.state, "mcl", { type: "testPart", id: other.id, plan: "quick" });
-      expect(typeof t.ok).toBe("boolean");
-    }
+    const after = E.view(s, "fer") as { teams: Record<string, { tree?: { parts: Record<string, unknown> } }> };
+    expect(Object.keys(after.teams.fer.tree?.parts ?? {}).length).toBe(1);
   });
 });
 
