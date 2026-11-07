@@ -1,4 +1,5 @@
 import { logLedger } from "./ledger";
+import { failForward, fitReportText, rivalCopy } from "./fitreport";
 import { carLapGain, carOf, filePractice, recordTreeRun, treeFailures } from "./treeplay";
 import { onLanding } from "./dev";
 import { socialAfterRace, type RadioQuote } from "./social";
@@ -1073,8 +1074,11 @@ function finishRace(s: CareerState, ws: WeekendState, res: SessionResult, skipWo
   }
   const pos = mine.length ? Math.min(...mine) : 0;
   const learnt = weekendLearn(s, s.teamId, ws.circuitId);
+  learnt.push(...failForward(s));
+  const fitTxt = fitReportText(s);
+  const copied = rivalCopy(s, pos);
   trackCorrelates(s, s.teamId);
-  pushCard(s, "debrief", `Debrief: ${meta.gp}`, `${winner?.spec.name ?? "?"} won. Your cars finished ${mine.length ? mine.map((p) => "P" + p).join(" and ") : "outside the classification"}.${reveals.length ? "\n\nParts report:\n" + reveals.join("\n") : ""}${learnt.length ? "\n\nWhat the weekend taught the engineers:\n" + learnt.join("\n") : ""}`, [{ id: "ok", label: "OK" }], { urgency: 2, deadline: s.day + 4 });
+  pushCard(s, "debrief", `Debrief: ${meta.gp}`, `${winner?.spec.name ?? "?"} won. Your cars finished ${mine.length ? mine.map((p) => "P" + p).join(" and ") : "outside the classification"}.${reveals.length ? "\n\nParts report:\n" + reveals.join("\n") : ""}${fitTxt ? "\n\n" + fitTxt : ""}${copied ? "\n\n" + copied : ""}${learnt.length ? "\n\nWhat the weekend taught the engineers:\n" + learnt.join("\n") : ""}`, [{ id: "ok", label: "OK" }], { urgency: 2, deadline: s.day + 4 });
   recap(s, `${meta.gp} done. Best finish: ${pos ? "P" + pos : "none"}.`);
   if (!skipWorld) s.round += 1;
 }
