@@ -361,3 +361,5 @@
   .app .topline { flex-wrap: wrap; }
   .app .topline .c-tabs { flex: 1 1 100%; order: 2; min-width: 0; }
 }
+.gd-slide { display: grid; gap: 2px; margin: 8px 0; }
+.gd-slide input[type=range] { width: 100%; }

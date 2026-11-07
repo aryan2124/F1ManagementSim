@@ -1092,7 +1092,9 @@ export type Action =
   | { type: "poachStaff"; staffId: string; offerSalary: number }
   | { type: "pressStyle"; style: "open" | "guarded" | "quiet" }
   | { type: "buyoutProspect"; id: string }
-  | { type: "practiceRun"; programme: Programme; setup: SetupVec; driverId: string; fresh?: boolean; setId?: string }
+  | { type: "practiceRun"; programme: Programme; setup: SetupVec; driverId: string; fresh?: boolean; setId?: string; live?: boolean; worn?: number }
+  | { type: "pracSetup"; setup: SetupVec; minutes: number }
+  | { type: "pracFinish"; sets?: Record<string, import("../sim/tyreSets").TyreSet[]> }
   | { type: "setAlloc"; alloc: { S: number; M: number; H: number } }
   | { type: "setSetup"; setup: SetupVec; force?: boolean }
   | { type: "setTeller"; teller: import("./threads").Teller }

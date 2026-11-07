@@ -23,9 +23,10 @@ const RUNS: { p: Programme; label: string; help: string }[] = [
 /** FP1, FP2 and FP3 as a clocked session on the qualifying sim, with the garage drawer beside the cars. */
 export function PracticeLive({ s, d, onDone }: Props & { onDone: () => void }) {
   const ws = s.weekend!;
-  const ctl = useMemo(() => new PracticeController(s), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const ctl = useMemo(() => new PracticeController(s, (a) => d(a)), []); // eslint-disable-line react-hooks/exhaustive-deps
+  ctl.s = s;
   useEffect(() => {
-    const id = window.setInterval(() => { if (ctl.poll().length) d({ type: "touch" }); }, 400);
+    const id = window.setInterval(() => { ctl.poll(); }, 400);
     return () => window.clearInterval(id);
   }, [ctl, d]);
   const meta = loadCircuit(ws.circuitId).meta;
@@ -35,7 +36,7 @@ export function PracticeLive({ s, d, onDone }: Props & { onDone: () => void }) {
       meta={meta}
       kind="fp"
       practice={{ index: ctl.index, extras: <GarageDrawer s={s} d={d} ctl={ctl} /> }}
-      onDone={() => { ctl.finish(); d({ type: "touch" }); onDone(); }}
+      onDone={() => { ctl.finish(); onDone(); }}
     />
   );
 }
@@ -73,7 +74,7 @@ export function GarageDrawer({ s, d, ctl }: Props & { ctl: PracticeController })
   const tr = treeOf(s, me);
   const ws = s.weekend!;
   const built = Object.values(tr.parts).map((p) => ({ p, nd: nodeOf(tr, p.id)! })).filter((x) => x.nd);
-  const act = (r: { message: string }) => { setMsg(r.message); d({ type: "touch" }); };
+  const act = (r: { message: string }) => { setMsg(r.message); };
   const drivers = ctl.humanIds.map((h) => ({ id: h, car: carOf(s, me.id, h), code: s.drivers[h]?.spec.code ?? h }));
   return (
     <section className="panel gd" data-testid="garage-drawer">
@@ -138,7 +139,7 @@ export function GarageDrawer({ s, d, ctl }: Props & { ctl: PracticeController })
               <b>CAR {dv.car} {dv.code}</b>
               <div className="gd-progs">
                 {RUNS.map((r) => (
-                  <button key={r.p} className={`tiny ${ctl.programme[dv.id] === r.p ? "on primary" : ""}`} title={r.help} onClick={() => { ctl.programme[dv.id] = r.p; d({ type: "touch" }); }}>{r.label}</button>
+                  <button key={r.p} className={`tiny ${ctl.programme[dv.id] === r.p ? "on primary" : ""}`} title={r.help} onClick={() => { ctl.programme[dv.id] = r.p; }}>{r.label}</button>
                 ))}
               </div>
               <p className="dim small">{RUNS.find((r) => r.p === ctl.programme[dv.id])?.help}</p>

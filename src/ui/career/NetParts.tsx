@@ -10,6 +10,7 @@ import type { Compound, RaceConfig } from "../../sim/types";
 import { NetQualiSession, NetRaceSession, type NetLink } from "../../game/netsession";
 import { QualiScreen } from "../QualiScreen";
 import { RaceScreen } from "../RaceScreen";
+import { PracticeLive } from "./PracticeLive";
 import { Results } from "../Results";
 import type { PlayerView } from "../../shared/careerNet";
 import type { CareerRoom } from "./net";
@@ -103,6 +104,7 @@ export function ReadyDock({ room, s, onWeekend }: { room: CareerRoom; s: CareerS
 /** Practice and the wait for qualifying, for an online weekend. */
 export function NetWeekend({ room, s, d, msg, onExit }: Props & { room: CareerRoom; msg: string; onExit: () => void }) {
   const ws = s.weekend;
+  const [onTrack, setOnTrack] = useState(false);
   if (!ws || ws.stage === "done") {
     return (
       <div className="screen">
@@ -120,7 +122,7 @@ export function NetWeekend({ room, s, d, msg, onExit }: Props & { room: CareerRo
         <span className="dim small">Practice is yours alone. Qualifying and the race start once the whole league is ready.</span>
       </div>
       {ws.stage === "practice" ? (
-        <Practice s={s} d={d} msg={msg} net />
+        onTrack ? <PracticeLive key={ws.sessionsLeft} s={s} d={d} onDone={() => setOnTrack(false)} /> : <Practice s={s} d={d} msg={msg} net onTrack={() => setOnTrack(true)} />
       ) : (
         <section className="panel">
           <h3>PRACTICE IS OVER</h3>

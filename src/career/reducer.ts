@@ -33,7 +33,7 @@ import { castVote, persuade, trade } from "./vote";
 import { logSpend } from "./log";
 import { rulesOf } from "./eras";
 import { PART_NAME, fitNew } from "./powertrain";
-import { endPractice, practiceRun, recordSession, setAlloc, simulateTo, simulateWeekend } from "./weekend";
+import { endPractice, finishPracticeSession, practiceRun, recordSession, setAlloc, simulateTo, simulateWeekend } from "./weekend";
 import { CFG } from "./config";
 import { launchTutorialEra } from "./tutorialEra";
 import { fmtMoney, round2 } from "./util";
@@ -388,8 +388,20 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       return good(`${st.name} released. Payout ${fmtMoney(st.salary * left * 0.4)}.`);
     }
     case "practiceRun": {
-      const out = practiceRun(s, a.programme, a.setup, a.driverId, { fresh: a.fresh, setId: a.setId });
+      const out = practiceRun(s, a.programme, a.setup, a.driverId, { fresh: a.fresh, setId: a.setId, live: a.live, worn: a.worn });
+      if (a.live) return good(out.join("\n"));
       return out.length ? good(out[0]) : fail("No runs left.");
+    }
+    case "pracSetup": {
+      const ws = s.weekend;
+      if (!ws || ws.stage !== "practice") return fail("No session.");
+      ws.setup = { ...a.setup };
+      ws.fitMin = (ws.fitMin ?? 0) + a.minutes;
+      return good(`Setup saved. ${a.minutes} minutes of the session.`);
+    }
+    case "pracFinish": {
+      finishPracticeSession(s, a.sets);
+      return good();
     }
     case "setTeller": {
       s.teller = a.teller;

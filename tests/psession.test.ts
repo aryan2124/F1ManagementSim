@@ -1,10 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { newCareer } from "../src/career/world";
 import { startWeekend } from "../src/career/weekend";
+import { apply } from "../src/career/reducer";
+import type { Action, CareerState } from "../src/career/types";
 import { PracticeController } from "../src/career/psession";
 import { nodeKey, install, treeOf } from "../src/career/ctree";
 
 vi.setConfig({ testTimeout: 300000 });
+
+/** The test dispatch: apply the action to the state in place, like a server replaying it. */
+const on = (s: CareerState) => (a: Action) => ({ ...apply(s, a), state: s });
 
 function setup(seed = 8) {
   const s = newCareer("mcl", seed, 1, "quick");
@@ -29,7 +34,7 @@ function until(c: PracticeController, f: () => boolean, maxTicks = 40000) {
 describe("a practice session on the qualifying sim", () => {
   it("runs on one clock, and a finished run feeds the engineers and the part readings", () => {
     const { s } = setup();
-    const c = new PracticeController(s);
+    const c = new PracticeController(s, on(s));
     expect(c.sim.clock).toBe(3600);
     c.start();
     expect(c.sim.phase).toBe("running");
@@ -54,7 +59,7 @@ describe("a practice session on the qualifying sim", () => {
 
   it("a change in the garage costs session minutes and money, and holds the car", () => {
     const { s, t } = setup();
-    const c = new PracticeController(s);
+    const c = new PracticeController(s, on(s));
     c.start();
     const a = c.humanIds[0];
     c.sim.step();
@@ -73,7 +78,7 @@ describe("a practice session on the qualifying sim", () => {
 
   it("the session ends with the clock, sets go back and the next session is one closer", () => {
     const { s } = setup();
-    const c = new PracticeController(s);
+    const c = new PracticeController(s, on(s));
     const ws = s.weekend!;
     const left = ws.sessionsLeft;
     c.start();
@@ -101,7 +106,7 @@ describe("delegated practice", () => {
 describe("setup inside the session", () => {
   it("saving sliders costs three minutes and holds both cars; a car on track blocks it", () => {
     const { s } = setup(10);
-    const c = new PracticeController(s);
+    const c = new PracticeController(s, on(s));
     c.start();
     c.sim.step();
     const r = c.changeSetup({ ...s.weekend!.setup, [s.weekend!.axes[0].id]: 0.3 });
@@ -111,5 +116,50 @@ describe("setup inside the session", () => {
     for (const h of c.humanIds) expect(c.sim.car(h).readyTick).toBeGreaterThan(c.sim.tick + 1000);
     c.sim.car(c.humanIds[0]).phase = "out";
     expect(c.changeSetup({ ...s.weekend!.setup }).ok).toBe(false);
+  });
+});
+
+describe("a league server can replay a live session", () => {
+  it("the same actions on a copy of the state give the same practice results", () => {
+    const { s } = setup(11);
+    const copy = structuredClone(s);
+    const log: Action[] = [];
+    const c = new PracticeController(s, (a) => { log.push(a); return { ...apply(s, a), state: s }; });
+    c.start();
+    const a = c.humanIds[0];
+    c.programme[a] = "part";
+    until(c, () => c.sim.car(a).phase === "garage" && c.sim.tick > c.sim.car(a).readyTick, 200);
+    expect(c.fit(nodeKey("floor", 1, 1), "A", true).ok).toBe(true);
+    c.sim.step();
+    c.sim.car(a).readyTick = 0;
+    c.sim.command({ type: "go", carId: a, compound: "S", fresh: true, laps: 1 });
+    until(c, () => c.sim.car(a).runsDone >= 1);
+    c.poll();
+    c.finish();
+    expect(log.length).toBeGreaterThan(2);
+    for (const x of log) apply(copy, x);
+    expect(copy.weekend!.runs).toEqual(s.weekend!.runs);
+    expect(copy.weekend!.tp).toEqual(s.weekend!.tp);
+    expect(copy.weekend!.sessionsLeft).toBe(s.weekend!.sessionsLeft);
+    expect(copy.teams[copy.teamId].cash).toBe(s.teams[s.teamId].cash);
+  });
+});
+
+describe("live practice inside a league", () => {
+  it("the league engine accepts the live-session actions for its own player", async () => {
+    const { careerEngine: E } = await import("../src/career/multi");
+    let ms: any = E.create({ seed: 5, teamId: "fer", settings: { extra: { raceLength: "quick" } } });
+    ms = E.assign(ms, "fer", "p1");
+    let g = 0;
+    while (!ms.slices.fer.top.weekend && g++ < 120) { const r: any = E.stepDay(ms); ms = r.state; if (r.weekend) break; }
+    const ws0 = ms.slices.fer.top.weekend;
+    expect(ws0).toBeTruthy();
+    const setup = { ...ws0.setup };
+    const a = E.reduceAs(ms, "fer", { type: "pracSetup", setup, minutes: 3 });
+    expect(a.ok).toBe(true);
+    expect((a.state as any).slices.fer.top.weekend.fitMin).toBe(3);
+    const b = E.reduceAs(a.state, "fer", { type: "pracFinish" });
+    expect(b.ok).toBe(true);
+    expect((b.state as any).slices.fer.top.weekend.sessionsLeft).toBe(ws0.sessionsLeft - 1);
   });
 });

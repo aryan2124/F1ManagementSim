@@ -1,8 +1,11 @@
 import { QualiSession } from "../game/qsession";
-import { practiceEntries, planPractice, practiceRun, finishPracticeSession } from "./weekend";
-import { requestFit, suggestedFit } from "./fitting";
+import { practiceEntries, planPractice } from "./weekend";
+import { suggestedFit } from "./fitting";
 import { carOf } from "./treeplay";
-import type { CareerState, Programme } from "./types";
+import type { Action, CareerState, Programme } from "./types";
+
+/** How the controller changes the career: every change is an action, so a league server replays it exactly. */
+export type Dispatch = (a: Action) => { ok: boolean; message: string; state?: CareerState };
 
 /**
  * A practice session on the qualifying sim. One clock (about an hour), the cars go out when the player says so, and
@@ -20,8 +23,12 @@ export class PracticeController {
   private seen = new Map<string, number>();
   private done = false;
 
-  constructor(readonly s: CareerState) {
-    const plan = planPractice(s);
+  /** The latest state: refreshed after every action, and by the screen on every render. */
+  s: CareerState;
+
+  constructor(state: CareerState, private readonly dispatch: Dispatch) {
+    this.s = state;
+    const plan = planPractice(state);
     this.humanIds = plan.humanIds;
     this.gp = plan.gp;
     this.index = plan.session;
@@ -31,6 +38,13 @@ export class PracticeController {
       this.programme[id] = "setup";
       this.seen.set(id, 0);
     }
+  }
+
+  /** Send an action; keep the state it produced. */
+  private act(a: Action): { ok: boolean; message: string } {
+    const r = this.dispatch(a);
+    if (r.ok && r.state) this.s = r.state;
+    return r;
   }
 
   get sim() {
@@ -49,15 +63,15 @@ export class PracticeController {
   /** Call every so often: turns finished runs into learning. Returns the new lines. */
   poll(): string[] {
     const out: string[] = [];
-    const ws = this.s.weekend;
-    if (!ws || ws.stage !== "practice") return out;
+    if (!this.s.weekend || this.s.weekend.stage !== "practice") return out;
     for (const id of this.humanIds) {
+      const ws = this.s.weekend!;
       const car = this.sim.car(id);
       const n = this.seen.get(id) ?? 0;
       if (car.runsDone <= n) continue;
       this.seen.set(id, car.runsDone);
-      const lines = practiceRun(this.s, this.programme[id] ?? "setup", ws.setup, id, { live: true, fresh: car.fresh, worn: car.wear });
-      out.push(...lines);
+      const r = this.act({ type: "practiceRun", programme: this.programme[id] ?? "setup", setup: ws.setup, driverId: id, fresh: car.fresh, worn: car.wear, live: true });
+      if (r.ok && r.message) out.push(...r.message.split("\n"));
     }
     if (out.length) this.log.unshift(...out);
     this.log = this.log.slice(0, 24);
@@ -81,7 +95,7 @@ export class PracticeController {
     const q = driverId ? this.sim.car(driverId) : null;
     if (q && q.phase !== "garage") return { ok: false, message: `Car ${car} is out on the track. Bring it in first.` };
     const before = this.s.weekend?.fitMin ?? 0;
-    const r = requestFit(this.s, t, id, car, on, rush);
+    const r = this.act({ type: "treeInstall", id, car, on, rush });
     if (!r.ok) return r;
     const minutes = (this.s.weekend?.fitMin ?? 0) - before;
     this.refresh();
@@ -96,8 +110,8 @@ export class PracticeController {
     if (!ws || ws.stage !== "practice") return { ok: false, message: "No session." };
     const cars = this.humanIds.map((h) => this.sim.car(h));
     if (cars.some((c) => c.phase !== "garage")) return { ok: false, message: "Both cars must be in the garage to change the setup." };
-    ws.setup = { ...setup };
-    ws.fitMin = (ws.fitMin ?? 0) + PracticeController.SETUP_MIN;
+    const r = this.act({ type: "pracSetup", setup, minutes: PracticeController.SETUP_MIN });
+    if (!r.ok) return r;
     for (const c of cars) c.readyTick = Math.max(c.readyTick, this.sim.tick + Math.round((PracticeController.SETUP_MIN * 60) / 0.1));
     return { ok: true, message: `Setup saved. ${PracticeController.SETUP_MIN} minutes of the session.` };
   }
@@ -124,6 +138,6 @@ export class PracticeController {
     if (this.done) return;
     this.done = true;
     this.poll();
-    finishPracticeSession(this.s, this.sim.finalSets());
+    this.act({ type: "pracFinish", sets: this.sim.finalSets() });
   }
 }
