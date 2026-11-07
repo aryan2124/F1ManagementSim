@@ -13,8 +13,12 @@ A guard test, `tests/regulations.test.ts`, now fails if any flag has no live rea
 ## Checked and already working
 twoRaceWeekend and allSprints, refuelling, fixedStop, relay, draft, tyrePool, batterySwap, weatherCard, driverWeight, openCooling (reliability), the cost auditor (monthly fines in `loopholes.ts`), talentCap, ballast, handicapStart, stop windows, defence tokens, standing restarts, stage racing, checkpoint cuts, two-heat, open radio, radio quota, aggregate quali, single shot.
 
-## Still not built (on the KNOWN_GAPS list)
-- **tunnelBank, twinChassis**: "two chassis, pick after practice" has no second tree. Only the area multiplier works.
-- **openBooks, transparentPaddock**: "publish a dial every third race, copy what rivals disclosed". The dials went away with the old R&D, so nothing is published or copied.
-- **enginePackages, grenadeEra**: "a pool of engine modes that destroy the engine" has no pool. Only the power multiplier works.
+## Built after the first audit pass
+- **Grenade era (enginePackages):** a pool of 6 grenade runs per team per season. A run is a whole weekend: more power, less engine reliability. The player switches it on in the Engine Mode panel, AI teams spend theirs by a rule of thumb, and the pool refills each year. Runs are booked after the race.
+- **Twin chassis (tunnelBank):** car A and car B are the two chassis. After practice the player picks one for both cars, free, the only change the parc ferme allows. New parts cost 30 percent more.
+- **Transparent paddock (openBooks):** every third round is a disclosure weekend. The player publishes one fitted part, truthfully or as a decoy, and may copy one rival disclosure (which may be a decoy). A truthful disclosure lets a rival gain, a decoy makes a copying rival lose, and the stewards fine a decoy one time in four.
+
+## Still not built
 - Rules that exist only as format-choice trait overlays (sixWheels pit crew effects, wingsBanned tow tactics, fuelIsMoney fuel budget) are cosmetic rather than systems.
+
+The KNOWN_GAPS list in the guard test is now empty.

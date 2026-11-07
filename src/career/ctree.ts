@@ -228,7 +228,8 @@ export function frozen(s: CareerState, comp: CompId, flags: { freezeAreas?: Area
 /** The cost and time of a node now: the last stretch of an era is dearer, and tier four is dearest. */
 export function priceOf(s: CareerState, nd: TreeNode): { cost: number; days: number } {
   const late = nd.tier === 4 ? 1 + 0.6 * eraProgress(s) : 1 + 0.25 * eraProgress(s);
-  return { cost: round2(nd.cost * late * (s.teams[s.teamId]?.tree?.mods?.cost ?? 1)), days: Math.round(nd.days * late) };
+  const twin = rulesOf(s).tunnelBank ? 1.3 : 1; // two chassis to build for (TWIN_COST in twin.ts)
+  return { cost: round2(nd.cost * late * twin * (s.teams[s.teamId]?.tree?.mods?.cost ?? 1)), days: Math.round(nd.days * late) };
 }
 
 export function lockOf(s: CareerState, t: TeamState, nd: TreeNode, flags: { freezeAreas?: Area[] } = {}): Lock {

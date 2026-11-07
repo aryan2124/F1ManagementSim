@@ -1,3 +1,7 @@
+import { paddockLive, publishable } from "../../career/paddock";
+import { baseTeam } from "../../career/car";
+import { twinLive, twinRows } from "../../career/twin";
+import { GRENADE_POOL, grenadeLeft, grenadeLive, grenadeOn } from "../../career/grenade";
 import { PEP, type PepTone } from "../../career/focus";
 import { nodeOf } from "../../career/ctree";
 import { visibleCard } from "../../career/leadcards";
@@ -452,11 +456,17 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
             </div>
           </section>
           <PartsPanel s={s} d={d} forced={deadAny} />
+          {paddockLive(s) && <PaddockPanel s={s} d={d} />}
+          {twinLive(s) && <TwinPanel s={s} d={d} />}
+          {grenadeLive(s) && <GrenadePanel s={s} d={d} />}
         </div>
       );
     }
     return (
       <>
+      {paddockLive(s) && <PaddockPanel s={s} d={d} />}
+      {twinLive(s) && <TwinPanel s={s} d={d} />}
+      {grenadeLive(s) && <GrenadePanel s={s} d={d} />}
       <QualiScreen
         session={qs}
         meta={wk!.meta}
@@ -489,7 +499,7 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
     return (
       <>
       <Briefing
-        extras={<>{ws.parc && <ParcStrip s={s} d={d} />}<PartsPanel s={s} d={d} />{kind === "race" && <PepTalk s={s} d={d} />}</>}
+        extras={<>{ws.parc && <ParcStrip s={s} d={d} />}<PartsPanel s={s} d={d} />{paddockLive(s) && <PaddockPanel s={s} d={d} />}{twinLive(s) && <TwinPanel s={s} d={d} />}{grenadeLive(s) && <GrenadePanel s={s} d={d} />}{kind === "race" && <PepTalk s={s} d={d} />}</>}
         weekend={wk!}
         title={sessionTitle(wk!.meta.gp, ws.stage === "sprint" ? "sprint" : "race")}
         quali={briefRows(rows.current, plan!.raceCfg?.grid ?? prevOrder, plan!.drops, prevOrder)}
@@ -551,6 +561,81 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
     );
   }
   return null;
+}
+
+/** Transparent paddock: publish one part of the car, and copy one rival disclosure. */
+export function PaddockPanel({ s, d }: Props) {
+  const ws = s.weekend!;
+  const [msg, setMsg] = useState("");
+  const [pick, setPick] = useState("");
+  const pd = ws.paddock;
+  if (!pd) return null;
+  const list = publishable(s);
+  const id = pick || list[0]?.id;
+  return (
+    <section className="panel paddock">
+      <h3>DISCLOSURE WEEKEND</h3>
+      <p className="small dim">The rules make every team publish one part of its car this weekend. Publish it truthfully and a rival may copy the gain. Publish a decoy and a rival who copies it goes backwards, but the stewards may notice. You may also copy one disclosure, and you cannot tell which ones are honest.</p>
+      <h4>PUBLISH</h4>
+      {pd.published ? <p className="small">Published: {pd.published.name} ({pd.published.honest ? "truthful" : "decoy"}).</p> : list.length === 0 ? <p className="small dim">You have no fitted parts, so there is nothing to publish.</p> : (
+        <div className="row-btns">
+          <select value={id} onChange={(e) => setPick(e.target.value)} aria-label="Part to publish">{list.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
+          <button className="btn" title="Tell the paddock what the part really does. A rival may copy it and gain." onClick={() => setMsg(d({ type: "paddockPublish", id, honest: true }).message)}>PUBLISH TRUTHFULLY</button>
+          <button className="btn" title="Publish a misleading version. A rival who copies it loses ground. About one time in four the stewards notice and fine you." onClick={() => setMsg(d({ type: "paddockPublish", id, honest: false }).message)}>PUBLISH A DECOY</button>
+        </div>
+      )}
+      <h4>COPY A RIVAL</h4>
+      <div className="row-btns">
+        {pd.rivals.map((r) => (
+          <button key={r.team} className="btn" disabled={!!pd.copied} title={`Copy their published ${r.area} detail. It might be honest. It might be a decoy.`} onClick={() => setMsg(d({ type: "paddockCopy", team: r.team }).message)}>{pd.copied === r.team ? "COPIED " : "COPY "}{baseTeam(r.team).name.toUpperCase()}: {r.area.toUpperCase()}, CLAIMS +{r.claim.toFixed(2)}</button>
+        ))}
+      </div>
+      {msg && <p className="c-msg">{msg}</p>}
+    </section>
+  );
+}
+
+/** Twin chassis: after practice, pick the chassis both cars race on. */
+export function TwinPanel({ s, d }: Props) {
+  const ws = s.weekend!;
+  const [msg, setMsg] = useState("");
+  const rows = twinRows(s);
+  if (ws.stage !== "sq" && ws.stage !== "quali") return null;
+  const picked = ws.twin?.pick;
+  return (
+    <section className="panel twin">
+      <h3>TWIN CHASSIS</h3>
+      <p className="small dim">You brought two chassis, A and B. Pick the one both cars race on. It is free and the only change the parc ferme allows. Lap time is what the parts are worth at this circuit.</p>
+      <div className="gd-cars">
+        {rows.map((r) => (
+          <div key={r.car} className="gd-car">
+            <b>CHASSIS {r.car} <span className="dim">{r.gain >= 0 ? "+" : ""}{r.gain.toFixed(2)} s a lap</span></b>
+            <p className="small dim">{r.parts.length ? r.parts.join(", ") : "stock parts only"}</p>
+            <button className={`btn ${picked === r.car ? "primary" : ""}`} disabled={!!picked} title={`Both cars race on chassis ${r.car}.`} onClick={() => setMsg(d({ type: "twinPick", which: r.car }).message)}>{picked === r.car ? "RACING THIS ONE" : `RACE CHASSIS ${r.car}`}</button>
+          </div>
+        ))}
+      </div>
+      <div className="row-btns"><button className="btn" disabled={!!picked} title="Car A stays on chassis A and car B on chassis B." onClick={() => setMsg(d({ type: "twinPick", which: "keep" }).message)}>{picked === "keep" ? "EACH KEEPS ITS OWN" : "KEEP THEM AS THEY ARE"}</button></div>
+      {msg && <p className="c-msg">{msg}</p>}
+    </section>
+  );
+}
+
+/** Grenade era: burn one of the season's engine runs for power now. */
+export function GrenadePanel({ s, d }: Props) {
+  const on = grenadeOn(s, s.teamId);
+  const left = grenadeLeft(s, s.teamId);
+  const [msg, setMsg] = useState("");
+  return (
+    <section className="panel grenade">
+      <h3>ENGINE MODE</h3>
+      <p className="small dim">The rules give each team {GRENADE_POOL} grenade runs a season. A run is a whole weekend: the engine makes more power and is much more likely to break. Qualifying uses it only if it is on before that session starts. <b>{left}</b> run{left === 1 ? "" : "s"} left{on ? " after this one" : ""}.</p>
+      <div className="row-btns">
+        <button className={`btn ${on ? "primary" : ""}`} disabled={!on && left <= 0} title="Spend one run from the pool for more power this weekend, at the price of engine reliability." onClick={() => setMsg(d({ type: "grenade", on: !on }).message)}>{on ? "GRENADE MODE ON (TAP TO CANCEL)" : "RUN GRENADE MODE"}</button>
+      </div>
+      {msg && <p className="c-msg">{msg}</p>}
+    </section>
+  );
 }
 
 /** Who your drivers have history with, and where they start: the world remembers every pass and every touch. */

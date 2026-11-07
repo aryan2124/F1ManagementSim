@@ -8,7 +8,9 @@ import { carOf } from "../../career/treeplay";
 import { TRIM } from "../../career/setup";
 import { fmtMoney } from "../../career/util";
 import { useUiTick } from "../hooks";
-import { TreeLive } from "./Weekend";
+import { GrenadePanel, PaddockPanel, TreeLive } from "./Weekend";
+import { paddockLive } from "../../career/paddock";
+import { grenadeLive } from "../../career/grenade";
 import type { Programme } from "../../career/types";
 import type { Props } from "./common";
 
@@ -35,7 +37,7 @@ export function PracticeLive({ s, d, onDone }: Props & { onDone: () => void }) {
       session={ctl.session}
       meta={meta}
       kind="fp"
-      practice={{ index: ctl.index, extras: <GarageDrawer s={s} d={d} ctl={ctl} onDone={onDone} /> }}
+      practice={{ index: ctl.index, extras: <><GarageDrawer s={s} d={d} ctl={ctl} onDone={onDone} />{paddockLive(s) && <PaddockPanel s={s} d={d} />}{grenadeLive(s) && <GrenadePanel s={s} d={d} />}</> }}
       onDone={() => { ctl.finish(); onDone(); }}
     />
   );

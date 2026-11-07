@@ -5,6 +5,9 @@ import { setExploit } from "./loopholes";
 import { setKeystone } from "./keystones";
 import { scrapBuild, startBuild, startTest } from "./ctree";
 import { applySuggested, requestFit } from "./fitting";
+import { setGrenade } from "./grenade";
+import { twinPick } from "./twin";
+import { copyRival, publish } from "./paddock";
 import { setFocus, pepTalk, setDelegate } from "./focus";
 import { runLab } from "./lab";
 import { clampDesign } from "./design";
@@ -78,6 +81,14 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
     }
     case "setDelegate":
       return good(setDelegate(s, a.dept, a.on));
+    case "twinPick":
+      return good(twinPick(s, a.which));
+    case "paddockPublish":
+      return good(publish(s, a.id, a.honest));
+    case "paddockCopy":
+      return good(copyRival(s, a.team));
+    case "grenade":
+      return good(setGrenade(s, a.on));
     case "pepTalk":
       return good(pepTalk(s, a.tone));
     case "setFocus":

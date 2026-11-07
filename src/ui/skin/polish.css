@@ -389,3 +389,8 @@
 .app .tower li button.tiny { padding: 0 !important; width: 20px !important; height: 20px !important; min-width: 0 !important; font-size: 12px !important; line-height: 1 !important; margin: 0 !important; --cut: 3px; }
 
 .sk-explain { margin: 6px 0 8px; padding: 6px 8px; border-left: 2px solid var(--accent, #f5c542); line-height: 1.35; }
+
+/* rule panels in the narrow session sidebar: buttons stack and wrap instead of spilling out */
+.paddock .row-btns, .twin .row-btns, .grenade .row-btns { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+.paddock .row-btns .btn, .twin .btn, .grenade .btn { width: 100%; white-space: normal; text-align: left; line-height: 1.25; }
+.paddock select { width: 100%; }

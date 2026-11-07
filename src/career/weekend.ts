@@ -1,4 +1,7 @@
 import { logLedger } from "./ledger";
+import { twinLive } from "./twin";
+import { openPaddock, settlePaddock } from "./paddock";
+import { GRENADE_POOL, aiGrenades, commitGrenades, grenadeLive, grenadeUsed } from "./grenade";
 import { applySuggested } from "./fitting";
 import { failForward, fitReportText, rivalCopy } from "./fitreport";
 import { carLapGain, carOf, filePractice, recordTreeRun, treeFailures } from "./treeplay";
@@ -216,6 +219,12 @@ export function startWeekend(s: CareerState): WeekendState {
     if (dr && dr.teamId !== s.teamId && list.length) ticker(s, `${dr.spec.name} takes a ${totalDrop(list)} place grid penalty this weekend: ${list[0].why}.`, 1);
   }
   if (sponsorRunsLost(s) > 0) ws.notes.push(`Sponsor commitments cost you ${sponsorRunsLost(s)} practice run${sponsorRunsLost(s) > 1 ? "s" : ""} this weekend.`);
+  openPaddock(s, ws);
+  if (twinLive(s)) ruleNotes.push("Rule: twin chassis. Car A and car B are your two chassis. After practice you pick one and both cars race on it, free of fitting costs. New parts cost 30 percent more.");
+  if (grenadeLive(s)) {
+    aiGrenades(s, ws);
+    ws.ruleNotes.push(`Rule: grenade engine modes. You have ${GRENADE_POOL - grenadeUsed(s, s.teamId)} of ${GRENADE_POOL} runs left this season. A run gives more power and costs engine life, for the whole weekend.`);
+  }
   return ws;
 }
 
@@ -1034,6 +1043,7 @@ function finishRace(s: CareerState, ws: WeekendState, res: SessionResult, skipWo
   if (skipWorld) raceBonuses(s, results, ws.sprint);
   else raceMoney(s, results, ws.sprint);
   afterRace(s, res.order, res.dnf, skipWorld, duels);
+  if (res.kind === "race") { commitGrenades(s); settlePaddock(s, ws); }
   graduateWin(s, winner?.id);
   if (!skipWorld) playoffCheck(s, ws.round);
   const podium = res.order.slice(0, 3).map((id) => s.drivers[id]?.spec.name ?? id);

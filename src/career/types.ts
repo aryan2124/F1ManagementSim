@@ -621,6 +621,13 @@ export interface WeekendState {
   /** Race rules chosen by the fans, if the rule is live. */
   fanRule?: "fastestLap" | "extraRun" | "softTyres";
   weatherCard?: { kind: "dry" | "mixed" | "wet"; chance: [number, number] };
+  /** Grenade era: teams running the destructive engine mode this weekend, and whether the runs were booked. */
+  grenade?: Record<string, boolean>;
+  grenadeSpent?: boolean;
+  /** Twin chassis: which chassis both cars race on, once picked after practice. */
+  twin?: { pick: "A" | "B" | "keep" };
+  /** Transparent paddock: a disclosure weekend. Rivals' disclosures (honest or decoy, hidden), what the player published and copied. */
+  paddock?: { rivals: { team: string; area: Area; claim: number; honest: boolean }[]; published?: { id: string; name: string; area: Area; honest: boolean }; copied?: string; settled?: boolean };
   /** Fresh tyre sets left per human driver after qualifying, and tyres locked by the qualifying rule. */
   tyreSets?: Record<string, Record<"S" | "M" | "H", number>>;
   locks?: Record<string, "S" | "M" | "H">;
@@ -811,6 +818,8 @@ export interface CareerState {
   v: 1;
   /** Power unit and gearbox wear per driver, and grid drops waiting for the next race. */
   wear?: Record<string, DriverWear>;
+  /** Grenade era: runs spent from each team's yearly pool. */
+  grenade?: Record<string, { year: number; used: number }>;
   gridDrops?: Record<string, GridDrop[]>;
   seed: number;
   uid: number;
@@ -1058,6 +1067,10 @@ export type Action =
   | { type: "upgradeFacility"; which: keyof Omit<Facilities, "building"> }
   | { type: "delegate"; area: keyof Delegation; level: Level }
   | { type: "setDelegate"; dept: import("./focus").Dept; on: boolean }
+  | { type: "grenade"; on: boolean }
+  | { type: "paddockPublish"; id?: string; honest: boolean }
+  | { type: "paddockCopy"; team: string }
+  | { type: "twinPick"; which: "A" | "B" | "keep" }
   | { type: "pepTalk"; tone: import("./focus").PepTone }
   | { type: "setFocus"; kind: import("./focus").FocusKind }
   | { type: "rndPlan"; focus?: RndPlan["focus"]; stance?: RndPlan["stance"] }

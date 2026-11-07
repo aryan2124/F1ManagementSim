@@ -13,11 +13,7 @@ import { rulesOf } from "../src/career/eras";
  * (the old R&D, now used by AI teams only) does not count. A flag with no reader is a rule that says something and
  * does nothing. If a flag must stay unbuilt, list it in KNOWN_GAPS with the reason, so the gap is a decision.
  */
-const KNOWN_GAPS: Record<string, string> = {
-  tunnelBank: "Twin chassis: a second tree and picking after practice is not built",
-  openBooks: "Transparent paddock: publishing and copying design dials is not built (dials were removed with the old R&D)",
-  enginePackages: "Grenade era: the engine pool as a currency is not built",
-};
+const KNOWN_GAPS: Record<string, string> = {};
 
 const walk = (dir: string): string[] => readdirSync(dir).flatMap((f) => { const p = join(dir, f); return statSync(p).isDirectory() ? walk(p) : /\.tsx?$/.test(f) ? [p] : []; });
 
