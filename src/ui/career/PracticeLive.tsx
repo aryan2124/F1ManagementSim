@@ -35,7 +35,7 @@ export function PracticeLive({ s, d, onDone }: Props & { onDone: () => void }) {
       session={ctl.session}
       meta={meta}
       kind="fp"
-      practice={{ index: ctl.index, extras: <GarageDrawer s={s} d={d} ctl={ctl} /> }}
+      practice={{ index: ctl.index, extras: <GarageDrawer s={s} d={d} ctl={ctl} onDone={onDone} /> }}
       onDone={() => { ctl.finish(); onDone(); }}
     />
   );
@@ -65,7 +65,7 @@ function SetupPane({ s, ctl, act }: { s: Props["s"]; ctl: PracticeController; ac
   );
 }
 
-export function GarageDrawer({ s, d, ctl }: Props & { ctl: PracticeController }) {
+export function GarageDrawer({ s, d, ctl, onDone }: Props & { ctl: PracticeController; onDone: () => void }) {
   useUiTick(250);
   const [tab, setTab] = useState<Tab>("parts");
   const [rush, setRush] = useState(false);
@@ -75,6 +75,7 @@ export function GarageDrawer({ s, d, ctl }: Props & { ctl: PracticeController })
   const ws = s.weekend!;
   const built = Object.values(tr.parts).map((p) => ({ p, nd: nodeOf(tr, p.id)! })).filter((x) => x.nd);
   const act = (r: { message: string }) => { setMsg(r.message); };
+  const [confirm, setConfirm] = useState<"" | "end" | "all">("");
   const drivers = ctl.humanIds.map((h) => ({ id: h, car: carOf(s, me.id, h), code: s.drivers[h]?.spec.code ?? h }));
   return (
     <section className="panel gd" data-testid="garage-drawer">
@@ -156,6 +157,28 @@ export function GarageDrawer({ s, d, ctl }: Props & { ctl: PracticeController })
         </ul>
       )}
       {msg && <p className="c-msg">{msg}</p>}
+      <div className="gd-skip">
+        {confirm === "" && (
+          <div className="row-btns">
+            <button className="btn" title="Stop this session now. Any run that finished still counts." onClick={() => setConfirm("end")}>END SESSION NOW</button>
+            <button className="btn" title="The engineers fit their best set and run every remaining session for you." onClick={() => setConfirm("all")}>SKIP PRACTICE</button>
+          </div>
+        )}
+        {confirm === "end" && (
+          <div className="row-btns">
+            <span className="small">End this session? Cars on track come in; finished runs count.</span>
+            <button className="btn primary" onClick={() => { ctl.finish(); setConfirm(""); onDone(); }}>YES, END IT</button>
+            <button className="btn" onClick={() => setConfirm("")}>NO</button>
+          </div>
+        )}
+        {confirm === "all" && (
+          <div className="row-btns">
+            <span className="small">Skip all practice? The engineers fit their best set and run the rest.</span>
+            <button className="btn primary" onClick={() => { ctl.finish(); d({ type: "simTo", until: "quali" }); onDone(); }}>YES, SKIP IT</button>
+            <button className="btn" onClick={() => setConfirm("")}>NO</button>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

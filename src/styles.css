@@ -1379,7 +1379,7 @@ tr.mine {
 .carcard .ch b { font-size: 22px; }
 
 /* ======== global readability pass: pixel face never below 10px, body face never below 16px ======== */
-.race-grid { grid-template-columns: 290px minmax(0, 1fr) 370px; }
+.race-grid { grid-template-columns: 310px minmax(0, 1fr) 370px; }
 .tiny { font-size: 14px; }
 .seg button { font-size: 13px; }
 .field > span { font-size: 13px; }

@@ -18,7 +18,7 @@
 .ctl.pit{margin-top:8px;clear:both}
 @media (min-width:1500px){
   .screen.race{max-width:1900px;margin:0 auto}
-  .race-grid.has-two{grid-template-columns:280px minmax(0,1fr) minmax(600px,680px)}
+  .race-grid.has-two{grid-template-columns:312px minmax(0,1fr) minmax(600px,680px)}
   .race-grid.has-two > .tower{min-width:0}
   .cars.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
 }
@@ -363,3 +363,25 @@
 }
 .gd-slide { display: grid; gap: 2px; margin: 8px 0; }
 .gd-slide input[type=range] { width: 100%; }
+
+/* ---- timing tower, one authoritative layout: fixed slots, the gap cell takes what is left and clips ---- */
+.app .tower li, .app .qboard li {
+  grid-template-columns: 24px 5px 38px 20px 26px minmax(0, 1fr) 18px;
+  gap: 4px; padding: 4px 5px; align-items: center; min-width: 0; overflow: hidden;
+}
+.app .tower li > *, .app .qboard li > * { min-width: 0; }
+.app .tower li .p { font-size: 12px; text-align: right; }
+.app .tower li .code { font-size: 13px; letter-spacing: 0; overflow: hidden; text-overflow: clip; white-space: nowrap; }
+.app .tower li .secs { display: flex; gap: 2px; justify-content: center; }
+.app .tower li .secs u { width: 7px; height: 9px; display: block; }
+.app .tower li .gap, .app .qboard li .gap {
+  display: flex; justify-content: flex-end; align-items: baseline; gap: 4px; min-width: 0; overflow: hidden;
+  font-size: 13px; white-space: nowrap; text-overflow: ellipsis; font-variant-numeric: tabular-nums;
+}
+.app .tower li .gap .pen { font-size: 10px; flex: none; }
+.app .tower li svg { flex: none; }
+.app .race-grid .tower { min-width: 0; }
+.app .tower h3 { font-size: 16px; white-space: nowrap; line-height: 1.2; }
+.gd-skip { margin-top: 10px; border-top: 1px dashed rgba(255,255,255,.15); padding-top: 8px; }
+.gd-skip .row-btns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.app .tower li .gap:has(.pen) { font-size: 11px; }
