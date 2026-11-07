@@ -343,3 +343,21 @@
 .gd-progs{display:flex;flex-wrap:wrap;gap:5px}
 .rt-rush{display:flex;gap:6px;align-items:center}
 .c-live{display:grid;gap:8px;padding:8px 0}
+
+/* ---- phone and narrow windows: the race and session screens stack and never push the page wider ---- */
+@media (max-width: 1150px) {
+  .app .race-grid, .race-grid, .race-grid.has-two { grid-template-columns: minmax(0, 1fr); }
+  .race-grid > * { min-width: 0; }
+  .race-grid .tower { overflow-x: auto; }
+  .race-grid .cars { grid-template-columns: minmax(0, 1fr); }
+  .screen.race { overflow-x: hidden; }
+  .racebar { flex-wrap: wrap; }
+}
+@media (max-width: 760px) {
+  .app .c-tabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+  .app .c-tabs button { flex: 0 0 auto; white-space: nowrap; }
+}
+@media (max-width: 760px) {
+  .app .topline { flex-wrap: wrap; }
+  .app .topline .c-tabs { flex: 1 1 100%; order: 2; min-width: 0; }
+}

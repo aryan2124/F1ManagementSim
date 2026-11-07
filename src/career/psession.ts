@@ -89,6 +89,19 @@ export class PracticeController {
     return r;
   }
 
+  /** Move the setup sliders mid-session: both cars must be in the garage and stay there for a few minutes. */
+  static SETUP_MIN = 3;
+  changeSetup(setup: Record<string, number>): { ok: boolean; message: string } {
+    const ws = this.s.weekend;
+    if (!ws || ws.stage !== "practice") return { ok: false, message: "No session." };
+    const cars = this.humanIds.map((h) => this.sim.car(h));
+    if (cars.some((c) => c.phase !== "garage")) return { ok: false, message: "Both cars must be in the garage to change the setup." };
+    ws.setup = { ...setup };
+    ws.fitMin = (ws.fitMin ?? 0) + PracticeController.SETUP_MIN;
+    for (const c of cars) c.readyTick = Math.max(c.readyTick, this.sim.tick + Math.round((PracticeController.SETUP_MIN * 60) / 0.1));
+    return { ok: true, message: `Setup saved. ${PracticeController.SETUP_MIN} minutes of the session.` };
+  }
+
   /** The staff's best set for this track on every car that is in the garage, change by change. */
   suggested(rush = false): { n: number; message: string } {
     const ws = this.s.weekend;

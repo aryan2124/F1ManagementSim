@@ -5,6 +5,7 @@ import { PracticeController } from "../../career/psession";
 import { COMPS, nodeOf, treeOf, type CompId } from "../../career/ctree";
 import { fitNumber, fitQuote } from "../../career/fitting";
 import { carOf } from "../../career/treeplay";
+import { TRIM } from "../../career/setup";
 import { fmtMoney } from "../../career/util";
 import { useUiTick } from "../hooks";
 import { TreeLive } from "./Weekend";
@@ -39,7 +40,29 @@ export function PracticeLive({ s, d, onDone }: Props & { onDone: () => void }) {
   );
 }
 
-type Tab = "parts" | "runs" | "readings" | "log";
+type Tab = "parts" | "runs" | "setup" | "readings" | "log";
+
+/** The car setup sliders inside the session. A change costs minutes and needs both cars in the garage. */
+function SetupPane({ s, ctl, act }: { s: Props["s"]; ctl: PracticeController; act: (r: { message: string }) => void }) {
+  const ws = s.weekend!;
+  const [v, setV] = useState<Record<string, number>>({ ...ws.setup });
+  const rows = ws.axes.concat([{ id: TRIM, label: "Trim", low: "Race", high: "Quali" } as never]);
+  const dirty = rows.some((a) => Math.abs((v[a.id] ?? 0) - (ws.setup[a.id] ?? 0)) > 1e-6);
+  return (
+    <div className="gd-setup">
+      {rows.map((a) => (
+        <label key={a.id} className="gd-slide">
+          <span className="small"><b>{a.label.toUpperCase()}</b> <em className="dim">{(v[a.id] ?? 0).toFixed(2)}</em></span>
+          <input type="range" min={-1} max={1} step={0.05} value={v[a.id] ?? 0} onChange={(e) => setV({ ...v, [a.id]: Number(e.target.value) })} />
+          <span className="small dim">{a.low} / {a.high}</span>
+        </label>
+      ))}
+      <div className="row-btns">
+        <button className={`btn${dirty ? " primary" : ""}`} disabled={!dirty} onClick={() => act(ctl.changeSetup(v))}>{dirty ? "SAVE SETUP (3 MIN)" : "SETUP SAVED"}</button>
+      </div>
+    </div>
+  );
+}
 
 export function GarageDrawer({ s, d, ctl }: Props & { ctl: PracticeController }) {
   useUiTick(250);
@@ -56,7 +79,7 @@ export function GarageDrawer({ s, d, ctl }: Props & { ctl: PracticeController })
     <section className="panel gd" data-testid="garage-drawer">
       <h3>GARAGE DRAWER</h3>
       <div className="seg gd-tabs">
-        {([["parts", "PARTS"], ["runs", "RUN FOR"], ["readings", "READINGS"], ["log", "LOG"]] as [Tab, string][]).map(([k, l]) => (
+        {([["parts", "PARTS"], ["runs", "RUN FOR"], ["setup", "SETUP"], ["readings", "READINGS"], ["log", "LOG"]] as [Tab, string][]).map(([k, l]) => (
           <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
@@ -107,6 +130,7 @@ export function GarageDrawer({ s, d, ctl }: Props & { ctl: PracticeController })
           </div>
         </>
       )}
+      {tab === "setup" && <SetupPane s={s} ctl={ctl} act={act} />}
       {tab === "runs" && (
         <div className="gd-cars">
           {drivers.map((dv) => (

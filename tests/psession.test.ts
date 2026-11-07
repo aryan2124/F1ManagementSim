@@ -97,3 +97,19 @@ describe("delegated practice", () => {
     expect(Number.isFinite(s.teams[s.teamId].cash)).toBe(true);
   });
 });
+
+describe("setup inside the session", () => {
+  it("saving sliders costs three minutes and holds both cars; a car on track blocks it", () => {
+    const { s } = setup(10);
+    const c = new PracticeController(s);
+    c.start();
+    c.sim.step();
+    const r = c.changeSetup({ ...s.weekend!.setup, [s.weekend!.axes[0].id]: 0.3 });
+    expect(r.ok).toBe(true);
+    expect(s.weekend!.setup[s.weekend!.axes[0].id]).toBe(0.3);
+    expect(s.weekend!.fitMin).toBe(3);
+    for (const h of c.humanIds) expect(c.sim.car(h).readyTick).toBeGreaterThan(c.sim.tick + 1000);
+    c.sim.car(c.humanIds[0]).phase = "out";
+    expect(c.changeSetup({ ...s.weekend!.setup }).ok).toBe(false);
+  });
+});
