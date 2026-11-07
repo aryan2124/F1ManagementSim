@@ -508,6 +508,9 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       const r = trade(s, a.teamId, a.myModule, a.theirModule);
       return r.ok ? good(r.message) : fail(r.message);
     }
+    case "pressStyle":
+      s.press.style = a.style;
+      return good();
     case "eraPackage":
       setPackage(s, s.teamId, a.pkg);
       return good();

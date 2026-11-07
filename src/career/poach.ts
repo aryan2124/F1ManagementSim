@@ -87,10 +87,16 @@ export function poachWeekly(s: CareerState) {
   const mine = Object.values(s.staff).filter((x) => x.teamId === s.teamId && x.endYear > s.year);
   for (const st of mine) {
     const key = st.role === "td" || st.role === "designer" || st.role === "strategy" || st.role === "aero" || st.role === "power" || st.role === "data";
-    const wanted = st.skill >= 72;
-    const base = (key ? 0.012 : 0.004) * (wanted ? 2 : 1) + (st.mood < 0.5 ? 0.02 : 0);
+    // an approach needs a cause: he is unhappy, underpaid for what he is worth, or his contract is running out and he is wanted
+    const underpaid = st.salary < staffAsk(st) * 0.85;
+    const expiring = st.endYear <= s.year + 1 && st.skill >= 72;
+    const unhappy = st.mood < 0.45;
+    if (!(unhappy || underpaid || expiring)) continue;
+    if ((s.poachLog ?? 0) >= s.year * 10 + 1) continue; // one a season at most
+    const base = (key ? 0.03 : 0.01) * (unhappy ? 1.6 : 1);
     const loyal = st.traits.includes("loyal") ? 0.25 : 1;
     if (!rng.chance(base * loyal)) continue;
+    s.poachLog = s.year * 10 + 1;
     const ranked = teamRanking(s);
     const aiOnly = ranked.filter((x) => !isHuman(s, x));
     const suitors = aiOnly.filter((x) => ranked.indexOf(x) < ranked.indexOf(s.teamId));

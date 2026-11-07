@@ -286,6 +286,10 @@ export interface PressState {
   silence: number;
   /** How hot the biggest live story is, 0..1. */
   heat: number;
+  /** The line you take when nobody asks you to choose: open (first answer), guarded (middle) or quiet (last). */
+  style?: "open" | "guarded" | "quiet";
+  /** Real press moments put to the player this season. */
+  asked?: { year: number; n: number; day: number };
   lastStory: number;
 }
 
@@ -788,6 +792,10 @@ export interface RivalCamp {
 }
 
 export interface CareerState {
+  /** Year times ten plus one once a rival has approached one of your people this year. */
+  poachLog?: number;
+  /** Optional choices put to the player this season, by kind. See cards.ts. */
+  cardBudget?: Partial<Record<string, { year: number; n: number; day: number }>>;
   /** Each rival's car by area when the last track update was written, so the next one can say who has moved. */
   rivalSnap?: Record<string, Record<string, number>>;
   campaign?: Campaign;
@@ -1074,6 +1082,7 @@ export type Action =
   | { type: "extend"; driverId: string; offer: Offer }
   | { type: "promise"; driverId: string; kind: PromiseKind }
   | { type: "poachStaff"; staffId: string; offerSalary: number }
+  | { type: "pressStyle"; style: "open" | "guarded" | "quiet" }
   | { type: "buyoutProspect"; id: string }
   | { type: "practiceRun"; programme: Programme; setup: SetupVec; driverId: string; fresh?: boolean; setId?: string }
   | { type: "setAlloc"; alloc: { S: number; M: number; H: number } }

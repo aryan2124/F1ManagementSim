@@ -510,7 +510,10 @@ const QUESTIONS: Q[] = [
   },
 ];
 
-/** Race-week Thursday: the press conference. When nothing is going on, there is none. */
+/**
+ * Race-week Thursday. Most weeks the team's standing press line answers for you. Only a real moment (a question
+ * with something behind it) reaches the player, at most five a season and never two within two weeks.
+ */
 export function pressConference(s: CareerState) {
   const st = s.story;
   if (s.cards.some((c) => c.kind === "media")) return;
@@ -518,24 +521,33 @@ export function pressConference(s: CareerState) {
   if (s.round === 0 && s.day < (s.calendar[0]?.day ?? 0) - 4) return;
   const rng = rngFor(s, `media:${s.day}`);
   const pool = QUESTIONS.map((q) => ({ q, w: q.weight(s) + (q.id === "mood" ? s.press.heat * 2 : 0) })).filter((x) => x.w > 0);
-  const real = pool.filter((x) => x.q.id !== "mood");
-  if (!real.length && !rng.chance(0.3 + s.press.heat)) {
-    news(s, "No press conference this week: nothing worth asking about.", { importance: 1, tag: "people" });
-    return;
-  }
+  if (!pool.length) return;
   const total = pool.reduce((a, x) => a + x.w, 0);
   let r = rng.next() * total;
-  let pick = pool[0].q;
+  let pick = pool[0];
   for (const x of pool) {
     r -= x.w;
     if (r <= 0) {
-      pick = x.q;
+      pick = x;
       break;
     }
   }
+  const press = s.press;
+  const asked = press.asked && press.asked.year === s.year ? press.asked : (press.asked = { year: s.year, n: 0, day: -999 });
+  const moment = pick.q.id !== "mood" && pick.w >= 2.5 && asked.n < 5 && s.day - asked.day >= 14;
   st.mediaDay = s.day;
   st.mediaCount += 1;
-  pushCard(s, "media", "Thursday press conference", pick.text(s), pick.opts.map((o) => ({ id: o.id, label: o.label, detail: o.detail })), { urgency: 1, deadline: s.day + 2, defaultOption: pick.opts[pick.opts.length - 1].id, data: { q: pick.id } });
+  if (!moment) {
+    // the standing line answers: open takes the first answer, guarded the middle, quiet the last
+    const o = pick.q.opts;
+    const style = press.style ?? "guarded";
+    const chosen = style === "open" ? o[0] : style === "quiet" ? o[o.length - 1] : o[Math.floor((o.length - 1) / 2)];
+    resolveMedia(s, pick.q.id, chosen.id);
+    return;
+  }
+  asked.n += 1;
+  asked.day = s.day;
+  pushCard(s, "media", "The press want an answer", pick.q.text(s), pick.q.opts.map((o) => ({ id: o.id, label: o.label, detail: o.detail })), { urgency: 1, deadline: s.day + 2, defaultOption: pick.q.opts[Math.floor((pick.q.opts.length - 1) / 2)].id, data: { q: pick.q.id } });
 }
 
 export function resolveMedia(s: CareerState, qid: string, option: string) {

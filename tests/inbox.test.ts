@@ -27,6 +27,7 @@ describe("inbox as the only door", () => {
   it("standing orders answer a kind of letter, but never a mandatory one", () => {
     const s = mk();
     apply(s, { type: "standingOrder", kind: "event", option: "b" });
+    s.cardBudget = {};
     const free = pushCard(s, "event", "Routine", "x", opts, { deadline: s.day + 20 });
     const must = pushCard(s, "event", "Serious", "x", opts, { deadline: s.day + 20, mandatory: true });
     advanceDay(s);

@@ -1,7 +1,6 @@
 import { PLink } from "./Profile";
 import { useEffect, useState, type ReactNode } from "react";
 import { DEPT_LABEL, type Dept } from "../../career/focus";
-import { campaignLine, rivalHint, AREA_PLAIN } from "../../career/campaign";
 import type { CareerState } from "../../career/types";
 import { circuitMeta } from "../../game/circuits";
 import { daysTo, factoryClosed, inSummerBreak, launchDay, summerEnd, winterEnd } from "../../career/calendar";
@@ -143,32 +142,13 @@ function threatLine(s: CareerState): string {
 const mood = (m: number) => (m > 0.7 ? "is happy" : m > 0.5 ? "is fine" : m > 0.3 ? "is annoyed" : "is furious");
 
 function Headline({ s }: { s: Props["s"] }) {
-  const camp = campaignLine(s);
-  const rivals = (s.rivalCamps ?? []).slice(0, 3);
   const next = s.calendar[s.round];
   const obj = s.teams[s.teamId].objectives[0];
   const rank = standingsRank(s).indexOf(s.teamId) + 1;
-  const c = s.campaign;
   if (!next) return null;
   return (
     <section className="panel c-headline">
-      <h3>THE PLAN</h3>
-      {camp ? (
-        <div className="hl-camp">
-          <b className="hl-t">{camp.text}</b>
-          <div className="hl-track">
-            <i style={{ width: `${camp.pct}%` }} />
-            <u style={{ left: "45%" }} title="Midway check" />
-            <em>{camp.pct}%</em>
-          </div>
-          <span className="dim">{camp.mile}. {c && c.hist.length ? `This week's work: ${c.hist.map((h) => `+${h}`).join(", ")}.` : ""}</span>
-        </div>
-      ) : (
-        <p className="hl-t">No campaign running. The next one is offered when a race is three to five weeks away.</p>
-      )}
-      {rivals.map((r) => (
-        <p key={r.teamId + r.area} className="hl-rival"><b style={{ color: hex(teamColour(s, r.teamId)) }}>{teamLabel(s, r.teamId)}</b> are bringing {AREA_PLAIN[r.area]} to round {s.calendar[r.target]?.round}. <span className="dim">{rivalHint(r)}.</span></p>
-      ))}
+      <h3>THIS WEEK</h3>
       {obj && <p className="hl-stake"><b>At stake:</b> the board wants P{obj.target} or better this year. You are P{rank}.</p>}
       <ul className="hl-people">
         {Object.values(s.drivers).filter((x) => x.teamId === s.teamId && !x.retired).map((x) => (
@@ -233,9 +213,6 @@ function WeekendIntro({ s }: { s: Props["s"] }) {
   const ws = s.weekend;
   if (!ws || ws.entered) return null;
   const race = s.calendar[ws.round];
-  const c = s.campaign;
-  const mineHere = c && c.target === ws.round;
-  const rivalsHere = (s.rivalCamps ?? []).filter((r) => r.target === ws.round);
   const rank = standingsRank(s).indexOf(s.teamId) + 1;
   const ranked = Object.entries(s.standings.teams).sort((a, b) => b[1] - a[1]);
   const i = ranked.findIndex(([id]) => id === s.teamId);
@@ -245,8 +222,6 @@ function WeekendIntro({ s }: { s: Props["s"] }) {
     <section className="panel c-intro">
       <h3>RACE WEEK: {circuitMeta(race.circuitId).gp.toUpperCase()}</h3>
       <ul className="c-tasks big">
-        {mineHere && c && <li className="todo"><b>Your {AREA_PLAIN[c.area].replace(/^an? /, "")} is judged this weekend.</b> It is at {Math.round(c.progress)}% of the plan. Practice will show what it really gives.</li>}
-        {rivalsHere.map((r) => <li key={r.teamId} className="todo"><b>{teamLabel(s, r.teamId)}</b> bring {AREA_PLAIN[r.area]}. {rivalHint(r)}.</li>)}
         <li className="todo"><b>Stakes:</b> you are P{rank} in the constructors.{above ? ` ${teamLabel(s, above[0])} are ${above[1] - (ranked[i]?.[1] ?? 0)} points up the road.` : ""}{below ? ` ${teamLabel(s, below[0])} are ${(ranked[i]?.[1] ?? 0) - below[1]} points behind.` : ""}</li>
         <li className="todo">Friday practice, Saturday qualifying, Sunday the race. The big button always names the next step.</li>
       </ul>

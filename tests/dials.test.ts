@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { newCareer } from "../src/career/world";
-import { resolveCard } from "../src/career/tick";
 import { addBoost, boostsFor, fitParts, injectIdea, startProject, tickRnd, wearOutParts } from "../src/career/rnd";
-import { devEventsWeekly, regulationShock } from "../src/career/crises";
+import { regulationShock } from "../src/career/regshock";
 import { applyNextCar } from "../src/career/nextcar";
 import { previewIdea } from "../src/career/brief";
 import { planOf } from "../src/career/rndplan";
@@ -98,38 +97,6 @@ describe("next year's car", () => {
     expect(t.dna[p.trait!]).toBeGreaterThan(before);
   });
   void tickRnd;
-});
-
-describe("development crises", () => {
-  it("a copied part can be protested, answered, or accepted", () => {
-    const s = career();
-    const t = s.teams[s.teamId];
-    const i = idea(s);
-    startProject(s, s.teamId, i.id);
-    const p = build(s, i.id);
-    fitParts(s, s.teamId);
-    p.fittedYear = s.year;
-    s.round = 3;
-    for (let k = 0; k < 400 && !s.cards.some((c) => c.kind === "devEvent"); k++) { s.day += 7; planOf(t).eventDay = undefined; devEventsWeekly(s); }
-    const c = s.cards.find((x) => x.kind === "devEvent");
-    expect(c).toBeTruthy();
-    expect(c!.options.length).toBeGreaterThanOrEqual(2);
-    resolveCard(s, c!.id, c!.options[c!.options.length - 1].id);
-    expect(s.cards.some((x) => x.kind === "devEvent")).toBe(false);
-  });
-  it("a cracked part can be redesigned", () => {
-    const s = career();
-    const t = s.teams[s.teamId];
-    const i = idea(s);
-    startProject(s, s.teamId, i.id);
-    const p = build(s, i.id);
-    fitParts(s, s.teamId);
-    s.cards.push({ id: 9100, kind: "devEvent", title: "x", body: "y", options: [{ id: "redesign", label: "r" }], urgency: 2, deadline: s.day + 5, defaultOption: "redesign", data: { kind: "cracked", projectId: p.id, redoCost: 1, redoDays: 6 } } as never);
-    const g = t.dna[p.trait!];
-    resolveCard(s, 9100, "redesign");
-    expect(t.dna[p.trait!]).toBeLessThan(g);
-    expect(t.projects.some((x) => x.name.startsWith("Redesign") && x.status === "building")).toBe(true);
-  });
 });
 
 describe("rules reset", () => {

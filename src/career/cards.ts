@@ -2,6 +2,9 @@ import { nextId } from "./util";
 import { addFact } from "./facts";
 import type { Card, CardKind, CardOption, CareerState } from "./types";
 
+/** Decision kinds from the old research flow and the weekly plan. The tree replaced them, so they are never put in front of the player. */
+export const DEAD_KINDS: ReadonlySet<CardKind> = new Set<CardKind>(["weekPlan", "campaign", "ideaBatch", "partReveal", "projectReady", "rndDirection", "devCrisis", "devEvent", "testDay", "nextCar", "staffNotice", "weekendPrep"]);
+
 export function pushCard(
   s: CareerState,
   kind: CardKind,
@@ -25,8 +28,25 @@ export function pushCard(
     mandatory: opts.mandatory ?? (kind === "firing" ? true : undefined),
     lapse: opts.lapse ? { on: opts.lapse, round: s.round, year: s.year } : undefined,
   };
-  s.cards.push(card);
+  if (!DEAD_KINDS.has(kind) && (opts.mandatory || withinBudget(s, kind, options.length, opts.urgency ?? 2))) s.cards.push(card);
   return card;
+}
+
+/**
+ * One fixed budget of optional choices for every career: a few events and a few offers a season, spaced apart.
+ * Urgent letters, contracts, the board and the tree never count against it.
+ */
+const BUDGET: Partial<Record<CardKind, { n: number; gap: number }>> = { event: { n: 4, gap: 28 }, mail: { n: 3, gap: 24 }, media: { n: 3, gap: 36 } };
+function withinBudget(s: CareerState, kind: CardKind, options: number, urgency: number): boolean {
+  const b = BUDGET[kind];
+  if (!b || options < 2 || urgency >= 3) return true;
+  const led = (s.cardBudget ??= {});
+  const e = (led[kind] ??= { year: s.year, n: 0, day: -999 });
+  if (e.year !== s.year) { e.year = s.year; e.n = 0; }
+  if (e.n >= b.n || s.day - e.day < b.gap) return false;
+  e.n += 1;
+  e.day = s.day;
+  return true;
 }
 
 /** In a league, lines about "you" or your own factory go to your private feed, the rest to everyone. */

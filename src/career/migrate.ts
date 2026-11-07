@@ -4,6 +4,7 @@ import { initRecords } from "./records";
 import { newBrand } from "./brand";
 import { newPress, newRift } from "./dressing";
 import { initAcademy, newAcademy } from "./academy";
+import { DEAD_KINDS } from "./cards";
 import { initEras, newEraState, pruneEras } from "./eras";
 import { defaultBudgets } from "./finance";
 import { makeOwner } from "./people";
@@ -39,6 +40,9 @@ export function upgradeState(s: CareerState): CareerState {
     initEras(s);
   }
   pruneEras(s);
+  s.cards = s.cards.filter((c) => !DEAD_KINDS.has(c.kind));
+  delete s.campaign;
+  delete s.rivalCamps;
   if (!s.academy) {
     s.academy = newAcademy();
     // scouts and coaches for every team so the new roles exist

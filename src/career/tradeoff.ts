@@ -10,58 +10,6 @@ export const METERS: { id: MeterId; label: string }[] = [
 /** What one option does to each meter: a size from -1 (much worse) to +1 (much better), plus the plain-words figure. */
 export type Fx = Partial<Record<MeterId, { v: number; say: string }>>;
 
-export interface Mix { car: number; drivers: number; money: number }
-
-/** What a full week of one kind of effort gives. A blend gives the same share of each. */
-export const FULL = {
-  car: { tunnel: 6, campaign: 6, morale: -0.02, cash: -0.2 },
-  drivers: { morale: 0.05, trust: 0.015, cash: -0.2 },
-  money: { cash: 0.5, fans: -0.3 },
-};
-
-export function parseMix(option: string): Mix | null {
-  if (!option.startsWith("mix:")) return null;
-  const p = option.slice(4).split(",").map(Number);
-  if (p.length !== 3 || p.some((n) => !isFinite(n) || n < 0)) return null;
-  const t = p[0] + p[1] + p[2];
-  if (t <= 0) return null;
-  return { car: p[0] / t, drivers: p[1] / t, money: p[2] / t };
-}
-
-export function mixId(m: Mix): string {
-  return `mix:${m.car.toFixed(2)},${m.drivers.toFixed(2)},${m.money.toFixed(2)}`;
-}
-
-/** The net effect of a blend, in real units. */
-export function mixEffect(m: Mix) {
-  return {
-    tunnel: FULL.car.tunnel * m.car,
-    campaign: FULL.car.campaign * m.car,
-    morale: FULL.car.morale * m.car + FULL.drivers.morale * m.drivers,
-    trust: FULL.drivers.trust * m.drivers,
-    cash: FULL.car.cash * m.car + FULL.drivers.cash * m.drivers + FULL.money.cash * m.money,
-    fans: FULL.money.fans * m.money,
-  };
-}
-
-const sgn = (n: number, f: (x: number) => string) => (n > 0 ? "+" : n < 0 ? "-" : "") + f(Math.abs(n));
-
-export function mixFx(m: Mix): Fx {
-  const e = mixEffect(m);
-  return {
-    car: { v: e.tunnel / 6, say: sgn(e.tunnel, (x) => `${x.toFixed(1)}h tunnel`) },
-    cash: { v: e.cash / 0.5, say: sgn(e.cash, (x) => `$${x.toFixed(2)}m`) },
-    mood: { v: e.morale / 0.05, say: sgn(e.morale * 100, (x) => `${x.toFixed(1)}%`) },
-    fans: { v: e.fans / 0.3, say: sgn(e.fans, (x) => x.toFixed(2)) },
-  };
-}
-
-export function dominant(m: Mix): "car" | "drivers" | "money" {
-  return m.car >= m.drivers && m.car >= m.money ? "car" : m.drivers >= m.money ? "drivers" : "money";
-}
-
-// ---------------------------------------------------------------- plain words to meters
-
 const NEG = /\b(cost|costs|spend|spent|pay|pays|fee|outlay|down|drop|drops|worse|angry|sulk|sulks|grumble|grumbles|lose|lost|loses|risk|risky|slow|slower|upset|unhappy|ignored|drift|drifts|less|tighter|winces|harm|damage|leaves|deepens|cooler|cools|coin toss|neglect|gamble)\b|-\s?\d|-\$/i;
 const POS = /\b(gain|gains|save|saves|saved|better|happier|delighted|cheer|cheers|recover|recovers|pleased|love|loves|approves|respect|respects|boost|bonus|up|heard|eases|ease|steadies|protected|kept|sharper|learn|learned|safe|stronger)\b|\+\s?\d|\+\$/i;
 const TOPIC: [MeterId, RegExp][] = [

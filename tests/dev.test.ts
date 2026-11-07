@@ -7,7 +7,6 @@ import { generateIdeas, startProject, scrapProject } from "../src/career/rnd";
 import { labToIdea } from "../src/career/rnd";
 import { runLab } from "../src/career/lab";
 import { forceThread, advanceThread, resolveThread } from "../src/career/threads";
-import { resolveTestDay, testDayCard } from "../src/career/dev";
 import { devOf, devWeekly, onBatchDecided, onLanding, pitchLine, recOf, testPart, rookieCandidate } from "../src/career/dev";
 import { teamStaff } from "../src/career/car";
 import { designOf } from "../src/career/design";
@@ -112,20 +111,6 @@ describe("development record", () => {
     onLanding(s, s.teamId, p);
     expect(devOf(t).missed).toBe(1);
   });
-  it("a staff notice arrives only after real overruling, and every answer resolves", () => {
-    for (const opt of ["counter", "listen", "go"]) {
-      const { s, t } = withProject(11);
-      const st = teamStaff(s, s.teamId).find((x) => x.role === "designer" && !x.intern)!;
-      recOf(t, st.id).overruled = 3;
-      st.mood = 0.2;
-      for (let i = 0; i < 60 && !s.cards.some((c) => c.kind === "staffNotice"); i++) { s.day += 7; devWeekly(s); }
-      const c = s.cards.find((x) => x.kind === "staffNotice");
-      expect(c, opt).toBeTruthy();
-      resolveCard(s, c!.id, opt);
-      if (opt === "go") expect(st.teamId).toBe(null);
-      else expect(st.mood).toBeGreaterThan(0.2);
-    }
-  });
   it("pitches are voiced from the person and carry an honest record", () => {
     const { t, s } = withProject(12);
     const i = t.ideas.find((x) => x.lead)!;
@@ -207,23 +192,6 @@ describe("the rest of the development scenes", () => {
     const same = runLab(s, s.teamId, "desk", designOf(t));
     if (same.entry) expect(labToIdea(s, s.teamId, same.entry.id).ok).toBe(false);
   });
-  it("the test day is a choice with different consequences", () => {
-    const outcomes: number[] = [];
-    for (const opt of ["mileage", "mapping", "race", "show"]) {
-      const s = newCareer("mcl", 31);
-      testDayCard(s);
-      const c = s.cards.find((x) => x.kind === "testDay")!;
-      expect(c).toBeTruthy();
-      const cash = s.teams[s.teamId].cash;
-      resolveCard(s, c.id, opt);
-      expect((s.letters ?? []).some((x) => x.subject === "Pre-season test report")).toBe(true);
-      if (opt === "mapping") expect(s.teams[s.teamId].cash).toBeLessThan(cash);
-      outcomes.push(s.teams[s.teamId].cash);
-    }
-    expect(outcomes.length).toBe(4);
-    const s = newCareer("mcl", 32);
-    resolveTestDay(s, "mileage");
-  });
   it("a trainee's landed part opens the rookie story, and treatment shifts the odds without fixing the ending", () => {
     const stays: Record<string, number> = { promote: 0, quiet: 0 };
     const endings = new Set<string>();
@@ -267,22 +235,5 @@ describe("the rest of the development scenes", () => {
     resolveCard(s, c.id, `idea:${ids[0]}`);
     expect(t.projects.some((p) => p.id === ids[0])).toBe(true);
     expect(t.ideas.some((i) => ids.slice(1).includes(i.id))).toBe(false);
-  });
-  it("two in-season test days a season, each with its own programme and a report", { timeout: 120000 }, () => {
-    const s = newCareer("mcl", 21);
-    const seen: string[] = [];
-    const known0 = JSON.stringify(Object.values(s.teams[s.teamId].know).map((k) => k.err));
-    for (let i = 0; i < 360 && s.year === 2026; i++) {
-      advanceDay(s);
-      for (const c of [...s.cards]) {
-        if (c.kind === "testDay" && c.data?.season) { seen.push(c.options.map((o) => o.id).join(",")); resolveCard(s, c.id, c.options.find((o) => o.id === "tyres")?.id ?? "rest"); }
-        else if (c.options.length > 1 && !["testDay"].includes(c.kind)) resolveCard(s, c.id, c.defaultOption ?? c.options[0].id);
-      }
-    }
-    expect(seen.length).toBe(2);
-    expect(seen[0]).toContain("tyres");
-    expect(seen[0]).toContain("rest");
-    expect(JSON.stringify(Object.values(s.teams[s.teamId].know).map((k) => k.err))).not.toBe(known0);
-    expect(s.cards.concat([]).every((c) => !/—/.test(c.body))).toBe(true);
   });
 });

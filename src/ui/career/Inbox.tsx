@@ -94,6 +94,12 @@ export function Inbox({ s, d, go }: Props & { go?: (t: import("./common").Tab) =
           <label><input type="checkbox" checked={!!s.away} onChange={(e) => d({ type: "setAway", away: e.target.checked })} /> I am away: letters wait for me, standing orders still apply.</label>
           {Object.keys(s.standing ?? {}).length > 0 && <span className="dim"> Standing orders: {Object.entries(s.standing ?? {}).map(([k, v]) => `${k} → ${v}`).join(", ")}. <button className="linkish" onClick={() => Object.keys(s.standing ?? {}).forEach((k) => d({ type: "standingOrder", kind: k, option: null }))}>cancel all</button></span>}
         </p>
+        <p className="small press-style" data-testid="press-style">
+          Press line when nobody asks you to choose:{" "}
+          {(["open", "guarded", "quiet"] as const).map((k) => (
+            <button key={k} className={`tiny ${(s.press.style ?? "guarded") === k ? "on" : ""}`} aria-pressed={(s.press.style ?? "guarded") === k} onClick={() => d({ type: "pressStyle", style: k })}>{k.toUpperCase()}</button>
+          ))}
+        </p>
         {folder === "decisions" && waiting.length > 0 && (
           <div className="c-card mail waiting">
             <h4>WAITING FOR YOU ({waiting.length})</h4>

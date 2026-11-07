@@ -1,5 +1,4 @@
 import { Meters, MiniMeters, fxOf } from "./Tradeoff";
-import { PlanDial } from "./Tradeoff";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Action, Card, CareerState, DriverState, Staff } from "../../career/types";
 import type { Result } from "../../career/reducer";
@@ -123,9 +122,8 @@ export function CardView({ c, d, compact, keys }: { c: Card; d: Dispatch; compac
           Decide by {fmtDay(c.deadline)}. If you do nothing: <b>{def ?? "the default"}</b>.
         </p>
       )}
-      {c.kind === "weekPlan" && <PlanDial onConfirm={(id) => d({ type: "card", id: c.id, option: id })} onOther={(id) => d({ type: "card", id: c.id, option: id })} />}
       {hasFx && <Meters fx={(() => { const o = c.options.find((x) => x.id === (hover ?? picked)); return o ? fxOf(o) ?? null : null; })()} />}
-      {c.kind !== "weekPlan" && <div className={rich ? "c-opts rich" : "c-opts"}>
+      {<div className={rich ? "c-opts rich" : "c-opts"}>
         {c.options.map((o, oi) => (
           <button key={o.id} onMouseEnter={() => setHover(o.id)} onMouseLeave={() => setHover(null)} className={`c-opt ${o.id === c.defaultOption ? "def" : ""}${picked === o.id ? " pick" : ""}`} aria-pressed={confirmFirst ? picked === o.id : undefined} onClick={() => (confirmFirst ? setPicked(o.id) : d({ type: "card", id: c.id, option: o.id }))}>
             <b>{keys && oi < 9 ? <kbd className="optkey">{oi + 1}</kbd> : null}{o.label}</b>
@@ -142,7 +140,7 @@ export function CardView({ c, d, compact, keys }: { c: Card; d: Dispatch; compac
           </button>
         ))}
       </div>}
-      {confirmFirst && c.kind !== "weekPlan" && (
+      {confirmFirst && (
         <div className="c-confirm">
           <button className="btn primary" disabled={!chosen} onClick={() => chosen && d({ type: "card", id: c.id, option: chosen.id })}>
             {chosen ? `CONFIRM: ${chosen.label}` : "PICK AN OPTION"}

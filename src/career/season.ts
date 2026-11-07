@@ -6,7 +6,7 @@ import { boardMove } from "./board";
 import { addArea, applyConcept, driftRegW } from "./traits";
 import { newCarDoubt, shiftBelief } from "./know";
 import { applyNextCar } from "./nextcar";
-import { regulationShock } from "./crises";
+import { regulationShock } from "./regshock";
 import { clauseBonuses } from "./silly";
 import { baseTeam, carRating, standingsRank, teamRanking } from "./car";
 import { buildCalendar } from "./calendar";

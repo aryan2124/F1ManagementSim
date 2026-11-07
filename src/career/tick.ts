@@ -6,8 +6,6 @@ import { amendmentsMonthly } from "./amendments";
 import { formatsMonthly } from "./formats";
 import { draftDaily } from "./draft";
 import { delegated } from "./focus";
-import { campaignWeekly, resolveCampaign, campaignOpen } from "./campaign";
-import { weekPlanCard, resolveWeekPlan, weekPlanOpen } from "./week";
 import { socialWeekly } from "./social";
 import { boardMove } from "./board";
 import { CFG } from "./config";
@@ -16,7 +14,7 @@ import { TRAIT_AREA, TRAIT_NAME } from "./traits";
 import { resolveMail, mailWeekly } from "./mail";
 import { storiesDaily, storiesWeekly } from "./stories";
 import { threadsWeekly } from "./threads";
-import { designQuality, nextCarWeekly, resolveNextCar } from "./nextcar";
+import { designQuality, resolveNextCar } from "./nextcar";
 import { addFact } from "./facts";
 import { standingsRank, staffOf, teamRanking, carRating, noisyRanking } from "./car";
 import { factoryClosed, launchDay, summerEnd, summerStart, testDay, winterStart } from "./calendar";
@@ -25,7 +23,6 @@ import { askingSalary, extendDriver, hireStaff, signDriver, staffAsk } from "./c
 import { tickTalks } from "./talks";
 import { driversOf, monthlyBooks, startFacility, tickFacility } from "./finance";
 import { aiResearch, capRoom, fitParts, resetAllowance, scrapProject, startProject, tickRnd, wearOutParts } from "./rnd";
-import { devEventsWeekly, resolveDevEvent } from "./crises";
 import { endOfSeason, isWeakestTeam, newSeason, newSeasonPlayer, playerRank, switchTeam, yearEndPlayer } from "./season";
 import { clamp, isHuman, epochDay, fmtMoney, fmtRange, rngFor, round2, ymd } from "./util";
 import { autoPractice, delegatedParts, simulateWeekend, startWeekend } from "./weekend";
@@ -38,7 +35,7 @@ import { riftWeekly, pressWeekly, resolveRift, resolvePressStory } from "./dress
 import { midSeasonReview, resolveMid, summerDeals } from "./silly";
 import { poachWeekly, resolveStaffPoach } from "./poach";
 import { weeklyReach } from "./convo";
-import { devWeekly, resolveTestDay, seasonTestDays, testDayCard, onBatchDecided, onHold, resolveCrisis, resolveNotice } from "./dev";
+import { resolveTestDay, onBatchDecided, onHold, resolveCrisis, resolveNotice } from "./dev";
 import { fadeSlights } from "./status";
 import { aiMonthly, driverRumours, pressConference, resolveMedia, settlePromises, weeklyPeople } from "./people";
 import { eventsWeekly, resolveEvent } from "./events";
@@ -123,12 +120,6 @@ export function resolveCard(s: CareerState, id: number, option: string, auto = f
     if (label) recap(s, `${auto ? "No answer, so" : "You chose"}: ${label}.`);
   }
   switch (c.kind) {
-    case "weekPlan":
-      resolveWeekPlan(s, option);
-      break;
-    case "campaign":
-      resolveCampaign(s, c, option);
-      break;
     case "rndDirection": {
       if (option.startsWith("brief:")) {
         const plan = planOf(me);
@@ -157,9 +148,6 @@ export function resolveCard(s: CareerState, id: number, option: string, auto = f
       break;
     case "devCrisis":
       resolveCrisis(s, option);
-      break;
-    case "devEvent":
-      resolveDevEvent(s, c, option);
       break;
     case "treePart":
     case "treeFail":
@@ -429,14 +417,12 @@ function weekly(s: CareerState) {
 
 /** The weekly work that belongs to one person: promises, the press, the dressing room, ideas. `first` is false for the second human onward. */
 export function weeklyPlayer(s: CareerState, first: boolean) {
-  const closed = factoryClosed(s.day, s.year);
   if (closedYear(s)) return;
   brandWeekly(s);
   riftWeekly(s);
   pressWeekly(s);
   settlePromises(s);
   poachWeekly(s);
-  devWeekly(s);
   midSeasonReview(s);
   if (s.round > 0 || s.day > epochDay(s.year, 3, 1)) {
     eventsWeekly(s);
@@ -446,9 +432,6 @@ export function weeklyPlayer(s: CareerState, first: boolean) {
     mailWeekly(s);
     driverRumours(s, first);
   }
-  nextCarWeekly(s);
-  if (!closed) { campaignWeekly(s); weekPlanCard(s); }
-  devEventsWeekly(s);
   passiveRead(s, s.teamId);
   treeWeekly(s);
 }
@@ -613,10 +596,7 @@ export function advanceDay(s: CareerState): void {
     for (const st of Object.values(s.staff)) if (st.teamId === s.teamId) st.mood = clamp(st.mood + 0.03 * Math.min(1.3, designQuality(s) + 0.4), 0, 1);
     addFact(s, "test", `${s.teamId.toUpperCase()} finished the pre-season test.`, [s.teamId], 1);
     eraStory(s);
-    testDayCard(s);
   }
-
-  if (!closedYear(s) && seasonTestDays(s).includes(s.day)) testDayCard(s, true);
 
   if (s.day % 7 === 2) weekly(s);
   if (!closedYear(s) && s.calendar[s.round] && s.calendar[s.round].day - s.day === 3) pressConference(s);
@@ -699,7 +679,6 @@ export function playerDay(s: CareerState): void {
   }
   if (s.day === testDay(s.year)) {
     eraStoryCard(s);
-    testDayCard(s);
   }
   treeDaily(s);
   trackUpdates(s, (c) => rainForecast(s, c));
@@ -754,8 +733,6 @@ export function stopNow(s: CareerState, before: number): string | null {
 export function stepDay(s: CareerState, first: boolean): string {
   if (s.weekend && s.weekend.stage !== "done") return "Finish the race weekend first.";
   if (s.fired) return "Choose where to go next.";
-  if (weekPlanOpen(s)) return "Pick this week's plan first.";
-  if (campaignOpen(s)) return "Answer the campaign decision first.";
   if (first) {
     s.recap = [];
     s.stopReason = "";
@@ -771,8 +748,6 @@ export function stepDay(s: CareerState, first: boolean): string {
 export function continueClock(s: CareerState, single = false): string {
   if (s.weekend && s.weekend.stage !== "done") return "Finish the race weekend first.";
   if (s.fired) return "Choose where to go next.";
-  if (weekPlanOpen(s)) return "Pick this week's plan first.";
-  if (campaignOpen(s)) return "Answer the campaign decision first.";
   s.recap = [];
   s.stopReason = "";
   const startDay = s.day;
