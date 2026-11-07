@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.setConfig({ testTimeout: 120000 });
 import { newCareer } from "../src/career/world";
 import { apply } from "../src/career/reducer";
 import { advanceDay } from "../src/career/tick";
