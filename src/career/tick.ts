@@ -15,7 +15,6 @@ import { resolveMail, mailWeekly } from "./mail";
 import { storiesDaily, storiesWeekly } from "./stories";
 import { beatsWeekly } from "./fingerprint";
 import { threadsWeekly } from "./threads";
-import { designQuality, resolveNextCar } from "./nextcar";
 import { addFact } from "./facts";
 import { standingsRank, staffOf, teamRanking, carRating, noisyRanking } from "./car";
 import { factoryClosed, launchDay, summerEnd, summerStart, testDay, winterStart } from "./calendar";
@@ -23,7 +22,7 @@ import { pushCard, ticker, news, recap } from "./cards";
 import { askingSalary, extendDriver, hireStaff, signDriver, staffAsk } from "./contracts";
 import { tickTalks } from "./talks";
 import { driversOf, monthlyBooks, startFacility, tickFacility } from "./finance";
-import { aiResearch, capRoom, fitParts, resetAllowance, scrapProject, startProject, tickRnd, wearOutParts } from "./rnd";
+import { aiResearch, capRoom, fitParts, resetAllowance, scrapProject, tickRnd, wearOutParts } from "./rnd";
 import { endOfSeason, isWeakestTeam, newSeason, newSeasonPlayer, playerRank, switchTeam, yearEndPlayer } from "./season";
 import { clamp, isHuman, epochDay, fmtMoney, fmtRange, rngFor, round2, ymd } from "./util";
 import { autoPractice, delegatedParts, simulateWeekend, startWeekend } from "./weekend";
@@ -36,7 +35,6 @@ import { riftWeekly, pressWeekly, resolveRift, resolvePressStory } from "./dress
 import { midSeasonReview, resolveMid, summerDeals } from "./silly";
 import { poachWeekly, resolveStaffPoach } from "./poach";
 import { weeklyReach } from "./convo";
-import { resolveTestDay, onBatchDecided, onHold, resolveCrisis, resolveNotice } from "./dev";
 import { fadeSlights } from "./status";
 import { aiMonthly, driverRumours, pressConference, resolveMedia, settlePromises, weeklyPeople } from "./people";
 import { eventsWeekly, resolveEvent } from "./events";
@@ -141,47 +139,12 @@ export function resolveCard(s: CareerState, id: number, option: string, auto = f
       }
       break;
     }
-    case "testDay":
-      resolveTestDay(s, option, !!d.season);
-      break;
-    case "staffNotice":
-      resolveNotice(s, c, option);
-      break;
-    case "devCrisis":
-      resolveCrisis(s, option);
-      break;
     case "treePart":
     case "treeFail":
       resolveTreeCard(s, c, option);
       break;
-    case "ideaBatch": {
-      const offered = String(d.offered ?? "").split(",").filter(Boolean).map(Number);
-      const [pickPart, ...flags] = option.split("|");
-      const chosen = pickPart.startsWith("idea:") ? Number(pickPart.slice(5)) : null;
-      onBatchDecided(s, s.teamId, offered, chosen);
-      // a real tradeoff: whatever was put to you and not taken is shelved for good, the people go back to their desks
-      me.ideas = me.ideas.filter((i) => !offered.includes(i.id) || i.id === chosen);
-      if (pickPart.startsWith("idea:")) {
-        const r = startProject(s, s.teamId, Number(pickPart.slice(5)), { life: flags.includes("short") ? "short" : "long", horizon: flags.includes("next") ? "next" : "now" });
-        if (r.ok) recap(s, "Project started.");
-        else if (!auto) recap(s, r.why ?? "Could not start.");
-      }
-      break;
-    }
-    case "projectReady": {
-      const p = me.projects.find((x) => x.id === Number(d.projectId));
-      if (p && p.status === "ready") {
-        p.hold = option === "hold";
-        onHold(s, s.teamId, p, p.hold);
-        recap(s, p.hold ? `${p.name}: held back.` : `${p.name}: will be fitted at the next race.`);
-      }
-      break;
-    }
     case "mail":
       resolveMail(s, c, option);
-      break;
-    case "nextCar":
-      resolveNextCar(s, option);
       break;
     case "event":
       resolveEvent(s, c, option);
@@ -604,7 +567,7 @@ export function advanceDay(s: CareerState): void {
   }
   if (s.day === testDay(s.year)) {
     // a good test day lifts the garage: people see the car running and the press has something to write
-    for (const st of Object.values(s.staff)) if (st.teamId === s.teamId) st.mood = clamp(st.mood + 0.03 * Math.min(1.3, designQuality(s) + 0.4), 0, 1);
+    for (const st of Object.values(s.staff)) if (st.teamId === s.teamId) st.mood = clamp(st.mood + 0.03, 0, 1);
     addFact(s, "test", `${s.teamId.toUpperCase()} finished the pre-season test.`, [s.teamId], 1);
     eraStory(s);
   }

@@ -3,7 +3,6 @@ import { newCareer } from "../src/career/world";
 import { reduce } from "../src/career/reducer";
 import { autoTo } from "../src/career/autoplay";
 import { advanceDay, resolveCard } from "../src/career/tick";
-import { setNextCar, nextCarOf } from "../src/career/nextcar";
 import { forceStory, STORY_IDS } from "../src/career/stories";
 import { startHunt, sponsorMail, traineeMail } from "../src/career/mail";
 import { AREAS } from "../src/career/types";
@@ -49,17 +48,6 @@ describe("simulate to a day", () => {
       expect(s.cards.length).toBeLessThan(60);
     }
   }, 120000);
-});
-
-describe("next year's car", () => {
-  it("changing course costs work already done", () => {
-    const s = newCareer("mer", 3);
-    setNextCar(s, "evolve", 0.5);
-    nextCarOf(s).points = 20;
-    const msg = setNextCar(s, "revolve", 0.5);
-    expect(nextCarOf(s).points).toBeCloseTo(12, 5);
-    expect(msg).toContain("40 percent");
-  });
 });
 
 describe("inbox and stories", () => {

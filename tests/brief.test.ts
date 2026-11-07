@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { newCareer } from "../src/career/world";
 import { resolveCard } from "../src/career/tick";
-import { fitParts, generateIdeas, startProject } from "../src/career/rnd";
-import { diagnose, profileOf, upcomingRaces } from "../src/career/brief";
+import { generateIdeas } from "../src/career/rnd";
+import { diagnose } from "../src/career/brief";
 import { planOf } from "../src/career/rndplan";
-import { AREA_TRAITS, TRAIT_GAIN_K } from "../src/career/traits";
+import { AREA_TRAITS } from "../src/career/traits";
 
 function career(seed = 8) {
   const s = newCareer("mcl", seed);
@@ -57,29 +57,4 @@ describe("the development brief", () => {
     expect(t.ideas.length).toBeGreaterThanOrEqual(n);
   });
 
-  it("a rethink pays its side cost on the car when it is fitted, and the profile shows when it lands", () => {
-    const s = career(11);
-    const t = s.teams[s.teamId];
-    const pick = diagnose(s)[0].trait;
-    const area = (Object.keys(AREA_TRAITS) as (keyof typeof AREA_TRAITS)[]).find((a) => AREA_TRAITS[a].includes(pick))!;
-    planOf(t).brief = { trait: pick, area, until: s.day + 40, day: s.day - 10 };
-    t.ideas = [];
-    generateIdeas(s, s.teamId);
-    const re = t.ideas.find((i) => i.approach === "rethink")!;
-    const prof = profileOf(s, re, 3);
-    expect(prof.side?.trait).toBe(re.side!.trait);
-    expect(prof.landsDay).toBe(s.day + re.days);
-    expect(prof.fit.length).toBeGreaterThan(0);
-    expect(upcomingRaces(s, 3).length).toBe(3);
-    t.capLimit += 500;
-    expect(startProject(s, s.teamId, re.id).ok).toBe(true);
-    const p = t.projects.find((x) => x.id === re.id)!;
-    expect(p.side).toEqual(re.side);
-    p.status = "ready";
-    p.hold = false;
-    const before = { ...t.dna };
-    fitParts(s, s.teamId);
-    expect(t.dna[re.side!.trait]).toBeLessThan(before[re.side!.trait]);
-    expect(before[re.side!.trait] - t.dna[re.side!.trait]).toBeCloseTo(re.side!.amount * TRAIT_GAIN_K, 1);
-  });
 });

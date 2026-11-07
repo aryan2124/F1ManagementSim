@@ -2,7 +2,6 @@ import { logLedger } from "./ledger";
 import { applySuggested } from "./fitting";
 import { failForward, fitReportText, rivalCopy } from "./fitreport";
 import { carLapGain, carOf, filePractice, recordTreeRun, treeFailures } from "./treeplay";
-import { onLanding } from "./dev";
 import { socialAfterRace, type RadioQuote } from "./social";
 import { planRetirements } from "./contracts";
 import { logQuali, logRaceResult, checkClinch } from "./records";
@@ -1070,7 +1069,6 @@ function finishRace(s: CareerState, ws: WeekendState, res: SessionResult, skipWo
         des.mood = clamp(des.mood + (verdict === "below" ? -0.04 : 0.02), 0, 1);
       }
       void mid;
-      onLanding(s, s.teamId, p);
     }
   }
   const pos = mine.length ? Math.min(...mine) : 0;

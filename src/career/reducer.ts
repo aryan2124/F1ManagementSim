@@ -19,16 +19,13 @@ import { planOf } from "./rndplan";
 import { changeLivery, endSponsor } from "./brand";
 import { canApproach, evaluateOffer, extendDriver, signDriver } from "./contracts";
 import { pushCard, sendLetter } from "./cards";
-import { ideaBody, ideaOptions } from "./ideas";
 import { askPriority, closeTalk, openTalk, privateTalk, soundOut, submitJuniorOffer, submitOffer, talkFor } from "./talks";
 import { facilityCost, startFacility, driversOf, budgetBlock, budgetMax, budgetMin, budgetPool, allocated } from "./finance";
-import { testPart } from "./dev";
-import { capRoom, designPart, labToIdea, scrapProject, startProject } from "./rnd";
+import { capRoom, designPart, scrapProject, startProject } from "./rnd";
 import { study, studyRegs, newCarDoubt } from "./know";
 import { TRAITS } from "./types";
 import { continueClock, resolveCard, stepDay, syncWeekendDay } from "./tick";
 import { autoTo } from "./autoplay";
-import { setNextCar } from "./nextcar";
 import { startHunt } from "./mail";
 import { buyoutProspect, assignScout, decide, moveSeries, promoteToSeat, setMentor, setRookie, setTraining, signProspect, trialDay } from "./academy";
 import { setPackage, setRoute, setSplit, startLab } from "./eras";
@@ -102,9 +99,6 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       const why = startHunt(s, a.mode);
       return why && !why.includes("replies are due") ? fail(why) : good(why ?? "");
     }
-    case "nextCar": {
-      return good(setNextCar(s, a.approach, a.share));
-    }
     case "autoTo": {
       const r = autoTo(s, a.day, a.max ?? 30);
       return r.why ? fail(r.why) : good(r.done ? "Arrived." : "");
@@ -120,10 +114,6 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       const r = startProject(s, s.teamId, a.ideaId);
       if (!r.ok) return fail(r.why ?? "Could not start.");
       return good(idea && capRoom(me) < 0 ? "Started, but you are now over the cost cap." : "Project started.");
-    }
-    case "testPart": {
-      const r = testPart(s, s.teamId, a.id, a.plan);
-      return r.ok ? good(r.message) : fail(r.message);
     }
     case "scrapProject":
       scrapProject(s, s.teamId, a.id);
@@ -523,15 +513,6 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
     case "eraPackage":
       setPackage(s, s.teamId, a.pkg);
       return good();
-    case "labToIdea": {
-      const r = labToIdea(s, s.teamId, a.entryId);
-      if (!r.ok) return fail(r.why ?? "Could not send it.");
-      if (!s.cards.some((c) => c.kind === "ideaBatch")) {
-        const i = r.idea!;
-        pushCard(s, "ideaBatch", "Your lab shape is on the table", ideaBody(s, 1, 1), [...ideaOptions(s, [i]), { id: "none", label: "Not now", detail: "The idea stays on the Car screen until its offer ends" }], { urgency: 2, deadline: s.day + 6, defaultOption: "none", data: { offered: String(i.id) } });
-      }
-      return good(`"${r.idea!.name}" is with the drawing office.`);
-    }
     case "designPart": {
       if (me.tunnelLeft < 6) return fail("A design brief needs 6 allowance hours of simulation time and there are not enough left.");
       const r = designPart(s, s.teamId, a.area, a.trait, a.kind, a.lead, a.size);

@@ -1,5 +1,4 @@
 import { schoolDiscount } from "./schools";
-import { ideaDrag } from "./nextcar";
 import { logLedger } from "./ledger";
 import { setbackOf } from "./poach";
 import { CFG } from "./config";
@@ -11,7 +10,6 @@ import { AREA_TRAITS, TRAIT_GAIN_K, addTrait, conceptFit } from "./traits";
 import { leadFor, leadSkill } from "./capability";
 import { designOf, designWorth, DESIGN_KEYS } from "./design";
 import { TRAIT_AREA, TRAIT_NAME } from "./traits";
-import { onBacked, onFit, onScrap, rookieCandidate } from "./dev";
 import { believeFit, correct, facilityFor } from "./know";
 import type { Rng } from "../sim/rng";
 import { rulesOf } from "./eras";
@@ -223,17 +221,6 @@ export function generateIdeas(s: CareerState, teamId: string): Idea[] {
   const frozen = rulesOf(s).freezeAreas ?? [];
   const plan = teamId === s.teamId ? activePlan(s, t) : { ...planOf(t), focus: "balanced" as const, stance: t.philosophy === "gamble" ? ("bold" as const) : ("balanced" as const) };
   const slow = (t.dev?.slowUntil ?? 0) > s.day;
-  if (isHuman(s, teamId) && !slow) {
-    const rk = rookieCandidate(s, teamId);
-    if (rk && !frozen.includes(rk.area)) {
-      const idea = makeIdea(s, t, rk.area, rng, "gamble", { lead: rk.st });
-      idea.rookie = true;
-      idea.note = `A trainee's own idea: ${rk.st.name}.`;
-      idea.name = `${rk.st.name.split(" ").slice(-1)[0]}'s ${idea.name}`;
-      t.ideas.push(idea);
-      fresh.push(idea);
-    }
-  }
   const brief = isHuman(s, teamId) ? briefOf(s, teamId) : undefined;
   if (brief && !slow && !frozen.includes(brief.area)) {
     // a week after the brief the office comes back with its answers; once the table is cleared they return with a follow-up round every ten days
@@ -261,7 +248,7 @@ export function generateIdeas(s: CareerState, teamId: string): Idea[] {
     if (slow && isHuman(s, teamId) && rng.next() < 0.6) continue;
     const have = t.ideas.filter((i) => i.area === area).length;
     if (have >= CFG.maxIdeasPerArea) continue;
-    if (rng.next() < areaChance(plan, area, (0.45 + bonus) * ideaDrag(s, teamId))) {
+    if (rng.next() < areaChance(plan, area, (0.45 + bonus))) {
       const idea = makeIdea(s, t, area, rng, pickKind(plan, rng.next()));
       t.ideas.push(idea);
       fresh.push(idea);
@@ -370,7 +357,6 @@ export function startProject(s: CareerState, teamId: string, ideaId: number, dia
   if (forNext) { p.forNext = true; p.hold = true; }
   if (idea.rookie) p.rookie = true;
   t.projects.push(p);
-  onBacked(s, teamId, p);
   if (teamId === s.teamId) {
     t.ledger.rnd = round2(t.ledger.rnd + idea.cost);
     logSpend(s, `Started "${idea.name}" (${idea.area}): ${idea.days} days${idea.tunnelHours ? `, up to ${idea.tunnelHours} tunnel hours` : ""}`, { cap: -idea.cost });
@@ -389,7 +375,6 @@ export function scrapProject(s: CareerState, teamId: string, id: number) {
     t.capSpent = round2(t.capSpent - back);
   }
   p.status = "scrapped";
-  onScrap(s, teamId, p);
   if (teamId === s.teamId) logLedger(s, { kind: "part", text: `Scrapped "${p.name}"`, cost: round2(p.cost - back), because: back ? "scrapped early, half the cap room came back" : "scrapped late, nothing came back", ref: `part:${p.id}:scrap` });
   if (teamId === s.teamId) logSpend(s, `Scrapped "${p.name}"${back ? `: ${fmtMoney(back)} of cap room came back` : ": nothing came back"}`, { cap: back });
 }
@@ -470,7 +455,6 @@ export function fitParts(s: CareerState, teamId: string): Project[] {
     }
     p.status = "fitted";
     if (teamId === s.teamId) logLedger(s, { kind: "part", text: `Fitted "${p.name}"`, cost: p.cost, because: `forecast ${p.predLo.toFixed(2)} to ${p.predHi.toFixed(2)}`, ref: `part:${p.id}:fit` });
-    onFit(s, teamId, p);
     p.fittedRound = s.round + 1;
     const mid = (p.predLo + p.predHi) / 2;
     p.delivered = p.trueGain;

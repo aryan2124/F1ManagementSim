@@ -1,4 +1,3 @@
-import { seasonTestDays } from "./dev";
 import { launchDay, summerEnd, summerStart, testDay, winterEnd, winterStart } from "./calendar";
 import { eraDates, rulesOf } from "./eras";
 import { driversOf } from "./finance";
@@ -38,7 +37,6 @@ export function agenda(s: CareerState): AgendaItem[] {
     out.push({ day: r.day - 2, kind: "weekend", label: r.sprint ? "Practice + sprint quali" : "Practice", sub: `${gp}. The weekend starts here and the clock stops.` });
     out.push({ day: r.day - 1, kind: "weekend", label: r.sprint ? "Sprint + qualifying" : "Qualifying", sub: `${gp}. Setup is locked after this.` });
   }
-  for (const day of seasonTestDays(s)) out.push({ day, kind: "test", label: "In-season test day", sub: "One day on a closed track. Choose what it is for." });
   for (const y of [s.year, s.year + 1]) {
     out.push({ day: launchDay(y), kind: "launch", label: `${y} car launch` });
     out.push({ day: testDay(y), kind: "test", label: `${y} pre-season test` });

@@ -1,6 +1,6 @@
 import { CIRCUITS } from "../game/circuits";
-import { AREA_TRAITS, TRAIT_AREA, TRAIT_GAIN_K, TRAIT_NAME, IMB, areaOfPair, trackNeed, traitWeight } from "./traits";
-import { NEXT_YEAR_GAIN, SHORT_LIFE, accuracy, boostsFor } from "./rnd";
+import { AREA_TRAITS, TRAIT_AREA, TRAIT_GAIN_K, IMB, areaOfPair, trackNeed, traitWeight } from "./traits";
+import { accuracy } from "./rnd";
 import { planOf } from "./rndplan";
 import { clamp, rngFor, round2 } from "./util";
 import { TRAITS, type Area, type CareerState, type Idea, type Project, type Trait } from "./types";
@@ -97,47 +97,6 @@ export interface Profile {
   inBrief: boolean;
 }
 
-export function profileOf(s: CareerState, i: Idea, slotsMax: number): Profile {
-  const t = s.teams[s.teamId];
-  const landsDay = s.day + i.days;
-  const races = upcomingRaces(s, 6);
-  const left = s.calendar.filter((c) => c.day >= s.day).length;
-  const after = s.calendar.filter((c) => c.day > landsDay).length;
-  const fit = races.map((r) => ({ gp: r.gp, round: r.round, f: i.trait ? round2(trackFactor(i.trait, r.circuitId)) : 1, after: r.day > landsDay }));
-  const b = briefActive(s);
-  return {
-    fit,
-    landsDay,
-    racesAfter: after,
-    racesLeft: left,
-    slots: { used: t.projects.filter((p) => p.status === "building").length, max: slotsMax },
-    side: i.side ? { trait: i.side.trait, amount: i.side.amount, name: TRAIT_NAME[i.side.trait] } : undefined,
-    balance: balanceChange(s, i),
-    inBrief: !!b && b.trait === i.trait,
-  };
-}
-
 export const clampN = clamp;
 export type { Project };
 
-/** What a pitch really costs and gives once the dials and any weekend data are applied. */
-export interface Dialled { life: "short" | "long"; horizon: "now" | "next" }
-export function previewIdea(s: CareerState, i: Idea, dl: Dialled) {
-  const next = dl.horizon === "next";
-  const short = dl.life === "short" && !next;
-  const g = next ? NEXT_YEAR_GAIN : short ? SHORT_LIFE.gain : 1;
-  let cost = i.cost * (short ? SHORT_LIFE.cost : 1);
-  let days = i.days;
-  let lo = i.predLo * g;
-  let hi = i.predHi * g;
-  const b = i.trait ? boostsFor(s, s.teamId, i.trait) : { pct: 0, why: "" };
-  if (b.pct > 0) {
-    cost *= 1 - b.pct;
-    days = Math.max(3, Math.round(days * (1 - 0.6 * b.pct)));
-    const mid = (lo + hi) / 2;
-    const half = ((hi - lo) / 2) * (1 - 0.8 * b.pct);
-    lo = mid - half;
-    hi = mid + half;
-  }
-  return { cost: round2(cost), days, predLo: round2(lo), predHi: round2(hi), boost: b.pct > 0 ? { pct: b.pct, why: b.why } : undefined, short, next };
-}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Person } from "./career/DevRoom";
+import { Person } from "./career/Person";
 import type { DevReact, Staff } from "../career/types";
 import "./career/devroom.css";
 import type { RaceSession } from "../game/session";

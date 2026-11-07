@@ -181,10 +181,6 @@ export function shiftKnow(t: TeamState, tr: Trait, delta: number) {
   t.know[tr].est = round2(t.know[tr].est + delta);
   syncBelief(t);
 }
-/** Pre-season testing: every trait's belief moves toward the truth. */
-export function testLearn(t: TeamState, share: number) {
-  for (const tr of TRAITS) correct(t, tr, share);
-}
 
 /** Which traits a circuit stresses most, from its character. */
 export function stressedAt(circuitId: string): Trait[] {

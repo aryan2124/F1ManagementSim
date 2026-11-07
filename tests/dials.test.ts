@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { newCareer } from "../src/career/world";
-import { addBoost, boostsFor, fitParts, injectIdea, startProject, tickRnd, wearOutParts } from "../src/career/rnd";
+import { addBoost, boostsFor, fitParts, injectIdea, startProject, wearOutParts } from "../src/career/rnd";
 import { regulationShock } from "../src/career/regshock";
-import { applyNextCar } from "../src/career/nextcar";
-import { previewIdea } from "../src/career/brief";
 import { planOf } from "../src/career/rndplan";
 import { AREA_TRAITS } from "../src/career/traits";
 import type { CareerState, Idea } from "../src/career/types";
@@ -37,7 +35,6 @@ describe("weekend data", () => {
     const base = { cost: i.cost, days: i.days };
     addBoost(s, s.teamId, i.trait!, 0.2, "Test data");
     expect(boostsFor(s, s.teamId, i.trait).pct).toBe(0.2);
-    expect(previewIdea(s, i, { life: "long", horizon: "now" }).cost).toBeLessThan(base.cost);
     expect(startProject(s, s.teamId, i.id).ok).toBe(true);
     const p = t.projects.find((x) => x.id === i.id)!;
     expect(p.cost).toBeLessThan(base.cost);
@@ -77,26 +74,6 @@ describe("part life", () => {
     expect(p.worn).toBe(true);
     expect(wearOutParts(s, s.teamId)).toHaveLength(0);
   });
-});
-
-describe("next year's car", () => {
-  it("a banked part never races this year and goes on the car in January", () => {
-    const s = career();
-    const t = s.teams[s.teamId];
-    const i = idea(s);
-    startProject(s, s.teamId, i.id, { horizon: "next" });
-    const p = build(s, i.id);
-    expect(p.forNext).toBe(true);
-    expect(p.trueGain).toBeCloseTo(0.15, 2);
-    const before = t.dna[p.trait!];
-    expect(fitParts(s, s.teamId)).toHaveLength(0);
-    expect(t.dna[p.trait!]).toBe(before);
-    s.year += 1;
-    applyNextCar(s);
-    expect(p.status).toBe("fitted");
-    expect(t.dna[p.trait!]).toBeGreaterThan(before);
-  });
-  void tickRnd;
 });
 
 describe("rules reset", () => {

@@ -2,7 +2,11 @@ import { apply } from "../../src/career/reducer";
 import { autoPlayDays } from "../../src/career/headless";
 import { believedAreaGain, pipeline } from "../../src/career/guide";
 import { capRoom, maxConcurrent } from "../../src/career/rnd";
-import { committedTunnel } from "../../src/career/ideas";
+const committedTunnel = (s: CareerState, teamId: string): number => {
+  let n = 0;
+  for (const p of s.teams[teamId].projects) if (p.status === "building" && p.tunnelHours > 0) n += (p.tunnelHours / p.days) * Math.max(0, p.days - p.progress);
+  return Math.round(n);
+};
 import { TRAIT_AREA } from "../../src/career/traits";
 import { TRAITS } from "../../src/career/types";
 import { staffReadout } from "../../src/career/capability";

@@ -1,7 +1,6 @@
 import { Linked } from "./Profile";
 import { CardView } from "./common";
 import { MiniMeters, fxOf } from "./Tradeoff";
-import { isScene, openScene } from "./DevRoom";
 import { useState } from "react";
 import { HUNT, huntCooldown, type HuntMode } from "../../career/mail";
 import type { CareerState } from "../../career/types";
@@ -42,8 +41,8 @@ export interface InboxItem {
 }
 
 /** A decision that needs the player: it lives in the inbox, never on the home screen. */
-export const isDecision = (c: Card) => !c.notice && !c.mail && !isScene(c);
-const DECISION_FROM: Record<string, string> = { treePart: "Drawing office", treeFail: "Garage", weekPlan: "Team principal's office", campaign: "Drawing office", sponsorOffer: "Commercial", sponsorReview: "Commercial", contractExpiring: "Contracts", contractOffer: "Contracts", staffExpiring: "Human resources", staffPoach: "Human resources", board: "The board", capWarning: "Finance", capBreach: "Finance", facility: "Facilities", era: "The FIA", firing: "The board" };
+export const isDecision = (c: Card) => !c.notice && !c.mail;
+const DECISION_FROM: Record<string, string> = { media: "Press office", treePart: "Drawing office", treeFail: "Garage", weekPlan: "Team principal's office", campaign: "Drawing office", sponsorOffer: "Commercial", sponsorReview: "Commercial", contractExpiring: "Contracts", contractOffer: "Contracts", staffExpiring: "Human resources", staffPoach: "Human resources", board: "The board", capWarning: "Finance", capBreach: "Finance", facility: "Facilities", era: "The FIA", firing: "The board" };
 
 /** Everything in the inbox, newest first: offers and letters, and every conversation, read or unread. */
 export function inboxItems(s: CareerState): InboxItem[] {
@@ -60,14 +59,12 @@ export function inboxItems(s: CareerState): InboxItem[] {
   return out.sort((a, b) => (a.kind === "decision" ? 0 : 1) - (b.kind === "decision" ? 0 : 1) || b.day - a.day);
 }
 
-export const unreadCount = (s: CareerState) => inboxItems(s).filter((x) => x.unread).length + s.cards.filter(isScene).length;
+export const unreadCount = (s: CareerState) => inboxItems(s).filter((x) => x.unread).length;
 
 /** Letters from sponsors, scouts and young drivers, every conversation with a driver, and the way to go looking for sponsors yourself. */
-const SCENE_FROM: Record<string, string> = { ideaBatch: "Drawing office", rndDirection: "Drawing office", projectReady: "Drawing office", testDay: "Test crew", staffNotice: "A member of staff", devCrisis: "The whole department", devEvent: "The factory", media: "Press office" };
 
 export function Inbox({ s, d, go }: Props & { go?: (t: import("./common").Tab) => void }) {
   const items = inboxItems(s);
-  const waiting = s.cards.filter(isScene);
   const cool = huntCooldown(s);
   const [sel, setSel] = useState<string | null>(null);
   const [folder, setFolder] = useState<Folder>("decisions");
@@ -100,25 +97,6 @@ export function Inbox({ s, d, go }: Props & { go?: (t: import("./common").Tab) =
             <button key={k} className={`tiny ${(s.press.style ?? "guarded") === k ? "on" : ""}`} aria-pressed={(s.press.style ?? "guarded") === k} onClick={() => d({ type: "pressStyle", style: k })}>{k.toUpperCase()}</button>
           ))}
         </p>
-        {folder === "decisions" && waiting.length > 0 && (
-          <div className="c-card mail waiting">
-            <h4>WAITING FOR YOU ({waiting.length})</h4>
-            <ul className="c-mails">
-              {waiting.map((c) => (
-                <li key={c.id} className="unread">
-                  <button onClick={() => openScene(c.id)}>
-                    <i className="dot" aria-label="needs you" />
-                    <span className="who">{SCENE_FROM[c.kind] ?? "The factory"}</span>
-                    <span className="subj">{c.title}</span>
-                    <em className="when">{c.deadline !== undefined ? `by ${fmtDay(c.deadline)}` : ""}</em>
-                    <b className="tag">OPEN</b>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <p className="dim small">These do not interrupt you any more unless they are urgent. Open one when you are ready; if the date passes, the default is taken.</p>
-          </div>
-        )}
         {shown.length === 0 && <p className="dim">{folder === "practice" ? "Practice reports land here after each weekend's practice." : folder === "track" ? "The track report arrives at the start of the season, with updates when something changes." : folder === "decisions" ? "Nothing waits on you." : "Nothing here."}</p>}
         {items.length === 0 && folder === "other" && <p className="dim">Nothing yet. Sponsors write when the team is doing well, scouts write after a race weekend, and young drivers write whenever they feel brave. Every conversation with a driver is kept here too.</p>}
         <ul className="c-mails">
