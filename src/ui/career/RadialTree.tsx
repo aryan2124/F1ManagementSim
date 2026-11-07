@@ -4,6 +4,8 @@ import { teamColour } from "../../career/brand";
 import { COMPS, TIER_FX, branchBlurb, branchName, isBuilding, isBuilt, lapOf, lockOf, nodeKey, nodeOf, treeOf, type CompId, type TreeNode } from "../../career/ctree";
 import { rulesOf } from "../../career/eras";
 import { lapDelta } from "../../career/util";
+import { TRAIT_NAME } from "../../career/traits";
+import type { Trait } from "../../career/types";
 import { loadCircuit } from "../../game/circuits";
 import { activeDrivers } from "../../career/car";
 import { fitNumber } from "../../career/fitting";
@@ -215,7 +217,7 @@ export function RadialTree({ s, d }: Props) {
                   style={{ left: p.x, top: p.y, borderColor: lk === "built" || lk === "building" ? undefined : ARM_COLOUR[nd.comp] }}
                   onClick={() => { setPick(nd.id); lastArm = nd.comp; setMsg(""); }}
                   aria-label={`${nd.name}, ${SHORT[nd.comp]}, tier ${nd.tier}, ${lk}`}
-                  title={nd.name}
+                  title={`${nd.name} (${branchName(nd.comp, nd.branch)} lane, tier ${nd.tier}): ${(Object.keys(nd.fx) as Trait[]).map((t) => `${(nd.fx[t] ?? 0) > 0 ? "+" : "-"} ${TRAIT_NAME[t].toLowerCase()}`).join(", ")}. Click for details.`}
                 >
                   <span>{nd.tier === 4 ? "K" : ["I", "II", "III"][nd.tier - 1]}</span>
                   {part && (part.onA || part.onB) && <i className="rt-fit">{part.onA ? "A" : ""}{part.onB ? "B" : ""}</i>}

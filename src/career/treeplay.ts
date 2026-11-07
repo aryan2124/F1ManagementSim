@@ -3,7 +3,7 @@ import { traitWeight, trackNeed } from "./traits";
 import { pushCard, recap, sendLetter } from "./cards";
 
 import { requestFit, tickFits } from "./fitting";
-import { install, lockOf, misfitOf, nodeOf, priceOf, slotsOf, startBuild, tickTree, treeOf, type CompId, type TreeNode, type TreeState } from "./ctree";
+import { COMPS, install, lockOf, misfitOf, nodeOf, priceOf, slotsOf, startBuild, tickTree, treeOf, type CompId, type TreeNode, type TreeState } from "./ctree";
 import { CARDS, assignCards, cardMods, promoteSpark, sparkWeekly } from "./leadcards";
 import { rulesOf } from "./eras";
 import { round2, clamp } from "./util";
@@ -27,6 +27,8 @@ export function refreshMods(s: CareerState, t: TeamState) {
     if (!c?.fx.gain) continue;
     for (const k of roleComps[st.role] ?? []) gain[k] = round2((gain[k] ?? 1) * c.fx.gain);
   }
+  const am = rulesOf(s).areaMult;
+  if (am) for (const c of COMPS) { const k = am[c.area]; if (k) gain[c.id] = round2((gain[c.id] ?? 1) * k); }
   tr.mods = { speed: m.speed, cost: m.cost, testDays: m.testDays, failure: m.failure, gain };
 }
 
@@ -38,12 +40,18 @@ export function treeDaily(s: CareerState) {
     if (tr.announced !== undefined) newEraLetter(s);
     tr.announced = tr.era;
   }
-  if (s.day % 7 === 0) refreshMods(s, t);
+  if (s.day % 7 === 0 || !tr.mods) refreshMods(s, t);
   const r = tickTree(s, t);
   tickFits(s, t);
   for (const id of r.built) {
     const nd = nodeOf(tr, id)!;
     recap(s, `Built: ${nd.name}.`);
+    const cp = rulesOf(s).customerParts;
+    if (cp) {
+      const inc = round2(priceOf(s, nd).cost * cp);
+      t.cash = round2(t.cash + inc);
+      recap(s, `Customer teams bought the design of ${nd.name}: +$${inc.toFixed(2)}m.`);
+    }
     const dl = t.delegation.parts;
     if (dl !== "advise") {
       fitBoth(s, t, id);

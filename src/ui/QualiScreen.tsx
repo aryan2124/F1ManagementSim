@@ -150,7 +150,7 @@ function QualiScreenInner({ session, meta, onDone, skip, kind, practice }: { ses
         )}
         <div className="speeds">
           {SPEED_LIST.map((s) => (
-            <button key={s.v} className={session.speed === s.v ? "on" : ""} onClick={() => (session.speed = s.v)}>
+            <button title={s.v === 0 ? "Pause the session." : `Run the session at ${s.v} times real speed.`} key={s.v} className={session.speed === s.v ? "on" : ""} onClick={() => (session.speed = s.v)}>
               {s.label}
             </button>
           ))}
@@ -176,16 +176,16 @@ function QualiScreenInner({ session, meta, onDone, skip, kind, practice }: { ses
           </div>
           <div className="btabs">
             {(["radio", "sectors", "radar"] as QTab[]).map((t) => (
-              <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
+              <button title={t === "radio" ? "Radio calls and race control messages." : t === "sectors" ? "Sector times for every car." : "Rain on the map."} key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
                 {t === "radio" ? "RADIO" : t === "sectors" ? "SECTORS" : "WEATHER RADAR"}
               </button>
             ))}
             {tab === "sectors" && (
               <span className="seg">
-                <button className={secMode === "last" ? "on" : ""} onClick={() => setSecMode("last")}>
+                <button title="Show each car's sector times from its last lap." className={secMode === "last" ? "on" : ""} onClick={() => setSecMode("last")}>
                   LAST LAP
                 </button>
-                <button className={secMode === "best" ? "on" : ""} onClick={() => setSecMode("best")}>
+                <button title="Show each car's best sector times of the session." className={secMode === "best" ? "on" : ""} onClick={() => setSecMode("best")}>
                   BEST LAP
                 </button>
               </span>
@@ -225,7 +225,7 @@ function QualiOverlay({ session, onDone, practice }: { session: QualiSession; on
       <div className="finish-overlay">
         <h2>FP{practice.index + 1} COMPLETE</h2>
         <p className="elim">The chequered flag has fallen. The engineers have your numbers.</p>
-        <button className="btn primary big" onClick={onDone}>BACK TO THE GARAGE</button>
+        <button title="Leave the track and go back to the garage." className="btn primary big" onClick={onDone}>BACK TO THE GARAGE</button>
       </div>
     );
   }
@@ -238,7 +238,7 @@ function QualiOverlay({ session, onDone, practice }: { session: QualiSession; on
           <br />
           Every finished run teaches the engineers something. Nothing here counts towards the grid.
         </p>
-        <button className="btn primary big" onClick={() => session.startSegment()}>START FP{practice.index + 1}</button>
+        <button title="Start the practice clock. Both cars wait in the garage until you send them out." className="btn primary big" onClick={() => session.startSegment()}>START FP{practice.index + 1}</button>
       </div>
     );
   }
@@ -253,7 +253,7 @@ function QualiOverlay({ session, onDone, practice }: { session: QualiSession; on
           Send your cars out from the panel on the right, or let the team run them. A lap only counts if it starts before the chequered flag.
         </p>
         {net ? <p className="dim">The league starts every segment together.</p> : (
-          <button className="btn primary big" onClick={() => session.startSegment()}>
+          <button title="Start this qualifying segment. The clock runs and cars can go out." className="btn primary big" onClick={() => session.startSegment()}>
             START {QP}{sim.segment}
           </button>
         )}
@@ -270,7 +270,7 @@ function QualiOverlay({ session, onDone, practice }: { session: QualiSession; on
           </p>
         )}
         {net ? <p className="dim">{QP}{sim.segment + 1} starts in a moment.</p> : (
-          <button className="btn primary big" onClick={() => session.nextSegment()}>
+          <button title="Move on to the next qualifying segment." className="btn primary big" onClick={() => session.nextSegment()}>
             ON TO {QP}{sim.segment + 1}
           </button>
         )}
@@ -282,7 +282,7 @@ function QualiOverlay({ session, onDone, practice }: { session: QualiSession; on
       <div className="finish-overlay">
         <h2>{QN} COMPLETE</h2>
         <p className="elim">Pole: {sim.order[0].entry.driver.name}</p>
-        <button className="btn primary big" onClick={onDone}>
+        <button title="Go to the starting grid." className="btn primary big" onClick={onDone}>
           VIEW THE GRID
         </button>
       </div>
@@ -337,13 +337,13 @@ function QualiBoard({ session, onStats, practice, index }: { session: QualiSessi
         })}
       </ol>
       <div className="seg tower-mode" title="GAP shows the distance to the fastest time. EXACT shows every driver's own best lap time to the thousandth.">
-        <button className={!exact ? "on" : ""} onClick={() => setExact(false)}>GAP TO LEADER</button>
-        <button className={exact ? "on" : ""} onClick={() => setExact(true)}>EXACT TIMES</button>
+        <button title="Show how far each car is behind the fastest time." className={!exact ? "on" : ""} onClick={() => setExact(false)}>GAP TO LEADER</button>
+        <button title="Show every driver's own best lap time to the thousandth." className={exact ? "on" : ""} onClick={() => setExact(true)}>EXACT TIMES</button>
       </div>
       <button className={`tiny wide dir ${session.directing ? "on" : ""}`} title="The director cuts between the action like the TV feed: flying laps, drivers about to drop out, close fights and trouble. Click any driver to pin the camera." onClick={() => { session.directing = !session.directing; }}>
         {session.directing ? "DIRECTOR CAM: ON" : "DIRECTOR CAM: OFF"}
       </button>
-      <button className="tiny wide" onClick={() => (session.followId = sim.order[0].id)}>
+      <button title="Point the camera at the fastest car." className="tiny wide" onClick={() => (session.followId = sim.order[0].id)}>
         CAM: LEADER
       </button>
     </section>
@@ -425,7 +425,7 @@ function QualiCard({ session, car }: { session: QualiSession; car: QCar }) {
                 <span>TYRE</span>
                 <div className="seg five">
                   {(["S", "M", "H", "I", "W"] as Compound[]).map((c) => (
-                    <button key={c} className={compound === c ? "on" : ""} onClick={() => setCompound(c)}>
+                    <button title="Use this tyre compound for the next run." key={c} className={compound === c ? "on" : ""} onClick={() => setCompound(c)}>
                       <CompoundBadge c={c} size={16} />
                     </button>
                   ))}
@@ -434,8 +434,8 @@ function QualiCard({ session, car }: { session: QualiSession; car: QCar }) {
               <div className="ctl">
                 <span>SET</span>
                 <div className="seg">
-                  <button className={wantNew ? "on" : ""} disabled={!canNew} onClick={() => setFresh(true)}>{canNew ? `NEW x${left}` : "NONE LEFT"}</button>
-                  <button className={!wantNew ? "on" : ""} disabled={!canUsed} onClick={() => setFresh(false)}>{canUsed ? `USED ${Math.round(car.wear * 100)}% worn` : "USED n/a"}</button>
+                  <button title="Fit a brand new set. Quickest, but it uses up a set for the weekend." className={wantNew ? "on" : ""} disabled={!canNew} onClick={() => setFresh(true)}>{canNew ? `NEW x${left}` : "NONE LEFT"}</button>
+                  <button title="Use a set that already has laps on it. Slower, saves new sets." className={!wantNew ? "on" : ""} disabled={!canUsed} onClick={() => setFresh(false)}>{canUsed ? `USED ${Math.round(car.wear * 100)}% worn` : "USED n/a"}</button>
                 </div>
               </div>
             </>
@@ -443,10 +443,10 @@ function QualiCard({ session, car }: { session: QualiSession; car: QCar }) {
           <div className="ctl">
             <span>LAPS</span>
             <div className="seg">
-              <button className={laps === 1 ? "on" : ""} onClick={() => setLaps(1)}>
+              <button title="One flying lap after the out lap: less time on track, less tyre wear." className={laps === 1 ? "on" : ""} onClick={() => setLaps(1)}>
                 1 FLYING
               </button>
-              <button className={laps === 2 ? "on" : ""} onClick={() => setLaps(2)}>
+              <button title="Two flying laps: a second chance to put the lap together, more wear." className={laps === 2 ? "on" : ""} onClick={() => setLaps(2)}>
                 2 FLYING
               </button>
             </div>
@@ -454,20 +454,20 @@ function QualiCard({ session, car }: { session: QualiSession; car: QCar }) {
           <div className="ctl pit">
             <span>RUN</span>
             <div className="seg">
-              <button disabled={!canGo || car.auto} onClick={() => sim.command({ type: "go", carId: car.id, compound: chosen ? chosen.compound : compound, fresh: wantNew, laps, setId: chosen?.id })}>
+              <button title="Send this car out onto the track now with the chosen tyres and laps." disabled={!canGo || car.auto} onClick={() => sim.command({ type: "go", carId: car.id, compound: chosen ? chosen.compound : compound, fresh: wantNew, laps, setId: chosen?.id })}>
                 GO OUT
               </button>
-              <button disabled={car.phase !== "push" && car.phase !== "out"} onClick={() => sim.command({ type: "box", carId: car.id })}>
+              <button title="Bring this car back to the garage at the end of the lap." disabled={car.phase !== "push" && car.phase !== "out"} onClick={() => sim.command({ type: "box", carId: car.id })}>
                 BOX
               </button>
-              <button className={car.auto ? "on" : ""} onClick={() => sim.command({ type: "auto", carId: car.id, auto: !car.auto })}>
+              <button title="Let the team decide when and how to send this car out for the rest of the session." className={car.auto ? "on" : ""} onClick={() => sim.command({ type: "auto", carId: car.id, auto: !car.auto })}>
                 TEAM RUNS
               </button>
             </div>
           </div>
           {why && <p className="warn small">{why}</p>}
           {car.note && <p className="hint">{car.note}</p>}
-          <button className="tiny wide" onClick={() => (session.followId = car.id)}>
+          <button title="Point the camera at this car." className="tiny wide" onClick={() => (session.followId = car.id)}>
             CAM: {e.driver.code}
           </button>
         </>

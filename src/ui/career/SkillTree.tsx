@@ -5,7 +5,7 @@ import { rulesOf } from "../../career/eras";
 import { fmtMoney, lapDelta } from "../../career/util";
 import { trackRow } from "../../game/trackdata";
 import { loadCircuit } from "../../game/circuits";
-import { TRAIT_NAME } from "../../career/traits";
+import { TRAIT_NAME, TRAIT_BLURB } from "../../career/traits";
 import type { CareerState, Trait } from "../../career/types";
 import type { Props } from "./common";
 
@@ -54,9 +54,12 @@ export function NodeDetail({ s, d, nd, act, flags }: Props & { nd: TreeNode; act
     <>
       <h4>{nd.name}</h4>
       <p className="dim small">{branchName(nd.comp, nd.branch)} · tier {nd.tier} of 4</p>
+      <div className="sk-explain small">
+        <b>WHAT IT DOES.</b> {traits.map((t) => `${(nd.fx[t] ?? 0) > 0 ? "Adds" : "Costs you"} ${TRAIT_NAME[t].toLowerCase()}: ${TRAIT_BLURB[t]}`).join(" ")} {nd.tier === 4 ? "A keystone: a big gain that always costs something elsewhere." : `Tier ${nd.tier}: ${["a small, cheap step", "a solid step", "a large step that needs depth in this lane"][nd.tier - 1]}.`} The bar below is the lap time it should give, not the final word. Fit it to the car that suits the next track.
+      </div>
       <div className="sk-range" aria-label={`about ${lapDelta(r.hi)} to ${lapDelta(r.lo)} seconds a lap`}>
         <div className="tf-track"><i className="tf-mid" /><b className={`tf-bar ${r.mid > 0 ? "up" : "down"}`} style={{ left: `${lo}%`, width: `${Math.max(2, hi - lo)}%` }} /></div>
-        <div className="tf-ends"><span>SLOWER</span><span>{r.tested ? "MEASURED" : "STAFF GUESS"}</span><span>FASTER</span></div>
+        <div className="tf-ends"><span>SLOWER</span><span>{r.tested ? "MEASURED" : tr.sims?.includes(nd.id) ? "PREVIEWED" : "STAFF GUESS"}</span><span>FASTER</span></div>
       </div>
       <div className="sk-chips">
         {traits.map((t) => <span key={t} className={`sk-chip ${(nd.fx[t] ?? 0) > 0 ? "up" : "down"}`}>{TRAIT_NAME[t]} {(nd.fx[t] ?? 0) > 0 ? "up" : "down"}</span>)}
@@ -67,6 +70,9 @@ export function NodeDetail({ s, d, nd, act, flags }: Props & { nd: TreeNode; act
         <span className="sk-chip">{pr.days} days</span>
         <span className="sk-chip">team knows this lane {Math.round(Math.min(95, 20 + 17 * ex))}%</span>
       </div>
+      {!part && !isBuilding(tr, nd.id) && !tr.tests.some((x) => x.id === nd.id) && !tr.sims?.includes(nd.id) && lk.state !== "locked" && lk.state !== "deep" && <button className="btn" title="Run a model of this part on the rig before you pay for the real one. It narrows the staff's estimate. It does not measure it." onClick={() => act(rawDispatch(d, { type: "treeTest", id: nd.id }))}>PREVIEW IN THE SIMULATOR ($0.25m, {tr.mods?.testDays ?? 4} days)</button>}
+      {!part && tr.sims?.includes(nd.id) && <p className="small">Previewed on the rig: the band above is tighter. Build it to measure it exactly.</p>}
+      {!part && tr.tests.some((x) => x.id === nd.id) && <p className="small">The model is on the rig now.</p>}
       {!part && lk.ok && <button className="btn primary" onClick={() => act(rawDispatch(d, { type: "treeBuild", id: nd.id }))}>BUILD</button>}
       {!part && !lk.ok && lk.why && <p className="warn small">{lk.why}</p>}
       {isBuilding(tr, nd.id) && <button className="btn" onClick={() => act(rawDispatch(d, { type: "treeScrap", id: nd.id }))}>CANCEL BUILD</button>}

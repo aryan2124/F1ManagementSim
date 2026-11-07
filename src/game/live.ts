@@ -25,6 +25,8 @@ export interface LiveCar {
 
 export interface LiveSim {
   track: TrackModel;
+  /** The rules in force that change what the screen shows (attack zones). */
+  cfg?: { rules?: object };
   cars: LiveCar[];
   order: LiveCar[];
   neutral: { active: boolean; kind?: string };

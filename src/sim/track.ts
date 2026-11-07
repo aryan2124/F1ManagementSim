@@ -34,6 +34,8 @@ export interface TrackModel {
   speed: Float64Array;
   /** True where the track is straight enough to overtake / deploy. */
   straight: Uint8Array;
+  /** Attack zones: the longest straights, as distance ranges along the lap. Used when the rules mark boost zones. */
+  zones: { a: number; b: number }[];
   /** Pit lane runs this far either side of the start/finish line. */
   pitIn: number;
   pitOut: number;
@@ -65,6 +67,39 @@ export const PHYS = {
 };
 
 /** Maximum speed through a corner of curvature k (1/m). */
+/** The two or three longest straights of the lap (never shorter than 180 m), each trimmed so a zone starts after the braking
+ *  point and ends before the next one. Ranges are distances along the lap and may wrap past the line. */
+export function attackZonesOf(straight: Uint8Array, step: number, n: number): { a: number; b: number }[] {
+  const runs: { start: number; len: number }[] = [];
+  let first = 0;
+  while (first < n && straight[first]) first++;
+  if (first === n) return [{ a: 0, b: n * step * 0.3 }];
+  let cur = -1;
+  for (let o = 1; o <= n; o++) {
+    const i = (first + o) % n;
+    if (straight[i]) { if (cur < 0) cur = o; }
+    else if (cur >= 0) { runs.push({ start: (first + cur) % n, len: o - cur }); cur = -1; }
+  }
+  runs.sort((p, q) => q.len - p.len);
+  const long = runs.filter((r) => r.len * step >= 300).slice(0, 3);
+  const pick = long.length >= 2 ? long : runs.slice(0, Math.min(3, Math.max(2, runs.filter((r) => r.len * step >= 160).length)));
+  const out = pick.map((r) => {
+    const trim = Math.min(25, r.len * step * 0.1);
+    return { a: (r.start * step + trim) % (n * step), b: (r.start * step + r.len * step - trim) % (n * step) };
+  });
+  return out.sort((p, q) => p.a - q.a);
+}
+
+/** Is this distance along the lap inside an attack zone? Returns the metres left in the zone, or 0 outside. */
+export function zoneLeft(T: { zones: { a: number; b: number }[]; length: number }, lapPos: number): number {
+  for (const z of T.zones) {
+    if (z.a <= z.b) { if (lapPos >= z.a && lapPos <= z.b) return z.b - lapPos; }
+    else if (lapPos >= z.a) return T.length - lapPos + z.b;
+    else if (lapPos <= z.b) return z.b - lapPos;
+  }
+  return 0;
+}
+
 export function cornerSpeed(k: number, gripScale: number, vTop: number): number {
   const a = PHYS.A_MECH * gripScale;
   const kk = PHYS.K_AERO * gripScale;
@@ -179,6 +214,7 @@ export function buildTrack(def: TrackDef, ds = 4): TrackModel {
   }
   const straight = new Uint8Array(n);
   for (let i = 0; i < n; i++) straight[i] = Math.abs(curv[i]) < 0.0016 ? 1 : 0;
+  const zones = attackZonesOf(straight, step, n);
   let nominalLap = 0;
   for (let i = 0; i < n; i++) nominalLap += step / speed[i];
   // numbered corners: contiguous stretches of real curvature, apex at the tightest point
@@ -220,6 +256,7 @@ export function buildTrack(def: TrackDef, ds = 4): TrackModel {
     curv,
     speed,
     straight,
+    zones,
     pitIn: 230,
     pitOut: 260,
     boxS: 40,

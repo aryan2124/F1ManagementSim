@@ -77,6 +77,33 @@ export interface TrackArt {
 
 const px = (m: number) => m / M_PER_PX;
 
+/** The attack zones drawn on the road: a magenta wash with bright edge lines and arrow chevrons that point the way of travel. */
+export function buildZoneOverlay(track: TrackModel): Graphics {
+  const g = new Graphics();
+  const half = track.def.width / 2;
+  for (const z of track.zones) {
+    const len = z.a <= z.b ? z.b - z.a : track.length - z.a + z.b;
+    for (let d = 0; d <= len; d += 4) {
+      const s = (z.a + d) % track.length;
+      for (let lat = -half + 1; lat <= half - 1; lat += 3) {
+        const p = offsetPoint(track, s, lat);
+        g.rect(Math.round(p.x), Math.round(p.y), 3, 3).fill({ color: 0xff2bd6, alpha: 0.5 });
+      }
+      for (const sd of [-1, 1]) {
+        const e = offsetPoint(track, s, sd * (half - 0.5));
+        g.rect(Math.round(e.x) - 1, Math.round(e.y) - 1, 4, 4).fill({ color: 0xffe14a, alpha: 1 });
+      }
+      if (Math.round(d / 4) % 12 === 0) {
+        for (const k of [-2, -1, 0, 1, 2]) {
+          const c = offsetPoint(track, s - Math.abs(k) * 3, k * 3);
+          g.rect(Math.round(c.x), Math.round(c.y), 3, 3).fill({ color: 0xffffff, alpha: 0.85 });
+        }
+      }
+    }
+  }
+  return g;
+}
+
 function offsetPoint(track: TrackModel, s: number, lateral: number): { x: number; y: number } {
   const t = sampleTrack(track, s);
   const nx = Math.sin(t.heading);

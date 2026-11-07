@@ -1,5 +1,5 @@
 import { Rng } from "./rng";
-import { accelAt, brakeAt, sampleTrack, type TrackModel } from "./track";
+import { accelAt, brakeAt, sampleTrack, zoneLeft, type TrackModel } from "./track";
 import { IncidentSystem } from "./incidents";
 import { Strategist } from "./strategy";
 import { RadioSystem } from "./radio";
@@ -277,6 +277,7 @@ export class RaceSim {
         removed: false,
         boostLeft: cfg.rules?.pushToPass ?? 0,
         boostUntil: 0,
+        inZone: false,
         defendLeft: cfg.rules?.defenceTokens ?? 0,
         defendUntil: 0,
         pitSwap: false,
@@ -393,6 +394,18 @@ export class RaceSim {
         break;
       case "boost":
         if (car.status === "racing" && car.boostLeft > 0 && this.tick >= car.boostUntil) {
+          if (this.cfg.rules?.attackZones) {
+            const left = zoneLeft(this.track, mod(car.s, this.track.length));
+            if (left <= 0) {
+              if (car.entry.human) this.emit("radio", car.id, undefined, `${car.entry.driver.code}: Boost is only allowed in the attack zones.`);
+              break;
+            }
+            // the token lasts to the end of the zone, never longer than the usual twelve seconds
+            car.boostLeft--;
+            car.boostUntil = this.tick + Math.max(10, Math.min(120, Math.round(left / Math.max(car.v, 30) / DT)));
+            this.emit("radio", car.id, undefined, `${car.entry.driver.code}: Boost on in the zone! ${car.boostLeft} left.`);
+            break;
+          }
           car.boostLeft--;
           car.boostUntil = this.tick + 120;
           this.emit("radio", car.id, undefined, `${car.entry.driver.code}: Boost on! ${car.boostLeft} left.`);
@@ -771,7 +784,17 @@ export class RaceSim {
     const em = effMode(car);
     const ers = ersFactor(em, car.soc, straight);
 
-    const boosting = car.boostUntil > this.tick;
+    const zoneNow = this.cfg.rules?.attackZones ? zoneLeft(T, lapPos) : 0;
+    car.inZone = zoneNow > 0;
+    // computer drivers spend a token as they enter a zone: close behind a car, or in the last two laps
+    if (this.cfg.rules?.attackZones && !car.entry.human && car.status === "racing" && car.boostLeft > 0 && car.boostUntil + 1500 <= this.tick && zoneNow > 120 && !this.neutral.active) {
+      const rem = this.cfg.laps - car.lap;
+      if ((car.gapAhead > 0 && car.gapAhead < 1.2 && car.soc > 0.15 && (car.boostLeft > 1 || rem <= 8)) || (rem <= 2 && car.boostLeft >= rem)) {
+        car.boostLeft--;
+        car.boostUntil = this.tick + Math.max(10, Math.min(120, Math.round(zoneNow / Math.max(car.v, 30) / DT)));
+      }
+    }
+    const boosting = car.boostUntil > this.tick && (!this.cfg.rules?.attackZones || zoneNow > 0);
     const free = profV * factor * ers * (boosting ? 1.022 : 1);
     let target = free;
 
@@ -831,7 +854,8 @@ export class RaceSim {
 
       // try to start an overtake
       if (!neutral && !car.overtaking && car.lap >= this.neutral.lockLap && this.tick >= car.cooldownUntil && ah.status === "racing" && !this.inc.yellowAt(secNow) && !(this.radio && this.radio.blocksOvertake(car, ah))) {
-        const attackReach = car.mode === "attack" && car.soc > 0.03 ? 10 : 0;
+        const zoneBoost = !!this.cfg.rules?.attackZones && car.boostUntil > this.tick && car.inZone;
+        const attackReach = (car.mode === "attack" && car.soc > 0.03 ? 10 : 0) + (zoneBoost ? 14 : 0);
         if (straight && gapM < 34 + attackReach && gapM > -5) {
           const lapped = ah.s < car.s - L * 0.5;
           const delta = free - ah.v;
@@ -843,7 +867,7 @@ export class RaceSim {
             (ah.mode === "harvest" ? 0.5 : 0);
           if (lapped) score += 6;
           if (ah.defendUntil > this.tick && !lapped) score -= 3.5;
-          if (car.boostUntil > this.tick) score += 1.6;
+          if (car.boostUntil > this.tick && (!this.cfg.rules?.attackZones || car.inZone)) score += this.cfg.rules?.attackZones ? 2.6 : 1.6;
           if (this.radio) score += this.radio.letByBonus(car, ah);
           const p = clamp(0.006 + 0.022 * score, 0, 0.2);
           if (this.rng.chance(p)) {
@@ -1312,11 +1336,11 @@ export class RaceSim {
       }
       if (rl.stopWindow && !car.pitRequest && car.stops === 0 && car.lap + 1 >= rl.stopWindow[1] - 1 && remaining > 2) car.pitRequest = this.chooseCompound(car);
       if (rl.batterySwap && car.pitRequest && car.soc < 0.35) car.pitSwap = true;
-      if (rl.pushToPass && car.boostLeft > 0 && car.boostUntil <= this.tick && car.gapAhead > 0 && car.gapAhead < 1.0 && car.soc > 0.15) {
+      if (rl.pushToPass && !rl.attackZones && car.boostLeft > 0 && car.boostUntil <= this.tick && car.gapAhead > 0 && car.gapAhead < 1.0 && car.soc > 0.15) {
         car.boostLeft--;
         car.boostUntil = this.tick + 120;
       }
-      if (rl.pushToPass && car.boostLeft > 0 && remaining <= 2 && car.boostUntil <= this.tick) {
+      if (rl.pushToPass && !rl.attackZones && car.boostLeft > 0 && remaining <= 2 && car.boostUntil <= this.tick) {
         car.boostLeft--;
         car.boostUntil = this.tick + 120;
       }

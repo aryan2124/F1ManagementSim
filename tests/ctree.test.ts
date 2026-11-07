@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { newCareer } from "../src/career/world";
 import { initDesigns } from "../src/career/design";
-import { COMPS, DEEP_SHARE, install, lockOf, makeTree, nodeKey, nodeOf, rangeOf, startBuild, startTest, tickTree, treeOf, treeTraits } from "../src/career/ctree";
+import { COMPS, DEEP_SHARE, lapOf, install, lockOf, makeTree, nodeKey, nodeOf, rangeOf, startBuild, startTest, tickTree, treeOf, treeTraits } from "../src/career/ctree";
 import { keystoneTraits } from "../src/career/keystones";
 import { advanceDay } from "../src/career/tick";
 import { TRACK_DATA, trackRow } from "../src/game/trackdata";
@@ -147,4 +147,20 @@ describe("car tree", () => {
     for (let i = 0; i < 120; i++) advanceDay(s);
     expect(treeOf(s, s.teams[s.teamId]).nodes.length).toBe(72);
   }, 120000);
+  it("previews an unbuilt part on the rig: tighter estimate, cheaper, not a measurement", () => {
+    const { s, t } = mk();
+    const nd = treeOf(s, t).nodes.filter((n) => n.tier === 1).sort((a, b) => Math.abs(lapOf(b)) - Math.abs(lapOf(a)))[0];
+    const before = rangeOf(s, t, nd);
+    const cash = t.cash;
+    const r = startTest(s, t, nd.id);
+    expect(r.ok, r.message).toBe(true);
+    expect(cash - t.cash).toBeCloseTo(0.25, 2);
+    expect(startTest(s, t, nd.id).ok).toBe(false);
+    for (let i = 0; i < 6; i++) tickTree(s, t);
+    expect(treeOf(s, t).sims).toContain(nd.id);
+    const after = rangeOf(s, t, nd);
+    expect(after.tested).toBe(false);
+    expect(after.hi - after.lo).toBeLessThan(before.hi - before.lo);
+    expect(startTest(s, t, nd.id).ok).toBe(false);
+  });
 });

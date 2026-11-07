@@ -650,6 +650,7 @@ function moodsFor(s: CareerState, ids: string[]): Record<string, { morale: numbe
 function raceFormatRules(rules: ReturnType<typeof rulesOf>, laps: number, seed: number) {
   const out: Record<string, unknown> = {};
   if (rules.pushToPass) out.pushToPass = rules.pushToPass;
+  if (rules.attackZones) out.attackZones = true;
   if (rules.defenceTokens) out.defenceTokens = rules.defenceTokens;
   if (rules.batterySwap) out.batterySwap = true;
   if (rules.refuelling) out.refuelling = true;
@@ -1269,7 +1270,7 @@ export { activeDrivers };
 export function rulesBrief(r: RaceConfig["rules"] | undefined, laps: number): string[] {
   const out: string[] = [];
   if (!r) return out;
-  if (r.pushToPass) out.push(`Push to pass: ${r.pushToPass} boost tokens per driver, 12 seconds each.`);
+  if (r.pushToPass) out.push(r.attackZones ? `Attack zones: ${r.pushToPass} boost tokens per driver, each good for one attack zone (up to 12 seconds). Boost does nothing outside a zone.` : `Push to pass: ${r.pushToPass} boost tokens per driver, 12 seconds each.`);
   if (r.defenceTokens) out.push(`Defence tokens: ${r.defenceTokens} hard defences per driver, 15 seconds each.`);
   if (r.batterySwap) out.push("Battery swap: tick it on the stop call for 1.8 extra seconds in the box and a full charge.");
   if (r.refuelling) out.push("Refuelling: cars start light and add fuel at stops, at about 4.5 percent a second. Do not run dry.");

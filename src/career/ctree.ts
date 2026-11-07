@@ -1,6 +1,7 @@
 import { Rng, hashSeed } from "../sim/rng";
 import { clamp, round2 } from "./util";
 import { TRAITS } from "./types";
+import { rulesOf } from "./eras";
 import type { Area, CareerState, TeamState, Trait } from "./types";
 
 /**
@@ -73,7 +74,7 @@ export interface TreeNode {
 }
 export interface TreePart { id: string; day: number; copies: 1 | 2; onA: boolean; onB: boolean; tested: boolean; /** A rushed fit that went wrong on that car: the part works at 40 percent until it is fitted again. */ misfit?: { A?: boolean; B?: boolean }; /** Seconds a lap measured in practice, per session. */ seen?: number[] }
 export interface TreeBuild { id: string; progress: number; days: number }
-export interface TreeTest { id: string; left: number }
+export interface TreeTest { id: string; left: number; /** A trial of a part that is not built yet: it narrows the estimate but does not measure it. */ pre?: boolean }
 /** A change to a car waiting on the mechanics. */
 export interface FitJob { id: string; car: "A" | "B"; on: boolean; left: number; rush: boolean }
 export const MISFIT = 0.4;
@@ -84,6 +85,8 @@ export interface TreeState {
   parts: Record<string, TreePart>;
   builds: TreeBuild[];
   tests: TreeTest[];
+  /** Parts previewed in the simulator before they were built. */
+  sims?: string[];
   /** Fit changes in the garage, days left each. */
   fits?: FitJob[];
   /** Branch expertise carried over from the last era (key `${comp}:${branch}`). */
@@ -244,6 +247,12 @@ export function lockOf(s: CareerState, t: TeamState, nd: TreeNode, flags: { free
     if (done >= 1) return { ok: false, state: "capped", why: "One finished branch per component. The others stay unfinished." };
     if (eraProgress(s) < 0.25) return { ok: false, state: "locked", why: "The deepest parts only become possible later in the era." };
   }
+  const quota = rulesOf(s).upgradeQuota;
+  if (quota !== undefined) {
+    const yearStart = Date.UTC(s.year, 0, 1) / 86400000;
+    const used = Object.values(tr.parts).filter((p) => p.day >= yearStart).length + tr.builds.length;
+    if (used >= quota) return { ok: false, state: "capped", why: `The rules allow ${quota} new parts a season. All ${quota} are built or in the factory.` };
+  }
   if (nd.labour > 0 && skillOfFactory(s, t.id) < nd.labour) return { ok: false, state: "labour", why: `Needs engineers of skill ${nd.labour}. Yours average ${Math.round(skillOfFactory(s, t.id))}.` };
   return { ok: true, state: "available" };
 }
@@ -263,6 +272,13 @@ export function rangeOf(s: CareerState, t: TeamState, nd: TreeNode): { lo: numbe
   if (part?.tested) {
     const truth = lapOf(nd, scaled(nd, nd.mult));
     return { lo: round2(truth - 0.004), hi: round2(truth + 0.004), mid: truth, tested: true };
+  }
+  if (tr.sims?.includes(nd.id)) {
+    // a preview on the rig: centred nearer the truth with a tighter band, but not a measurement
+    const truth = lapOf(nd, scaled(nd, nd.mult));
+    const c = round2(mid + (truth - mid) * 0.75);
+    const w = Math.abs(mid) * 0.12 + 0.004;
+    return { lo: round2(c - w), hi: round2(c + w), mid: c, tested: false };
   }
   const half = Math.abs(mid) * 0.5 * (1 - k) + 0.004;
   return { lo: round2(mid - half), hi: round2(mid + half), mid, tested: false };
@@ -315,15 +331,22 @@ export function scrapBuild(t: TeamState, id: string) {
 export function startTest(s: CareerState, t: TeamState, id: string): { ok: boolean; message: string } {
   const tr = treeOf(s, t);
   const part = tr.parts[id];
-  if (!part) return { ok: false, message: "Build it first." };
-  if (part.tested) return { ok: false, message: "Already tested." };
+  const nd = nodeOf(tr, id);
+  if (!nd) return { ok: false, message: "No such part." };
+  if (part?.tested) return { ok: false, message: "Already tested." };
+  if (!part && tr.sims?.includes(id)) return { ok: false, message: "Already previewed. Build it to measure it properly." };
+  if (!part && tr.builds.some((b) => b.id === id)) return { ok: false, message: "It is being built. Test it when it arrives." };
   if (tr.tests.some((x) => x.id === id)) return { ok: false, message: "Already in the simulator." };
-  const cost = 0.4;
+  if (!part) {
+    const lk = lockOf(s, t, nd, {});
+    if (lk.state === "locked" || lk.state === "deep") return { ok: false, message: lk.why ?? "Not available yet." };
+  }
+  const cost = part ? 0.4 : 0.25;
   if (t.cash < cost) return { ok: false, message: "Not enough cash." };
   t.cash = round2(t.cash - cost);
   t.ledger.rnd = round2(t.ledger.rnd + cost);
-  tr.tests.push({ id, left: tr.mods?.testDays ?? 4 });
-  return { ok: true, message: "In the simulator for four days. The result is firmer the better the team knows this philosophy." };
+  tr.tests.push({ id, left: tr.mods?.testDays ?? 4, pre: !part });
+  return { ok: true, message: part ? "In the simulator for four days. The result is firmer the better the team knows this philosophy." : "A model of it is on the rig for four days. You get a tighter estimate before you spend on the real part." };
 }
 
 export function install(s: CareerState, t: TeamState, id: string, car: "A" | "B", on: boolean): { ok: boolean; message: string } {
@@ -361,6 +384,10 @@ export function tickTree(s: CareerState, t: TeamState): { built: string[]; teste
   for (const x of tr.tests) x.left -= 1;
   const finished = tr.tests.filter((x) => x.left <= 0);
   tr.tests = tr.tests.filter((x) => x.left > 0);
-  for (const x of finished) { const p = tr.parts[x.id]; if (p) { p.tested = true; out.tested.push(x.id); } }
+  for (const x of finished) {
+    const p = tr.parts[x.id];
+    if (p) { p.tested = true; out.tested.push(x.id); }
+    else if (x.pre) { tr.sims = [...(tr.sims ?? []), x.id]; out.tested.push(x.id); }
+  }
   return out;
 }

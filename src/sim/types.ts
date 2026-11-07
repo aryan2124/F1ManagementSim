@@ -209,6 +209,8 @@ export interface RaceRules {
   stopWindow?: [number, number];
   /** Boost tokens per driver (push to pass). */
   pushToPass?: number;
+  /** Boost only works inside the marked attack zones of the circuit. */
+  attackZones?: boolean;
   /** Hard-defence tokens per driver. */
   defenceTokens?: number;
   /** The energy store can be swapped at a stop. */
@@ -351,6 +353,8 @@ export interface CarState {
   /** Push to pass and defence tokens, and when each runs out. */
   boostLeft: number;
   boostUntil: number;
+  /** Inside an attack zone right now (only kept up to date when the rules mark zones). */
+  inZone: boolean;
   defendLeft: number;
   defendUntil: number;
   /** Choices attached to the next stop. */

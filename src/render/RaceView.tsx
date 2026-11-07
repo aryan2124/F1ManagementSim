@@ -6,7 +6,7 @@ import { TEAMS } from "../game/data";
 import { sampleTrack } from "../sim/track";
 import type { SimEvent } from "../sim/types";
 import type { ReactNode } from "react";
-import { buildTrackArt, M_PER_PX, themeGround } from "./trackArt";
+import { buildTrackArt, buildZoneOverlay, M_PER_PX, themeGround } from "./trackArt";
 import { loadScene } from "./sceneGround";
 import { AnimLayer } from "./animLayer";
 import { MIXED_FANS, VENUES } from "../game/venues";
@@ -116,6 +116,7 @@ export function RaceView({ session, meta, children }: { session: LiveSession<Liv
           }
         }
         // the art stays alive so the tiles in view can be baked again at double resolution when the player zooms in
+        if ((session.sim.cfg?.rules as { attackZones?: boolean } | undefined)?.attackZones) world.addChild(buildZoneOverlay(track));
         const skids = new Graphics();
         world.addChild(skids);
         let skidSegs = 0;

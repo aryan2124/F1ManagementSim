@@ -385,3 +385,7 @@
 .gd-skip { margin-top: 10px; border-top: 1px dashed rgba(255,255,255,.15); padding-top: 8px; }
 .gd-skip .row-btns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .app .tower li .gap:has(.pen) { font-size: 11px; }
+/* the race tower's i button: same small square as the session boards, never the big skin button */
+.app .tower li button.tiny { padding: 0 !important; width: 20px !important; height: 20px !important; min-width: 0 !important; font-size: 12px !important; line-height: 1 !important; margin: 0 !important; --cut: 3px; }
+
+.sk-explain { margin: 6px 0 8px; padding: 6px 8px; border-left: 2px solid var(--accent, #f5c542); line-height: 1.35; }

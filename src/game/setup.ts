@@ -42,6 +42,7 @@ export const REG_OPTIONS: { id: string; label: string; note: string }[] = [
   { id: "scheduledSC", label: "SCHEDULED SAFETY CAR", note: "A safety car comes out at a fixed point of the race." },
   { id: "standingRestarts", label: "STANDING RESTARTS", note: "Every safety car ends with a standing start." },
   { id: "pushToPass", label: "PUSH TO PASS", note: "Three boost tokens per driver." },
+  { id: "attackZones", label: "ATTACK ZONES", note: "Three boost tokens, but boost only works inside the marked zones on the long straights." },
   { id: "defenceTokens", label: "DEFENCE TOKENS", note: "Three hard-defence tokens per driver." },
   { id: "batterySwap", label: "BATTERY SWAP", note: "Swap the battery at a stop for 1.8 extra seconds and a full charge." },
   { id: "refuelling", label: "REFUELLING", note: "Start on a light fuel load and add fuel at stops." },
@@ -65,6 +66,7 @@ export function regConfig(regs: string[] | undefined, laps: number, seed: number
   if (on.has("scheduledSC")) rules.scheduledSC = true;
   if (on.has("standingRestarts")) rules.standingRestarts = true;
   if (on.has("pushToPass")) rules.pushToPass = 3;
+  if (on.has("attackZones")) { rules.pushToPass = 3; rules.attackZones = true; }
   if (on.has("defenceTokens")) rules.defenceTokens = 3;
   if (on.has("batterySwap")) rules.batterySwap = true;
   if (on.has("refuelling")) rules.refuelling = true;

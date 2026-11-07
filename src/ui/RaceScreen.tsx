@@ -194,7 +194,7 @@ export function RaceScreen({ session, meta, onFinish, skip, donuts, kind }: { se
         </div>
         <div className="speeds">
           {speeds.map((s) => (
-            <button key={s.v} className={session.speed === s.v ? "on" : ""} onClick={() => (session.speed = s.v)}>
+            <button key={s.v} className={session.speed === s.v ? "on" : ""} title={s.v === 0 ? "Pause the session." : `Run the session at ${s.v} times real speed.`} onClick={() => (session.speed = s.v)}>
               {s.label}
               {skip?.votes.speed && Object.values(skip.votes.speed).filter((x) => Number(x) === s.v).length > 0 && <small className="vote-dot">{Object.values(skip.votes.speed).filter((x) => Number(x) === s.v).length}</small>}
             </button>
@@ -222,16 +222,16 @@ export function RaceScreen({ session, meta, onFinish, skip, donuts, kind }: { se
           <PromptBar session={session} />
           <div className="btabs">
             {(["radio", "sectors", "radar"] as BottomTab[]).map((t) => (
-              <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
+              <button key={t} className={tab === t ? "on" : ""} title={t === "radio" ? "Radio calls and race control messages." : t === "sectors" ? "Sector times for every car, last lap or best lap." : "Rain on the map: where it is and where it is heading."} onClick={() => setTab(t)}>
                 {t === "radio" ? "RADIO" : t === "sectors" ? "SECTORS" : "WEATHER RADAR"}
               </button>
             ))}
             {tab === "sectors" && (
               <span className="seg">
-                <button className={secMode === "last" ? "on" : ""} onClick={() => setSecMode("last")}>
+                <button className={secMode === "last" ? "on" : ""} title="Show each car's sector times from its last lap." onClick={() => setSecMode("last")}>
                   LAST LAP
                 </button>
-                <button className={secMode === "best" ? "on" : ""} onClick={() => setSecMode("best")}>
+                <button className={secMode === "best" ? "on" : ""} title="Show each car's best sector times of the session." onClick={() => setSecMode("best")}>
                   BEST LAP
                 </button>
               </span>
@@ -456,7 +456,7 @@ function RaceOverlay({ session, onFinish, donuts }: { session: RaceSession; onFi
             <br />
             Space = pause. Keys 1 to 6 = speed. Click a timing row to change camera.
           </p>
-          <button className="btn primary big" onClick={() => session.start()}>
+          <button className="btn primary big" title="Start the lights sequence. The race begins when they go out." onClick={() => session.start()}>
             START LIGHTS
           </button>
         </div>
@@ -476,14 +476,14 @@ function RaceOverlay({ session, onFinish, donuts }: { session: RaceSession; onFi
       {celebrating && (
         <div className="dircap donut-cap">
           <i>VICTORY LAP</i> {session.donutIds.map((id) => session.sim.car(id).entry.driver.name).join(" and ")} {session.donutIds.length > 1 ? "put on a show" : "puts on a show"}
-          <button className="btn tiny" onClick={() => { session.celebrateFrom = 1; session.celebrateMs = 0; bump((n) => n + 1); }}>SKIP</button>
+          <button className="btn tiny" title="Skip the celebration." onClick={() => { session.celebrateFrom = 1; session.celebrateMs = 0; bump((n) => n + 1); }}>SKIP</button>
         </div>
       )}
       {finished && !celebrating && (
         <div className="finish-overlay">
           <h2>RACE COMPLETE</h2>
           <FinishCeremony session={session} />
-          <button className="btn primary big" onClick={onFinish}>
+          <button className="btn primary big" title="Go to the final classification and results." onClick={onFinish}>
             VIEW CLASSIFICATION
           </button>
         </div>
@@ -547,13 +547,13 @@ function TimingTower({ session }: { session: RaceSession }) {
       </ol>
       {statsId && <DriverStats sim={sim} carId={statsId} onClose={() => setStatsId(null)} />}
       <div className="seg tower-mode" title="GAP shows the distance to the leader. EXACT shows each driver's last lap time to the thousandth.">
-        <button className={!exact ? "on" : ""} onClick={() => setExact(false)}>GAP TO LEADER</button>
-        <button className={exact ? "on" : ""} onClick={() => setExact(true)}>EXACT LAP</button>
+        <button className={!exact ? "on" : ""} title="Show how far each car is behind the leader, in seconds." onClick={() => setExact(false)}>GAP TO LEADER</button>
+        <button className={exact ? "on" : ""} title="Show each car's last lap time to the thousandth." onClick={() => setExact(true)}>EXACT LAP</button>
       </div>
       <button className={`tiny wide dir ${session.directing ? "on" : ""}`} title="The race director cuts between the action like the TV feed: crashes, passes, battles, pit stops and radio calls." onClick={() => { session.directing = !session.directing; }}>
         {session.directing ? "DIRECTOR CAM: ON" : "DIRECTOR CAM: OFF"}
       </button>
-      <button className="tiny wide" onClick={() => (session.followId = leader.id)}>
+      <button className="tiny wide" title="Point the camera at the race leader." onClick={() => (session.followId = leader.id)}>
         CAM: LEADER
       </button>
       <div className="fl">
@@ -613,6 +613,18 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
   ];
   const moodWord = (m: number) => (m > 0.7 ? "HAPPY" : m > 0.5 ? "FINE" : m > 0.3 ? "ANNOYED" : "FURIOUS");
   const dead = car.status === "dnf";
+  const PACE_HELP: Record<string, string> = {
+    SAVE: "Save: drive well within the limit. Tyres and fuel last longer, the car is slower.",
+    "SAVE+": "Save plus: a little more pace than SAVE for a little more tyre and fuel use.",
+    STD: "Standard pace: the balanced default.",
+    "STD+": "Standard plus: slightly quicker than standard, a little extra tyre and fuel use.",
+    PUSH: "Push: flat out. The quickest lap time, but tyres and fuel wear fast.",
+  };
+  const MODE_HELP: Record<string, string> = {
+    harvest: "Harvest: recharge the battery. Slower on the straights, but fills the store.",
+    balanced: "Balance: deploy and recharge evenly over the lap.",
+    attack: "Attack: spend battery for extra power on the straights. Helps to pass, drains the store (see LAP BUDGET).",
+  };
   const push: { v: PushLevel; t: 0 | 1; label: string }[] = [
     { v: 0, t: 0, label: "SAVE" },
     { v: 0, t: 1, label: "SAVE+" },
@@ -682,7 +694,7 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
             <span>PACE</span>
             <div className="seg">
               {push.map((p) => (
-                <button key={p.label} className={car.push === p.v && car.trim === p.t ? "on" : ""} onClick={() => sim.command({ type: "push", carId: car.id, push: p.v, trim: p.t })}>
+                <button key={p.label} className={car.push === p.v && car.trim === p.t ? "on" : ""} title={PACE_HELP[p.label]} onClick={() => sim.command({ type: "push", carId: car.id, push: p.v, trim: p.t })}>
                   {p.label}
                 </button>
               ))}
@@ -692,7 +704,7 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
             <span>ENERGY</span>
             <div className="seg">
               {modes.map((m) => (
-                <button key={m.v} className={car.mode === m.v ? "on" : ""} onClick={() => sim.command({ type: "mode", carId: car.id, mode: m.v })}>
+                <button key={m.v} className={car.mode === m.v ? "on" : ""} title={MODE_HELP[m.v]} onClick={() => sim.command({ type: "mode", carId: car.id, mode: m.v })}>
                   {m.label}
                 </button>
               ))}
@@ -715,8 +727,15 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
               <span>RULES</span>
               <div className="seg">
                 {rl?.pushToPass ? (
-                  <button className={boosting ? "on" : ""} disabled={car.boostLeft <= 0 || boosting || car.status !== "racing"} title="Push to pass: about 12 seconds of extra power" onClick={() => sim.command({ type: "boost", carId: car.id })}>
-                    {boosting ? "BOOSTING" : `BOOST (${car.boostLeft})`}
+                  <button
+                    className={boosting ? "on" : ""}
+                    disabled={car.boostLeft <= 0 || boosting || car.status !== "racing" || (!!rl.attackZones && !car.inZone)}
+                    title={rl.attackZones
+                      ? "Attack zones: a boost token gives extra power until the end of the zone you are in (up to 12 seconds). It only works while the car is inside a marked zone on the map, and the button is dead outside one."
+                      : "Push to pass: about 12 seconds of extra power. One token per press."}
+                    onClick={() => sim.command({ type: "boost", carId: car.id })}
+                  >
+                    {boosting ? "BOOSTING" : rl.attackZones ? (car.inZone ? `BOOST NOW (${car.boostLeft})` : `BOOST (${car.boostLeft}) NOT IN ZONE`) : `BOOST (${car.boostLeft})`}
                   </button>
                 ) : null}
                 {rl?.defenceTokens ? (
@@ -755,7 +774,7 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
             </div>
           )}
           <PitWindow sim={sim} car={car} />
-          <button className="tiny plan-toggle" onClick={() => setPlanOpen(!planOpen)}>{planOpen ? "HIDE THE PLAN" : "THE PLAN"}{sim.radio?.standing.get(car.id) && describeOrders(sim.radio.standing.get(car.id)!).length > 0 ? ` (${describeOrders(sim.radio.standing.get(car.id)!).length})` : ""}</button>
+          <button className="tiny plan-toggle" title="Open or close the standing orders: pit and tyre plans this car follows by itself." onClick={() => setPlanOpen(!planOpen)}>{planOpen ? "HIDE THE PLAN" : "THE PLAN"}{sim.radio?.standing.get(car.id) && describeOrders(sim.radio.standing.get(car.id)!).length > 0 ? ` (${describeOrders(sim.radio.standing.get(car.id)!).length})` : ""}</button>
           {planOpen && <StrategyBoard compact life={isWetCompound(car.tyre.compound) ? undefined : sim.life[car.tyre.compound]} orders={sim.radio?.standing.get(car.id) ?? NO_ORDERS} laps={sim.cfg.laps} onChange={(o) => sim.command({ type: "standing", carId: car.id, orders: o })} />}
           <div className="ctl pit">
             <span>PIT</span>
@@ -766,7 +785,7 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
                 <b>
                   BOX BOX: <CompoundBadge c={car.pitRequest} size={16} /> {COMPOUNDS[car.pitRequest].name.toUpperCase()}
                 </b>
-                <button className="tiny" onClick={() => sim.command({ type: "cancelPit", carId: car.id })}>
+                <button className="tiny" title="Cancel the pit call. The car stays out." onClick={() => sim.command({ type: "cancelPit", carId: car.id })}>
                   CANCEL
                 </button>
               </div>
@@ -775,7 +794,7 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
                 <div className="pitpick">
                   <SetPicker sets={list} value={pitSet} onChange={setPitSet} advice={pitAdv?.set?.id} fitted={car.setId} live={car.setId ? { id: car.setId, wear: car.tyre.wear } : undefined} lockFitted />
                   {pitAdv?.why && <small className="dim">{pitAdv.why}</small>}
-                  <button className="btn" disabled={!canPit} onClick={() => {
+                  <button className="btn" disabled={!canPit} title="Call the car into the pits at the end of this lap and fit the chosen set." onClick={() => {
                     const x = list.find((y) => y.id === pitSet) ?? pitAdv?.set ?? bestSet(list, car.tyre.compound, car.setId);
                     if (x) sim.command({ type: "pit", carId: car.id, compound: x.compound, setId: x.id, swap, fuel });
                   }}>BOX FOR {pitSet || pitAdv?.set?.id || "AUTO"}</button>
@@ -846,7 +865,7 @@ function CarCard({ session, car }: { session: RaceSession; car: CarState }) {
               </button>
             </div>
           </div>
-          <button className="tiny wide" onClick={() => (session.followId = car.id)}>
+          <button className="tiny wide" title="Point the camera at this car." onClick={() => (session.followId = car.id)}>
             CAM: {e.driver.code}
           </button>
         </>

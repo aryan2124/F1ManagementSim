@@ -59,7 +59,7 @@ function SetupPane({ s, ctl, act }: { s: Props["s"]; ctl: PracticeController; ac
         </label>
       ))}
       <div className="row-btns">
-        <button className={`btn${dirty ? " primary" : ""}`} disabled={!dirty} onClick={() => act(ctl.changeSetup(v))}>{dirty ? "SAVE SETUP (3 MIN)" : "SETUP SAVED"}</button>
+        <button title="Save the slider positions on the car. It takes 3 minutes of the session and both cars must be in the garage." className={`btn${dirty ? " primary" : ""}`} disabled={!dirty} onClick={() => act(ctl.changeSetup(v))}>{dirty ? "SAVE SETUP (3 MIN)" : "SETUP SAVED"}</button>
       </div>
     </div>
   );
@@ -82,7 +82,7 @@ export function GarageDrawer({ s, d, ctl, onDone }: Props & { ctl: PracticeContr
       <h3>GARAGE DRAWER</h3>
       <div className="seg gd-tabs">
         {([["parts", "PARTS"], ["runs", "RUN FOR"], ["setup", "SETUP"], ["readings", "READINGS"], ["log", "LOG"]] as [Tab, string][]).map(([k, l]) => (
-          <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>
+          <button title={({ parts: "Fit or remove parts on each car. Changes cost session minutes and some cost money.", runs: "Choose what the next run is for.", setup: "Move the setup sliders for both cars.", readings: "What each part promised against what it gave.", log: "The engineers' notes and results." } as Record<string, string>)[k]} key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
       <p className="dim small">Minutes spent on changes: <b>{ws.fitMin ?? 0}</b> of 60. A car being worked on stays in the garage.</p>
@@ -90,7 +90,7 @@ export function GarageDrawer({ s, d, ctl, onDone }: Props & { ctl: PracticeContr
         <>
           <label className="small rt-rush"><input type="checkbox" checked={rush} onChange={(e) => setRush(e.target.checked)} /> RUSH changes: quicker, dearer, and a real chance of a bad fit</label>
           <div className="row-btns">
-            <button className="tiny" onClick={() => act(ctl.suggested(rush))}>SUGGESTED FIT</button>
+            <button title="Fit the set of parts the staff expect to be quickest at this track on both cars." className="tiny" onClick={() => act(ctl.suggested(rush))}>SUGGESTED FIT</button>
           </div>
           <div className="gd-cars">
             {drivers.map((dv) => {
@@ -167,15 +167,15 @@ export function GarageDrawer({ s, d, ctl, onDone }: Props & { ctl: PracticeContr
         {confirm === "end" && (
           <div className="row-btns">
             <span className="small">End this session? Cars on track come in; finished runs count.</span>
-            <button className="btn primary" onClick={() => { ctl.finish(); setConfirm(""); onDone(); }}>YES, END IT</button>
-            <button className="btn" onClick={() => setConfirm("")}>NO</button>
+            <button title="Stop the session now. Runs that finished still count." className="btn primary" onClick={() => { ctl.finish(); setConfirm(""); onDone(); }}>YES, END IT</button>
+            <button title="Keep going." className="btn" onClick={() => setConfirm("")}>NO</button>
           </div>
         )}
         {confirm === "all" && (
           <div className="row-btns">
             <span className="small">Skip all practice? The engineers fit their best set and run the rest.</span>
-            <button className="btn primary" onClick={() => { ctl.finish(); d({ type: "simTo", until: "quali" }); onDone(); }}>YES, SKIP IT</button>
-            <button className="btn" onClick={() => setConfirm("")}>NO</button>
+            <button title="The engineers fit their best set and run every remaining practice session for you." className="btn primary" onClick={() => { ctl.finish(); d({ type: "simTo", until: "quali" }); onDone(); }}>YES, SKIP IT</button>
+            <button title="Keep going." className="btn" onClick={() => setConfirm("")}>NO</button>
           </div>
         )}
       </div>
