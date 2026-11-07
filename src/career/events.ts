@@ -1,5 +1,6 @@
 import { resolveReach } from "./convo";
 import { tempo } from "./storyteller";
+import { lean, printOf, TEMPER_LINE } from "./fingerprint";
 import { boardMove } from "./board";
 import { resolveStory } from "./stories";
 import { resolveThread } from "./threads";
@@ -281,7 +282,7 @@ const EVENTS: Ev[] = [
       const d = r ? s.drivers[r.driverId as string] : driversOf(s, s.teamId).find((x) => x.gStage >= 3 && x.spec.pace > 0.98);
       if (!d) return null;
       const order = teamRanking(s);
-      const team = r?.teamId ?? order.filter((x) => x !== s.teamId)[Math.floor(rng.next() * 4)];
+      const team = r?.teamId ?? printOf(s).rivals.find((x) => x.grudge === "stole" || x.grudge === "snub")?.team ?? order.filter((x) => x !== s.teamId)[Math.floor(rng.next() * 4)];
       const ask = askingSalary(s, d);
       return {
         title: `${baseTeam(team).name} want ${d.spec.name}`,
@@ -328,7 +329,7 @@ const EVENTS: Ev[] = [
     weight: (s) => (me(s).board < 50 ? 3 : 0) + (s.owner.trust < 0.4 ? 2 : 0) + (me(s).cash < 0 ? 2.5 : 0),
     build: (s) => ({
       title: `${s.owner.name} wants answers`,
-      body: `${s.owner.name} has flown in. Board confidence is ${Math.round(me(s).board)} out of 100 and the owner's trust is ${s.owner.trust < 0.4 ? "low" : "shaky"}. He wants to hear how you will turn things around.`,
+      body: `${s.owner.name} has flown in. Board confidence is ${Math.round(me(s).board)} out of 100 and the owner's trust is ${s.owner.trust < 0.4 ? "low" : "shaky"}. He wants to hear how you will turn things around. ${TEMPER_LINE[printOf(s).temper]}`,
       options: [
         { id: "plan", label: "Present a cost plan", detail: "R&D ceiling cut by 10 percent, trust up" },
         { id: "patience", label: "Ask for patience", detail: s.owner.trust > 0.45 ? "He may give you time" : "He is unlikely to listen" },
@@ -344,7 +345,7 @@ const EVENTS: Ev[] = [
         s.owner.trust = clamp(s.owner.trust + 0.1, 0, 1);
         boardMove(s, me(s), 2, "A paddock event");
       } else if (opt === "patience") {
-        const ok = rngFor(s, "patience").chance(clamp(s.owner.trust + 0.1, 0.1, 0.8));
+        const ok = rngFor(s, "patience").chance(clamp(s.owner.trust + 0.1 + (printOf(s).temper === "patient" ? 0.15 : printOf(s).temper === "handson" ? -0.1 : 0), 0.1, 0.85));
         boardMove(s, me(s), ok ? 3 : -3, "A paddock event");
         recap(s, ok ? "The owner gave you more time." : "The owner was not convinced.");
       } else s.story.arcs.ownerPromise = 1;
@@ -643,7 +644,12 @@ export function eventsWeekly(s: CareerState) {
   const live = EVENTS.filter((e) => s.day - (st.last[e.id] ?? -999) >= e.cooldown && (!e.big || s.day - st.bigDay >= 7));
   const scored = live.map((e) => ({ e, w: e.weight(s) / (1 + 0.3 * (st.count[e.id] ?? 0)) })).filter((x) => x.w > 0);
   if (!scored.length) return;
-  const total = scored.reduce((a, x) => a + x.w, 0);
+  const raw = scored.reduce((a, x) => a + x.w, 0);
+  // the owner's temperament leans the mix, never the amount
+  for (const x of scored) x.w *= lean(s, x.e.id);
+  const lt = scored.reduce((a, x) => a + x.w, 0);
+  for (const x of scored) x.w *= raw / lt;
+  const total = raw;
   if (!rng.chance(Math.min(0.55, (0.06 + 0.1 * total) * tempo(s)))) return;
   let r = rng.next() * total;
   let pick = scored[0].e;

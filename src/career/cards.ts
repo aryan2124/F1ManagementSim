@@ -11,7 +11,7 @@ export function pushCard(
   title: string,
   body: string,
   options: CardOption[],
-  opts: { deadline?: number; defaultOption?: string; urgency?: 1 | 2 | 3; data?: Card["data"]; mandatory?: boolean; lapse?: "race" | "year" } = {},
+  opts: { deadline?: number; defaultOption?: string; urgency?: 1 | 2 | 3; data?: Card["data"]; mandatory?: boolean; free?: boolean; lapse?: "race" | "year" } = {},
 ): Card {
   const card: Card = {
     id: nextId(s),
@@ -28,7 +28,7 @@ export function pushCard(
     mandatory: opts.mandatory ?? (kind === "firing" ? true : undefined),
     lapse: opts.lapse ? { on: opts.lapse, round: s.round, year: s.year } : undefined,
   };
-  if (!DEAD_KINDS.has(kind) && (opts.mandatory || withinBudget(s, kind, options.length, opts.urgency ?? 2))) s.cards.push(card);
+  if (!DEAD_KINDS.has(kind) && (opts.mandatory || opts.free || withinBudget(s, kind, options.length, opts.urgency ?? 2))) s.cards.push(card);
   return card;
 }
 

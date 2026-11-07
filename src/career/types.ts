@@ -760,6 +760,8 @@ export interface StoryState {
   /** Tone the paddock sees the player in, -1 (ruthless) to 1 (loyal). */
   tone: number;
   arcs: Record<string, number>;
+  /** Per year: big beats and rival grudge lines already delivered. */
+  beats?: Record<number, { n: number; grudge: number }>;
   /** Follow-ups to earlier choices, waiting for their day. */
   queue?: { day: number; id: string; data: Record<string, number | string | boolean> }[];
 }
@@ -876,6 +878,8 @@ export interface CareerState {
   rivalries: Rivalry[];
   records: Record<string, RecordEntry>;
   owner: OwnerState;
+  /** What makes this career its own: owner temperament, rival grudges, the three story arcs. */
+  print?: import("./fingerprint").Print;
   story: StoryState;
   legacy: LegacyEntry[];
   /** Month of the last monthly pass, to keep it once a month. */

@@ -13,6 +13,7 @@ import { passiveRead } from "./know";
 import { TRAIT_AREA, TRAIT_NAME } from "./traits";
 import { resolveMail, mailWeekly } from "./mail";
 import { storiesDaily, storiesWeekly } from "./stories";
+import { beatsWeekly } from "./fingerprint";
 import { threadsWeekly } from "./threads";
 import { designQuality, resolveNextCar } from "./nextcar";
 import { addFact } from "./facts";
@@ -427,6 +428,7 @@ export function weeklyPlayer(s: CareerState, first: boolean) {
   if (s.round > 0 || s.day > epochDay(s.year, 3, 1)) {
     eventsWeekly(s);
     storiesWeekly(s);
+    beatsWeekly(s);
     threadsWeekly(s);
     socialWeekly(s);
     mailWeekly(s);

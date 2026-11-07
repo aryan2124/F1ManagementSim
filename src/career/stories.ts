@@ -642,8 +642,8 @@ const STORIES: Story[] = [
 
 const BY_ID = Object.fromEntries(STORIES.map((x) => [x.id, x]));
 
-function push(s: CareerState, st: Story, b: Built) {
-  pushCard(s, "event", b.title, b.body, b.options, { deadline: s.day + 12, defaultOption: b.options[b.options.length - 1].id, urgency: 2, data: { ...(b.data ?? {}), ev: `story:${st.id}` } });
+function push(s: CareerState, st: Story, b: Built, free = false) {
+  pushCard(s, "event", b.title, b.body, b.options, { deadline: s.day + 12, defaultOption: b.options[b.options.length - 1].id, urgency: 2, free, data: { ...(b.data ?? {}), ev: `story:${st.id}` } });
 }
 
 /** Once a week: maybe one story. Roughly one every few weeks. */
@@ -709,11 +709,11 @@ export const STORY_COUNT = STORIES.length;
 export const STORY_IDS = STORIES.map((x) => x.id);
 
 /** Puts one story on the table now (used by tests and the debug tools). */
-export function forceStory(s: CareerState, id: string): boolean {
+export function forceStory(s: CareerState, id: string, free = false): boolean {
   const st = BY_ID[id];
   if (!st) return false;
   const b = st.build(s, rngFor(s, `force:${id}`));
   if (!b) return false;
-  push(s, st, b);
+  push(s, st, b, free);
   return true;
 }
