@@ -14,7 +14,6 @@ import { nodeKey, install, startBuild, tickTree, treeOf } from "../src/career/ct
 import { startWeekend, practiceRun } from "../src/career/weekend";
 import { TreeLive } from "../src/ui/career/Weekend";
 import { Car } from "../src/ui/career/Car";
-import { SkillTree } from "../src/ui/career/SkillTree";
 import { Inbox } from "../src/ui/career/Inbox";
 import { sendSeasonReport } from "../src/career/treeplay";
 
@@ -39,10 +38,21 @@ describe("tree screens render", () => {
     expect(live.textContent).toContain("REMOVE");
     s.weekend = null;
     const car = mount(<Car s={s} d={d} />);
-    expect(car.querySelectorAll(".bal").length).toBe(6);
-    const tree = mount(<SkillTree s={s} d={d} comp="fw" onBack={() => {}} />);
-    expect(tree.querySelectorAll(".sk-node").length).toBe(12);
-    expect(tree.querySelector(".sk-node.built")).toBeTruthy();
+    expect(car.querySelector("[data-testid=radial-tree]")).toBeTruthy();
+    expect(car.querySelectorAll(".rt-arm").length).toBe(6);
+    expect(car.querySelectorAll(".rt-node").length).toBe(72);
+    expect(car.querySelectorAll(".rt-node.t4").length).toBe(18);
+    expect(car.querySelector(".rt-node.built")).toBeTruthy();
+    expect(car.querySelectorAll(".rt-slotcard").length).toBe(2);
+    // the heat points at what the next track pays: none at an average track, a dozen at Monaco
+    const day0 = s.day;
+    const mon = s.calendar.find((r) => r.circuitId === "monaco");
+    if (mon) {
+      s.day = mon.day - 3;
+      const hot = mount(<Car s={s} d={d} />);
+      expect(hot.querySelectorAll(".rt-node.hot").length).toBe(12);
+      s.day = day0;
+    }
     const inbox = mount(<Inbox s={s} d={d} />);
     const labels = [...inbox.querySelectorAll(".fold button")].map((b) => b.textContent ?? "");
     expect(labels.some((l) => l.startsWith("PRACTICE"))).toBe(true);

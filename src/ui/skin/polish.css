@@ -284,3 +284,50 @@
 .tp-bar b{position:absolute;top:0;bottom:0;background:#57cc99}
 .tp-bar b.bad{background:#ff7b7b}
 @media (max-width:700px){.tp-row{grid-template-columns:1fr 1fr 1fr}.tp-row > :first-child,.tp-row > :last-child{grid-column:1/-1}}
+
+/* ---- one big radial tree around the car ---- */
+.rt{display:grid;gap:8px}
+.rt-arms{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch}
+.rt-grow{flex:1}
+.rt-arm{display:grid;gap:1px;padding:5px 10px;min-height:44px;background:#141a33;border:2px solid #3b4780;border-radius:8px;color:#ece7ff;cursor:pointer;text-align:left}
+.rt-arm b{font-size:14px;letter-spacing:.05em}
+.rt-arm small{font-size:12px;opacity:.75}
+.rt-arm.work small{color:#57cc99}
+.rt-arm:hover,.rt-arm:focus-visible{background:#1c2347}
+.rt-heatline{margin:0}
+.rt-main{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px;align-items:start}
+.rt-vp{position:relative;height:min(74vh,780px);min-height:420px;overflow:hidden;background:radial-gradient(circle at 50% 50%,#1a2150 0%,#0c1026 70%);border:3px solid #2c3560;border-radius:10px;touch-action:none;cursor:grab}
+.rt-vp:active{cursor:grabbing}
+.rt-plane{position:absolute;left:0;top:0;transform-origin:0 0}
+.rt-lines{position:absolute;left:0;top:0;pointer-events:none}
+.rt-ring{fill:none;stroke:#26305e;stroke-width:1.5;stroke-dasharray:3 7}
+.rt-ring.key{stroke:#6b5a2a;stroke-width:2.5;stroke-dasharray:none}
+.rt-hubring{fill:#10152e;stroke:#3b4780;stroke-width:3}
+.rt-edge{stroke:#2c3560;stroke-width:5}
+.rt-edge.done{stroke:#57cc99}
+.rt-edge.work{stroke:#ffd166;stroke-dasharray:6 6}
+.rt-hub{position:absolute;display:grid;place-items:center;pointer-events:none;border-radius:50%;overflow:hidden}
+.rt-comp{position:absolute;transform:translate(-50%,-50%);font-size:24px;letter-spacing:.08em;white-space:nowrap;text-shadow:0 2px 0 #080b1c;pointer-events:none}
+.rt-lane{position:absolute;transform:translate(-50%,-50%);width:112px;text-align:center;font-size:15px;line-height:1.05;color:#b9c0e6;pointer-events:none}
+.rt-ringname{position:absolute;transform:translate(-50%,-50%);font-size:16px;letter-spacing:.1em;color:#b89a45;pointer-events:none;white-space:nowrap}
+.rt-node{position:absolute;width:58px;height:58px;margin:-29px 0 0 -29px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(160deg,#1c2347,#10152e);border:3px solid #3b4780;color:#ece7ff;font-size:19px;cursor:pointer;padding:0;overflow:visible}
+.rt-node:hover,.rt-node:focus-visible{transform:scale(1.14);z-index:3}
+.rt-node.on{outline:3px solid #fff;outline-offset:3px;z-index:4}
+.rt-node.t4{border-radius:10px;transform:rotate(45deg);border-width:4px}
+.rt-node.t4 span,.rt-node.t4 .rt-fit{transform:rotate(-45deg)}
+.rt-node.t4:hover,.rt-node.t4:focus-visible{transform:rotate(45deg) scale(1.14)}
+.rt-node.available{box-shadow:0 0 14px #ffd16688;background:linear-gradient(160deg,#3a3320,#1b1a12)}
+.rt-node.building{border-color:#ffd166;animation:car2-pulse 1.2s infinite}
+.rt-node.built{border-color:#57cc99;background:linear-gradient(160deg,#1e3b3a,#10252a)}
+.rt-node.locked,.rt-node.frozen,.rt-node.capped{opacity:.5;filter:grayscale(.6)}
+.rt-node.deep,.rt-node.labour{opacity:.85;border-style:dashed}
+.rt-node.hot::after{content:"";position:absolute;inset:-9px;border-radius:inherit;border:3px solid #ff9f43;box-shadow:0 0 18px #ff9f43aa;animation:car2-pulse 1.3s infinite;pointer-events:none}
+.rt-fit{position:absolute;bottom:-8px;right:-6px;font-style:normal;font-size:12px;background:#57cc99;color:#10152e;border-radius:6px;padding:0 4px;line-height:15px}
+.rt-prog{position:absolute;left:4px;bottom:-9px;height:5px;background:#ffd166;border-radius:3px}
+.rt-side{display:grid;gap:10px}
+.rt-slotgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rt-slotcard{display:grid;gap:3px;align-content:start}
+.rt-slotrow{display:grid;gap:0;text-align:left;background:#141a33;border:2px solid #2c3560;border-radius:6px;padding:3px 6px;color:#ece7ff;cursor:pointer;min-height:36px}
+.rt-slotrow span{font-size:11px;letter-spacing:.06em}
+.rt-slotrow em{font-style:normal;font-size:13px;line-height:1.1;overflow-wrap:anywhere}
+@media (max-width:900px){.rt-main{grid-template-columns:1fr}.rt-vp{height:min(62vh,560px);min-height:340px}}

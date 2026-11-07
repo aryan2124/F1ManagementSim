@@ -109,7 +109,9 @@ export function makeTree(seed: number, era: number, carry: Record<string, number
       for (let t = 0; t < 4; t++) {
         const g = TIER_FX[t] * eraScale;
         const fx: Partial<Record<Trait, number>> = { [b.main]: round2(g * (b.mainSign ?? 1)) };
-        if (b.side) fx[b.side] = round2(g * 0.45 * (b.sideSign ?? 1));
+        if (b.side) fx[b.side] = round2(g * (t === 3 && (b.sideSign ?? 1) < 0 ? 0.8 : 0.45) * (b.sideSign ?? 1));
+        // the outer ring is a keystone: big gain, and it always costs something (a synergy branch pays in tyre life)
+        if (t === 3 && (b.sideSign ?? 1) > 0 && b.main !== "wear") fx.wear = round2(-g * 0.4);
         nodes.push({
           id: nodeKey(c.id, bi, t + 1), comp: c.id, branch: bi as 0 | 1 | 2, tier: (t + 1) as 1 | 2 | 3 | 4, name: b.tiers[t], fx,
           cost: round2(TIER_COST[t] * (0.9 + rng.next() * 0.25)), days: Math.round(TIER_DAYS[t] * (0.9 + rng.next() * 0.25)), labour: TIER_LABOUR[t],

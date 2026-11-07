@@ -1,13 +1,10 @@
 import { useState } from "react";
-import { CarSprite } from "../pixel/CarSprite";
-import { teamColour } from "../../career/brand";
-import { COMPS, branchName, isBuilding, isBuilt, lapOf, nodeOf, slotsOf, buildSpeed, skillOfFactory, treeOf, type CompDef, type CompId } from "../../career/ctree";
-import { rulesOf } from "../../career/eras";
+import { COMPS, branchName, nodeOf, slotsOf, buildSpeed, skillOfFactory, treeOf, type CompId } from "../../career/ctree";
 import { facilityCost } from "../../career/finance";
-import { fmtDay, fmtMoney, lapDelta } from "../../career/util";
+import { fmtDay, fmtMoney } from "../../career/util";
 import { CARDS, isPromising } from "../../career/leadcards";
-import { teamOf, type Props } from "./common";
-import { SkillTree } from "./SkillTree";
+import { type Props } from "./common";
+import { RadialTree } from "./RadialTree";
 import { activeDrivers } from "../../career/car";
 import type { Delegation, Level } from "../../career/types";
 
@@ -41,8 +38,6 @@ export function SpendLog({ s }: { s: Props["s"] }) {
 export function Car({ s, d }: Props) {
   const me = s.teams[s.teamId];
   const tr = treeOf(s, me);
-  const flags = rulesOf(s);
-  const [comp, setComp] = useState<CompId | null>(null);
   const [parts, setParts] = useState(false);
   const [msg, setMsg] = useState("");
   const slots = slotsOf(me);
@@ -54,41 +49,6 @@ export function Car({ s, d }: Props) {
   const built = Object.values(tr.parts);
   const drivers = activeDrivers(s, s.teamId).map((id) => s.drivers[id]?.spec.code ?? id);
 
-  if (comp) return <SkillTree s={s} d={d} comp={comp} onBack={() => setComp(null)} />;
-
-  const card = (c: CompDef) => {
-    const nodes = tr.nodes.filter((n) => n.comp === c.id);
-    const done = nodes.filter((n) => isBuilt(tr, n.id));
-    const working = nodes.filter((n) => isBuilding(tr, n.id));
-    const frozen = (flags.freezeAreas ?? []).includes(c.area);
-    let gain = 0;
-    for (const p of built) {
-      const nd = nodeOf(tr, p.id);
-      if (nd?.comp === c.id) gain += lapOf(nd) * ((p.onA ? 0.5 : 0) + (p.onB ? 0.5 : 0));
-    }
-    const prog = working.length ? tr.builds.find((b) => b.id === working[0].id) : undefined;
-    return (
-      <button key={c.id} className={`bal ${frozen ? "frozen" : ""} ${working.length ? "work" : ""}`} onClick={() => setComp(c.id)} aria-label={`${c.name}, open its tree`} data-comp={c.id}>
-        <span className="bal-corner">{done.length}</span>
-        <b className="bal-name">{c.name.toUpperCase()}</b>
-        <span className="bal-rows">
-          {[0, 1, 2].map((b) => (
-            <span className="bal-row" key={b} title={branchName(c.id, b)}>
-              {[1, 2, 3, 4].map((t) => {
-                const n = nodes.find((x) => x.branch === b && x.tier === t)!;
-                return <i key={t} className={isBuilt(tr, n.id) ? "on" : isBuilding(tr, n.id) ? "work" : ""} />;
-              })}
-            </span>
-          ))}
-        </span>
-        <em className={gain > 0 ? "up" : "dim"}>{gain === 0 ? "no change yet" : `${lapDelta(gain)} s fitted`}</em>
-        {prog && <i className="bal-prog" style={{ width: `${Math.min(100, (prog.progress / prog.days) * 100)}%` }} />}
-        <small>{frozen ? "FROZEN BY THE RULES" : working.length ? `BUILDING ${working.length}` : "OPEN TREE"}</small>
-      </button>
-    );
-  };
-  const left: CompId[] = ["fw", "floor", "susp"];
-  const right: CompId[] = ["rw", "pu", "cool"];
   const byId = (id: CompId) => COMPS.find((c) => c.id === id)!;
 
   return (
@@ -133,14 +93,7 @@ export function Car({ s, d }: Props) {
         </section>
       )}
 
-      <div className="car2-stage">
-        <div className="car2-col">{left.map((id) => card(byId(id)))}</div>
-        <div className="car2-mid">
-          <CarSprite teamColor={teamColour(s)} accent={teamOf(s.teamId)?.accent ?? 0xffffff} size={380} />
-          <p className="dim small">Tap a card to open its tree. The dots are the 3 lanes of 4 parts each.</p>
-        </div>
-        <div className="car2-col">{right.map((id) => card(byId(id)))}</div>
-      </div>
+      <RadialTree s={s} d={d} />
 
       <section className="panel car2-set">
         <FactoryControls s={s} d={d} />
