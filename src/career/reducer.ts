@@ -143,6 +143,8 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       const r = requestFit(s, me, a.id, a.car, a.on, !!a.rush);
       return r.ok ? good(r.message) : fail(r.message);
     }
+    case "touch":
+      return good();
     case "treeSuggested": {
       const ci = s.weekend?.circuitId ?? s.calendar.find((r) => r.day >= s.day - 2)?.circuitId;
       if (!ci) return fail("No race to set the car up for.");

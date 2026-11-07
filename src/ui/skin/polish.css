@@ -331,3 +331,15 @@
 .rt-slotrow span{font-size:11px;letter-spacing:.06em}
 .rt-slotrow em{font-style:normal;font-size:13px;line-height:1.1;overflow-wrap:anywhere}
 @media (max-width:900px){.rt-main{grid-template-columns:1fr}.rt-vp{height:min(62vh,560px);min-height:340px}}
+
+/* ---- practice session: the garage drawer ---- */
+.gd{display:grid;gap:8px}
+.gd-tabs{display:flex;gap:4px;flex-wrap:wrap}
+.gd-cars{display:grid;gap:12px}
+.gd-car{display:grid;gap:5px;align-content:start}
+.gd-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:3px 0;border-bottom:1px solid #232b52}
+.gd-comp{font-size:11px;letter-spacing:.06em;min-width:92px;opacity:.8}
+.gd-row select{background:#141a33;color:#ece7ff;border:2px solid #3b4780;border-radius:6px;padding:4px 6px;font:inherit;font-size:13px;min-height:32px}
+.gd-progs{display:flex;flex-wrap:wrap;gap:5px}
+.rt-rush{display:flex;gap:6px;align-items:center}
+.c-live{display:grid;gap:8px;padding:8px 0}

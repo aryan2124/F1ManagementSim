@@ -15,6 +15,7 @@ import type { QualiRow } from "../../sim/qualifying";
 import type { Compound } from "../../sim/types";
 import { Briefing } from "../Briefing";
 import { QualiScreen } from "../QualiScreen";
+import { PracticeLive } from "./PracticeLive";
 import { RaceScreen } from "../RaceScreen";
 import { Results } from "../Results";
 import { PROGRAMME_LABEL, type Programme, type SessionKind, type SetupVec } from "../../career/types";
@@ -52,7 +53,7 @@ const skipWeekend = (d: Props["d"]) => {
 const DRIVER_WORD = (v: number) => (v >= 0.75 ? "at home in the car" : v >= 0.55 ? "settling in" : v >= 0.4 ? "not sure about it" : "uneasy");
 const TRIM_AXIS = { id: TRIM, label: "Trim", low: "Race: kind to the tyres", high: "Qualifying: one-lap pace" };
 
-export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolean }) {
+export function Practice({ s, d, msg, net, onTrack }: Props & { msg: string; net?: boolean; onTrack?: () => void }) {
   useMusic("garage");
   const ws = s.weekend!;
   const mine = driversOf(s, s.teamId);
@@ -93,7 +94,7 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
       <section className="panel found">
         <h3>SETUP FOUND</h3>
         <div className="found-bar"><i style={{ width: `${Math.round(Math.max(0, Math.min(1, knownAvg)) * 100)}%` }} /></div>
-        <p className="small dim">{Math.round(Math.max(0, Math.min(1, knownAvg)) * 100)}% of the car's sweet spot found. {ws.runsLeft} run{ws.runsLeft === 1 ? "" : "s"} left. Each timed run teaches the engineers more.</p>
+        <p className="small dim">{Math.round(Math.max(0, Math.min(1, knownAvg)) * 100)}% of the car's sweet spot found.{onTrack ? "" : ` ${ws.runsLeft} run${ws.runsLeft === 1 ? "" : "s"} left.`} Each timed run teaches the engineers more.</p>
       </section>
       {!ws.setList && rec && (
         <section className="panel c-alloc">
@@ -127,11 +128,21 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
       )}
       <section className="panel">
         <h3>THE GARAGE: PRACTICE {ws.sprint ? "(SPRINT WEEKEND: ONE SESSION)" : `(${ws.sessionsLeft} SESSION${ws.sessionsLeft === 1 ? "" : "S"} LEFT)`}</h3>
-        <div className="c-pips" title="Runs left in this session">
+        {onTrack && (
+          <div className="c-live">
+            <p className="small"><b>FP{Math.min(ws.sessions0, ws.sessions0 - ws.sessionsLeft + 1)} of {ws.sessions0}.</b> Each session is a real hour on the qualifying sim: send the cars out, change parts in the garage drawer (changes cost minutes), and read what each run tells you.</p>
+            {ws.sessionsLeft > 0 ? (
+              <button className="btn primary big" onClick={() => { if (unsaved) d({ type: "setSetup", setup }); onTrack(); }}>GO TO THE TRACK</button>
+            ) : (
+              <p className="c-msg">All sessions used. Finish your setup from what you learned, press SAVE SETUP, then END PRACTICE.</p>
+            )}
+          </div>
+        )}
+        {!onTrack && <div className="c-pips" title="Runs left in this session">
           {Array.from({ length: Math.max(total, ws.runsLeft) }, (_, i) => <i key={i} className={i < ws.runsLeft ? "on" : ""} />)}
           <span className="dim small">{ws.runsLeft} run{ws.runsLeft === 1 ? "" : "s"} left in this session</span>
-        </div>
-        {ws.runsLeft <= 0 && ws.sessionsLeft <= 0 && <p className="c-msg">All runs used. Finish your setup from what you learned, press SAVE SETUP, then END PRACTICE.</p>}
+        </div>}
+        {!onTrack && ws.runsLeft <= 0 && ws.sessionsLeft <= 0 && <p className="c-msg">All runs used. Finish your setup from what you learned, press SAVE SETUP, then END PRACTICE.</p>}
         <p className="small">Nobody can tell you the best setup: <b>work it out.</b> Change one thing, send a driver out, and read the lap time and what he says. The engineers' guess comes from a simulator that is never quite right.</p>
         <button className="linkish small" onClick={() => setHelp(!help)}>{help ? "Hide" : "Show"} the full guide</button>
         {help && (
@@ -207,6 +218,7 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
         </section>
         <section className="panel">
           <h3>RUN PLAN</h3>
+          {!onTrack && <>
           <div className="c-progs">
             {PROGS.map((p) => {
               const h = PROG_HELP[p];
@@ -235,7 +247,8 @@ export function Practice({ s, d, msg, net }: Props & { msg: string; net?: boolea
             </button>
             <span className="dim small">Programme: {PROGRAMME_LABEL[prog]}</span>
           </div>
-          {unsaved && <p className="small warn">The run uses the sliders as they are now, and they become the car's setup.</p>}
+          </>}
+          {unsaved && <p className="small warn">{onTrack ? "Save the setup before you go out: the session uses the saved setup." : "The run uses the sliders as they are now, and they become the car's setup."}</p>}
           {msg && <p className="c-msg">{msg}</p>}
           <h4>THE EVIDENCE</h4>
           {timed.length === 0 && <p className="dim small">No timed runs yet. A setup, qualifying simulation or race simulation run gives a lap time.</p>}
@@ -393,6 +406,7 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
   const [qs, setQs] = useState<QualiSession | null>(null);
   const [rs, setRs] = useState<RaceSession | null>(null);
   const [view, setView] = useState<"play" | "brief" | "race" | "results">("play");
+  const [onTrack, setOnTrack] = useState(false);
   const rows = useRef<QualiRow[] | null>(null);
   const lastKind = useRef<SessionKind>("race");
   useEffect(() => { scrollTop(); }, [ws?.stage, ws?.round, view, !!qs, !!rs]);
@@ -414,7 +428,7 @@ export function WeekendFlow({ s, d, msg, onExit }: Props & { msg: string; onExit
       </div>
     );
   }
-  if (ws.stage === "practice") return <Practice s={s} d={d} msg={msg} />;
+  if (ws.stage === "practice") return onTrack ? <PracticeLive key={ws.sessionsLeft} s={s} d={d} onDone={() => setOnTrack(false)} /> : <Practice s={s} d={d} msg={msg} onTrack={() => setOnTrack(true)} />;
 
   const kind = ws.stage;
   const deadAny = Object.keys(ws.dead ?? {}).length > 0;

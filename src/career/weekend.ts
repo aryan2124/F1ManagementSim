@@ -344,20 +344,24 @@ function grantRunBoosts(s: CareerState, programme: Programme, eng: number, wet: 
   if (given.length) out.push(`The factory can use this: ${given.join(", ")} for the next five weeks.`);
 }
 
-export function practiceRun(s: CareerState, programme: Programme, setup: SetupVec, driverId: string, opts: { fresh?: boolean; setId?: string } = {}): string[] {
+/**
+ * One practice run. With `live` the run happened in the clocked session on the qualifying sim: the clock and the tyre sets
+ * belong to that session, so this only does the learning (setup picture, tyre and race knowledge, part readings).
+ */
+export function practiceRun(s: CareerState, programme: Programme, setup: SetupVec, driverId: string, opts: { fresh?: boolean; setId?: string; live?: boolean; worn?: number } = {}): string[] {
   const ws = s.weekend;
   const out: string[] = [];
-  if (!ws || ws.stage !== "practice" || ws.runsLeft <= 0) return out;
+  if (!ws || ws.stage !== "practice" || (!opts.live && ws.runsLeft <= 0)) return out;
   const t = s.teams[s.teamId];
   const eng = engineerSkill(s) / 100;
   const sim = t.facilities.sim;
-  const rng = new Rng(hashSeed(`run:${ws.seed}:${ws.sessionsLeft}:${ws.runsLeft}:${programme}`));
+  const rng = new Rng(hashSeed(`run:${ws.seed}:${ws.sessionsLeft}:${ws.runsLeft}:${programme}:${ws.runs?.length ?? 0}`));
   const locked = !!rulesOf(s).setupLockAfterFirst && ws.sessionsLeft < ws.sessions0;
   if (programme === "setup" && locked) {
     out.push("The setup is locked after the first practice session by the rules. Run a different programme.");
     return out;
   }
-  ws.runsLeft -= 1;
+  if (!opts.live) ws.runsLeft -= 1;
   // a worn unit can let go in practice: the run is lost and the unit has to be replaced
   const wr = wearOf(s, driverId);
   const frng = new Rng(hashSeed(`fail:${ws.seed}:${ws.sessionsLeft}:${ws.runsLeft}:${driverId}`));
@@ -374,23 +378,23 @@ export function practiceRun(s: CareerState, programme: Programme, setup: SetupVe
   const wetRun = rng.chance(clamp(raceRainPeak(s, ws.circuitId, ws.seed + 11 * (ws.sessionsLeft + 1)) * 0.9, 0, 0.8));
   const lists = ensureSets(s);
   const list = lists[setKeyFor(s, driverId)] ?? [];
-  const set = pickPracticeSet(list, programme, !!opts.fresh, opts.setId);
-  const fresh = !!set && set.runs === 0;
-  const worn = set && set.runs > 0 ? clamp(set.wear, 0, 0.8) : 0;
+  const set = opts.live ? undefined : pickPracticeSet(list, programme, !!opts.fresh, opts.setId);
+  const fresh = opts.live ? !!opts.fresh : !!set && set.runs === 0;
+  const worn = opts.live ? clamp(opts.worn ?? 0, 0, 0.8) : set && set.runs > 0 ? clamp(set.wear, 0, 0.8) : 0;
   if (set) {
     set.runs++;
     set.wear = round2(set.wear + (RUN_WEAR[programme] ?? 0.05) * (programme === "tyres" || programme === "raceSim" ? 1 : 1));
     set.log.push(`FP${ws.sessions0 - ws.sessionsLeft + 1}`);
     out.push(`Run on set ${set.id} (${COMPOUNDS[set.compound].name}, ${fresh ? "a new set" : `${Math.round(worn * 100)}% worn before the run`}).`);
     if (set.wear >= 0.8) out.push(`Set ${set.id} is finished: it is too worn to be worth putting on again.`);
-  } else out.push("There was no usable set left in the garage for that run: it went out on scrubbed old rubber.");
+  } else if (!opts.live) out.push("There was no usable set left in the garage for that run: it went out on scrubbed old rubber.");
   if (wetRun) out.push("Rain at the track during this run: the numbers are rougher than usual.");
   grantRunBoosts(s, programme, eng, wetRun, out);
   // the car goes out as the sliders say (unless the rules have locked the setup)
   const used: SetupVec = locked ? { ...ws.setup } : { ...setup };
   if (!locked) ws.setup = { ...setup };
   const poleRef = loadCircuit(ws.circuitId).meta.poleRef ?? 90;
-  const timed = programme === "setup" || programme === "qualiSim" || programme === "raceSim";
+  const timed = programme === "setup" || programme === "qualiSim" || programme === "raceSim" || (!!opts.live && programme === "part");
   // familiarity grows with laps, with diminishing returns: spamming runs does not make him confident
   ws.fam ??= {};
   ws.fam[driverId] = clamp((ws.fam[driverId] ?? 0) + 0.07 * (1 - (ws.fam[driverId] ?? 0)), 0, 1);
@@ -437,6 +441,8 @@ export function practiceRun(s: CareerState, programme: Programme, setup: SetupVe
   } else if (programme === "qualiSim") {
     ws.qualiKnow = clamp(ws.qualiKnow + 0.3 + eng * 0.1, 0, 1);
     out.push("Qualifying simulation done: the driver has a clearer idea of the lap. The lap time above is a qualifying-trim lap.");
+  } else if (programme === "part" && opts.live) {
+    out.push("Part test run done: the stopwatch reading for each fitted part is on the parts panel, next to what the staff expected.");
   } else if (programme === "part") {
     // a part held back in the garage is tested first: the whole point of holding it is to learn the real number before it goes on the car
     const held = t.projects.filter((p) => p.status === "ready" && p.hold && p.tested === undefined);
@@ -461,10 +467,10 @@ export function practiceRun(s: CareerState, programme: Programme, setup: SetupVe
     weekendRead(s, s.teamId, focus, 0.6 + 0.4 * eng);
     out.push(`The data tightened the engineers' numbers on ${focus.map((x) => TRAIT_NAME[x].toLowerCase()).join(", ")}.`);
   }
-  if (timed) recordTreeRun(s, Math.max(0, ws.sessions0 - ws.sessionsLeft), driverId, runNoise(eng, fresh, wetRun, programme) * (programme === "raceSim" ? 1 : 1 + worn));
+  if (timed) recordTreeRun(s, Math.max(0, ws.sessions0 - ws.sessionsLeft), driverId, runNoise(eng, fresh, wetRun, programme) * (programme === "raceSim" ? 1 : 1 + worn) * (programme === "part" ? 0.6 : 1));
   ws.notes.unshift(...out);
   ws.notes = ws.notes.slice(0, 30);
-  if (ws.runsLeft <= 0) {
+  if (!opts.live && ws.runsLeft <= 0) {
     ws.sessionsLeft -= 1;
     if (ws.sessionsLeft > 0) {
       ws.runsLeft = Math.max(2, CFG.runsPerPractice - sponsorRunsLost(s));
@@ -478,6 +484,46 @@ export function practiceRun(s: CareerState, programme: Programme, setup: SetupVe
     }
   }
   return out;
+}
+
+/** Everything a clocked practice session needs: the sim config, the human cars, and how long it runs. */
+export const PRACTICE_MINUTES = 60;
+export function practiceEntries(s: CareerState) {
+  const ws = s.weekend as WeekendState;
+  const conf: Record<string, number> = {};
+  for (const id of Object.keys(ws.confidence)) {
+    const d = s.drivers[id];
+    conf[id] = clamp(d ? trueConfidence(ws, d) : ws.confidence[id] ?? 0.5, 0, 0.97);
+  }
+  return entriesFor(s, conf, setupEffects(s, ws, "quali"), ws.circuitId);
+}
+
+export function planPractice(s: CareerState): { cfg: QualiConfig; humanIds: string[]; gp: string; session: number } {
+  const ws = s.weekend as WeekendState;
+  const { meta, track } = loadCircuit(ws.circuitId);
+  const session = Math.max(0, ws.sessions0 - ws.sessionsLeft);
+  const settings: WeekendSettings = { teamId: s.teamId, circuitId: ws.circuitId, distance: "full", seed: ws.seed + 20 + session, weather: "random", difficulty: s.difficulty };
+  const entries = practiceEntries(s);
+  const humanIds = entries.filter((e) => e.human).map((e) => e.id);
+  const cfg: QualiConfig = {
+    seed: settings.seed, track, entries, weather: qualiWeather(settings), minutes: [PRACTICE_MINUTES, 1, 1],
+    tyreSetList: tyreSetListFor(s, humanIds),
+  };
+  return { cfg, humanIds, gp: meta.gp, session };
+}
+
+/** A clocked session is over: the sets it wore go back, the track rubbers in, and the next session is one step closer. */
+export function finishPracticeSession(s: CareerState, sets?: Record<string, TyreSet[]>) {
+  const ws = s.weekend;
+  if (!ws || ws.stage !== "practice") return;
+  if (sets) ws.setList = { ...(ws.setList ?? {}), ...sets };
+  ws.fitMin = 0;
+  ws.sessionsLeft = Math.max(0, ws.sessionsLeft - 1);
+  if (ws.sessionsLeft > 0) {
+    const dr = new Rng(hashSeed(`drift:${ws.seed}:${ws.sessionsLeft}`));
+    if (ws.sweet.balance !== undefined) ws.sweet.balance = clamp(ws.sweet.balance + 0.05 + dr.gauss() * 0.03, -1, 1);
+    ws.notes.unshift("Next practice session. The track has rubbered in: the best balance has moved a little, so earlier readings are slightly out of date.");
+  } else ws.notes.unshift("All practice sessions used. Make your final setup changes and save, then press END PRACTICE.");
 }
 
 /** End practice early and go to qualifying. */

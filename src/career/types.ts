@@ -1053,6 +1053,7 @@ export type Action =
   | { type: "treeTest"; id: string }
   | { type: "treeInstall"; id: string; car: "A" | "B"; on: boolean; rush?: boolean }
   | { type: "treeSuggested"; rush?: boolean }
+  | { type: "touch" }
   | { type: "treeKeep"; id: string; keep: boolean }
   | { type: "upgradeFacility"; which: keyof Omit<Facilities, "building"> }
   | { type: "delegate"; area: keyof Delegation; level: Level }

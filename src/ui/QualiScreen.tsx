@@ -24,6 +24,7 @@ import { QualiDirector } from "../game/qdirector";
 import { liveSectorColors } from "./sectorRows";
 import { RaceAudio } from "../audio/raceAudio";
 import { scrollTop } from "./hooks";
+import type { ReactNode } from "react";
 
 const SPEED_LIST: { v: SpeedSetting; label: string }[] = [
   { v: 0, label: "||" },
@@ -51,7 +52,14 @@ function fmtTime(t: number) {
 
 type QTab = "radio" | "sectors" | "radar";
 
-export function QualiScreen(props: { session: QualiSession; meta: CircuitMeta; onDone: () => void; skip?: NetSkip; kind?: "quali" | "sq" }) {
+export interface PracticeBridge {
+  /** Which practice session this is (1, 2, 3). */
+  index: number;
+  /** The garage drawer, shown under your cars. */
+  extras: ReactNode;
+}
+
+export function QualiScreen(props: { session: QualiSession; meta: CircuitMeta; onDone: () => void; skip?: NetSkip; kind?: "quali" | "sq" | "fp"; practice?: PracticeBridge }) {
   useEffect(() => { scrollTop(); }, []);
   return (
     <QualiKindCtx.Provider value={props.kind ?? "quali"}>
@@ -60,7 +68,7 @@ export function QualiScreen(props: { session: QualiSession; meta: CircuitMeta; o
   );
 }
 
-function QualiScreenInner({ session, meta, onDone, skip, kind }: { session: QualiSession; meta: CircuitMeta; onDone: () => void; skip?: NetSkip; kind?: "quali" | "sq" }) {
+function QualiScreenInner({ session, meta, onDone, skip, kind, practice }: { session: QualiSession; meta: CircuitMeta; onDone: () => void; skip?: NetSkip; kind?: "quali" | "sq" | "fp"; practice?: PracticeBridge }) {
   const QP = useQPrefix();
   const QN = useQualiName();
   useMusic("quali");
@@ -129,7 +137,7 @@ function QualiScreenInner({ session, meta, onDone, skip, kind }: { session: Qual
           BOX<span>BOX</span>
         </div>
         <div className="lapcount">
-          <b>{QP}{sim.segment}</b> {QN}
+          <b>{practice ? `${QP}${practice.index + 1}` : `${QP}${sim.segment}`}</b> {QN}
         </div>
         <div className="clock big">{fmtClock(sim.clock)}</div>
         <div className="gpname">{sessionTitle(meta.gp, kind ?? "quali").toUpperCase()}</div>
@@ -151,12 +159,12 @@ function QualiScreenInner({ session, meta, onDone, skip, kind }: { session: Qual
       <SkipPrompt session={session} net={skip} />
 
       <div className={`race-grid${session.humanIds.length > 1 ? " has-two" : ""}`}>
-        <QualiBoard session={session} onStats={setStatsId} />
+        <QualiBoard session={session} onStats={setStatsId} practice={!!practice} index={practice?.index ?? 0} />
         {statsId && <QualiStats sim={session.sim} carId={statsId} onClose={() => setStatsId(null)} />}
         <div className="center">
           <div className="viewbox">
             <RaceView session={session} meta={meta}>
-              <QualiOverlay session={session} onDone={onDone} />
+              <QualiOverlay session={session} onDone={onDone} practice={practice} />
             </RaceView>
             <Minimap session={session} />
             {sim.phase === "running" && (
@@ -195,13 +203,14 @@ function QualiScreenInner({ session, meta, onDone, skip, kind }: { session: Qual
           {session.humanIds.map((id) => (
             <QualiCard key={id} session={session} car={sim.car(id)} />
           ))}
+          {practice?.extras}
         </div>
       </div>
     </div>
   );
 }
 
-function QualiOverlay({ session, onDone }: { session: QualiSession; onDone: () => void }) {
+function QualiOverlay({ session, onDone, practice }: { session: QualiSession; onDone: () => void; practice?: PracticeBridge }) {
   const QP = useQPrefix();
   const QN = useQualiName();
   const sim = session.sim;
@@ -211,6 +220,28 @@ function QualiOverlay({ session, onDone }: { session: QualiSession; onDone: () =
   const eliminated = sim.segmentOrder[sim.segment - 1] ?? [];
   const names = sim.cars.filter((c) => c.eliminatedIn === sim.segment).sort((a, b) => a.position - b.position);
 
+  if (practice && (sim.phase === "break" || sim.phase === "done")) {
+    return (
+      <div className="finish-overlay">
+        <h2>FP{practice.index + 1} COMPLETE</h2>
+        <p className="elim">The chequered flag has fallen. The engineers have your numbers.</p>
+        <button className="btn primary big" onClick={onDone}>BACK TO THE GARAGE</button>
+      </div>
+    );
+  }
+  if (practice && sim.phase === "ready") {
+    return (
+      <div className="finish-overlay grid-intro">
+        <h2>FP{practice.index + 1}</h2>
+        <p>
+          One hour on the clock. Send your cars out from the panel on the right, change parts in the garage drawer (every change costs minutes), and pick what each run is for.
+          <br />
+          Every finished run teaches the engineers something. Nothing here counts towards the grid.
+        </p>
+        <button className="btn primary big" onClick={() => session.startSegment()}>START FP{practice.index + 1}</button>
+      </div>
+    );
+  }
   if (sim.phase === "ready") {
     return (
       <div className="finish-overlay grid-intro">
@@ -266,7 +297,7 @@ function QualiOverlay({ session, onDone }: { session: QualiSession; onDone: () =
   );
 }
 
-function QualiBoard({ session, onStats }: { session: QualiSession; onStats: (id: string) => void }) {
+function QualiBoard({ session, onStats, practice, index }: { session: QualiSession; onStats: (id: string) => void; practice?: boolean; index?: number }) {
   const QP = useQPrefix();
   const sim = session.sim;
   const [exact, setExact] = useState(false);
@@ -276,13 +307,13 @@ function QualiBoard({ session, onStats }: { session: QualiSession; onStats: (id:
   const lead = rows[0]?.best[seg] ?? Infinity;
   return (
     <section className="tower panel qboard">
-      <h3>{QP}{sim.segment} TIMING</h3>
+      <h3>{practice ? `${QP}${(index ?? 0) + 1}` : `${QP}${sim.segment}`} TIMING</h3>
       <ol>
         {rows.map((c, i) => {
           const out = c.eliminatedIn !== 0 && c.eliminatedIn < sim.segment;
           const t = out ? c.best[c.eliminatedIn - 1] : c.best[seg];
           const gap = i === 0 || !isFinite(t) || !isFinite(lead) ? "" : `+${(t - lead).toFixed(3)}`;
-          const showCut = sim.phase !== "done" && !out && sim.segment < 3 && i === cut - 1;
+          const showCut = !practice && sim.phase !== "done" && !out && sim.segment < 3 && i === cut - 1;
           return (
             <li
               key={c.id}
