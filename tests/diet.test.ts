@@ -27,14 +27,15 @@ function tally(team: string, seed: number, years: number) {
 
 describe("the decision diet", () => {
   it("puts about ten to sixteen choices a season in front of the player, and none from the old research flow", () => {
-    const runs = [tally("wil", 1, 2), tally("mcl", 3, 2)];
+    const runs = [tally("wil", 1, 2), tally("mcl", 3, 2), tally("hss", 5, 1), tally("alp", 7, 1), tally("mer", 9, 1), tally("fer", 11, 1)];
     
     for (const r of runs) {
       expect(r.choices).toBeGreaterThanOrEqual(7);
-      expect(r.choices).toBeLessThanOrEqual(15);
+      expect(r.choices).toBeLessThanOrEqual(16);
       for (const k of DEAD_KINDS) expect(r.kinds[k] ?? 0).toBe(0);
       expect((r.kinds.staffPoach ?? 0) / 2).toBeLessThanOrEqual(1);
-      expect((r.kinds.media ?? 0) / 2).toBeLessThanOrEqual(5);
+      expect((r.kinds.media ?? 0) / 2 / 1).toBeLessThanOrEqual(5);
+      expect(((r.kinds.staffExpiring ?? 0) + (r.kinds.contractExpiring ?? 0) + (r.kinds.sponsorReview ?? 0)) / 2).toBeLessThanOrEqual(7);
     }
   });
 });

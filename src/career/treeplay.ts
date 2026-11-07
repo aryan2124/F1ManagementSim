@@ -2,7 +2,7 @@ import { Rng, hashSeed } from "../sim/rng";
 import { traitWeight, trackNeed } from "./traits";
 import { pushCard, recap, sendLetter } from "./cards";
 
-import { tickFits } from "./fitting";
+import { requestFit, tickFits } from "./fitting";
 import { install, lockOf, misfitOf, nodeOf, priceOf, slotsOf, startBuild, tickTree, treeOf, type CompId, type TreeNode, type TreeState } from "./ctree";
 import { CARDS, assignCards, cardMods, promoteSpark, sparkWeekly } from "./leadcards";
 import { rulesOf } from "./eras";
@@ -46,8 +46,7 @@ export function treeDaily(s: CareerState) {
     recap(s, `Built: ${nd.name}.`);
     const dl = t.delegation.parts;
     if (dl !== "advise") {
-      install(s, t, id, "A", true);
-      install(s, t, id, "B", true);
+      fitBoth(s, t, id);
       continue;
     }
     pushCard(s, "treePart", `Ready: ${nd.name}`, `Built for both cars. Where does it go?`, [
@@ -71,17 +70,25 @@ export function treeDaily(s: CareerState) {
   }
 }
 
+/** Fitting a new part to both cars is a real job: the mechanics take days and it costs money like any other change. */
+function fitBoth(s: CareerState, t: TeamState, id: string) {
+  for (const car of ["A", "B"] as const) {
+    const r = requestFit(s, t, id, car, true);
+    if (!r.ok) { recap(s, `${nodeOf(treeOf(s, t), id)?.name ?? "A part"} waits in the parts menu: ${r.message}`); break; }
+  }
+}
+
 export function resolveTreeCard(s: CareerState, c: Card, option: string) {
   const t = s.teams[s.teamId];
   const id = String(c.data?.id ?? "");
   if (c.kind === "treePart") {
-    if (option === "both") { install(s, t, id, "A", true); install(s, t, id, "B", true); }
-    else if (option === "A") install(s, t, id, "A", true);
+    if (option === "both") fitBoth(s, t, id);
+    else if (option === "A") requestFit(s, t, id, "A", true);
     return;
   }
   if (c.kind === "treeFail") {
     const who = option === "B" ? "B" : "A";
-    install(s, t, id, who, true);
+    install(s, t, id, who, true); // the surviving copy was already on a car: handing it over is not a new fit
     const ds = activeDrivers(s, t.id);
     const other = s.drivers[ds[who === "A" ? 1 : 0] ?? ""] as DriverState | undefined;
     if (other) other.morale = clamp(other.morale - 0.06, 0, 1);

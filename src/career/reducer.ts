@@ -3,7 +3,7 @@ import { pickFormat, placeBid } from "./formats";
 import { proposeAmendment, voteAmendment } from "./amendments";
 import { setExploit } from "./loopholes";
 import { setKeystone } from "./keystones";
-import { install, scrapBuild, startBuild, startTest } from "./ctree";
+import { scrapBuild, startBuild, startTest } from "./ctree";
 import { applySuggested, requestFit } from "./fitting";
 import { setFocus, pepTalk, setDelegate } from "./focus";
 import { runLab } from "./lab";
@@ -152,10 +152,10 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       return r.n ? good(r.message) : fail(r.message);
     }
     case "treeKeep": {
-      const r1 = install(s, me, a.id, "A", a.keep);
+      const r1 = requestFit(s, me, a.id, "A", a.keep);
       if (!r1.ok) return fail(r1.message);
-      install(s, me, a.id, "B", a.keep);
-      return good(a.keep ? "Kept on both cars." : "Taken off both cars.");
+      const r2 = requestFit(s, me, a.id, "B", a.keep);
+      return r2.ok ? good(a.keep ? "Kept on both cars." : "Taken off both cars. Removing costs minutes and money too.") : fail(r2.message);
     }
     case "holdPart": {
       const p = me.projects.find((x) => x.id === a.id);

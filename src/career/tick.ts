@@ -470,9 +470,18 @@ export function summerPlayer(s: CareerState) {
       ], { urgency: 2, deadline: end, defaultOption: "talk", data: { driverId: dr.id } });
     }
   }
+  let staffLetters = 0;
   for (const st of Object.values(s.staff)) {
     if (st.teamId !== s.teamId) continue;
     if (st.endYear <= s.year) {
+      // contract letters share the diet: leads always get one, the rest after the first two are simply renewed
+      const lead = ["td", "designer", "aero", "power", "strategy"].includes(st.role);
+      if (!lead && ++staffLetters > 2) {
+        st.endYear = s.year + 2;
+        st.salary = staffAsk(st);
+        recap(s, `${st.name} was re-signed by the office, no letter needed.`);
+        continue;
+      }
       pushCard(s, "staffExpiring", `${st.name}'s contract ends`, `${st.name} (${st.role}) is out of contract this year. Renewing costs about ${fmtMoney(staffAsk(st))} a year.`, [
         { id: "renew", label: "Renew for 2 years" },
         { id: "let", label: "Let them go" },

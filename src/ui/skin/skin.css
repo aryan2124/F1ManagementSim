@@ -2380,7 +2380,7 @@ button.link { background: none; border: 0; padding: 0; color: var(--c-gold, #ffd
 @media (prefers-reduced-motion: reduce) { .confirm-back, .confirm-box { animation: none; } }
 
 /* the main action of a long page stays on screen, so nothing needs scrolling to reach it */
-.row-btns.sticky-actions { position: sticky; bottom: 0; z-index: 6; padding: 10px 0 8px; margin-top: 8px; background: linear-gradient(to top, var(--panel) 70%, transparent); }
+.row-btns.sticky-actions { position: sticky; bottom: 0; z-index: 6; padding: 10px 0 8px; margin-top: 8px; background: linear-gradient(to top, var(--panel) 88%, transparent); }
 
 /* strategy report card */
 .db-grade { display: inline-block; margin-left: 10px; padding: 0 10px; border: 2px solid currentColor; font-size: 20px; }
