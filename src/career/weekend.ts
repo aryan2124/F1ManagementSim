@@ -1,4 +1,5 @@
 import { logLedger } from "./ledger";
+import { applySuggested } from "./fitting";
 import { failForward, fitReportText, rivalCopy } from "./fitreport";
 import { carLapGain, carOf, filePractice, recordTreeRun, treeFailures } from "./treeplay";
 import { onLanding } from "./dev";
@@ -1178,6 +1179,12 @@ export function autoPractice(s: CareerState, finish: boolean) {
   const ids = driversOf(s, s.teamId).map((d) => d.id);
   if (!ids.length) return;
   const order: Programme[] = ["setup", "setup", "setup", "qualiSim", "raceSim", "tyres"];
+  // delegated: the engineers fit the best set for this track before running (a normal fit, never a rush)
+  const mine = s.teams[s.teamId];
+  if (mine.tree) {
+    const fit = applySuggested(s, mine, ws.circuitId, false);
+    if (fit.n) ws.notes.unshift(`The engineers fitted their best set for this track: ${fit.message}`);
+  }
   let guard = 0;
   let i = 0;
   while (ws.stage === "practice" && (ws.sessionsLeft > 0 || ws.runsLeft > 0) && guard++ < 80) {

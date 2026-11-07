@@ -85,3 +85,15 @@ describe("a practice session on the qualifying sim", () => {
     expect(ws.sessionsLeft).toBe(left - 1);
   });
 });
+
+describe("delegated practice", () => {
+  it("the staff fit their best set and run the session without the player", async () => {
+    const { autoPractice } = await import("../src/career/weekend");
+    const { s, tr } = setup(9);
+    const before = Object.values(tr.parts).filter((p) => p.onA || p.onB).length;
+    autoPractice(s, false);
+    expect(s.weekend!.notes.join(" ")).toMatch(/engineers/);
+    expect(Object.values(tr.parts).filter((p) => p.onA || p.onB).length).toBeGreaterThanOrEqual(Math.min(before, 1));
+    expect(Number.isFinite(s.teams[s.teamId].cash)).toBe(true);
+  });
+});
