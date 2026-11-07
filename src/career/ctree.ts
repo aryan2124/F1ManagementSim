@@ -71,15 +71,21 @@ export interface TreeNode {
   /** The hidden multiplier on the staff's number. */
   mult: number;
 }
-export interface TreePart { id: string; day: number; copies: 1 | 2; onA: boolean; onB: boolean; tested: boolean; /** Seconds a lap measured in practice, per session. */ seen?: number[] }
+export interface TreePart { id: string; day: number; copies: 1 | 2; onA: boolean; onB: boolean; tested: boolean; /** A rushed fit that went wrong on that car: the part works at 40 percent until it is fitted again. */ misfit?: { A?: boolean; B?: boolean }; /** Seconds a lap measured in practice, per session. */ seen?: number[] }
 export interface TreeBuild { id: string; progress: number; days: number }
 export interface TreeTest { id: string; left: number }
+/** A change to a car waiting on the mechanics. */
+export interface FitJob { id: string; car: "A" | "B"; on: boolean; left: number; rush: boolean }
+export const MISFIT = 0.4;
+export const misfitOf = (p: TreePart, car: "A" | "B") => (p.misfit?.[car] ? MISFIT : 1);
 export interface TreeState {
   era: number;
   nodes: TreeNode[];
   parts: Record<string, TreePart>;
   builds: TreeBuild[];
   tests: TreeTest[];
+  /** Fit changes in the garage, days left each. */
+  fits?: FitJob[];
   /** Branch expertise carried over from the last era (key `${comp}:${branch}`). */
   carry: Record<string, number>;
   /** A part that failed and went to one driver; waiting on the player's choice. */
@@ -97,6 +103,14 @@ export const TIER_LABOUR = [0, 0, 66, 74];
 /** Share of the factory's finished work that must sit in a branch before tier 3 and tier 4 open. */
 export const DEEP_SHARE = [0, 0, 0.3, 0.45];
 
+/**
+ * How big each lane is, tuned so that every lane is the best choice on a real share of the circuits: the lane that helps
+ * both traits is smaller per tier, so a flat, average track does not always pick it. (See tests/fitting.test.ts.)
+ */
+export const MAG: Record<CompId, [number, number, number]> = {
+  fw: [1, 0.3, 1.45], rw: [1, 0.8, 0.6], floor: [1, 0.45, 1.3], pu: [1, 0.7, 0.35], cool: [1, 0.75, 0.55], susp: [1, 1.15, 0.8],
+};
+const r3 = (x: number) => Math.round(x * 1000) / 1000;
 export const nodeKey = (c: CompId, b: number, t: number) => `${c}${b}${t}`;
 
 /** The tree for an era, cut from a seed so it is the same whenever it is read. */
@@ -107,11 +121,11 @@ export function makeTree(seed: number, era: number, carry: Record<string, number
   for (const c of COMPS) {
     TPL[c.id].forEach((b, bi) => {
       for (let t = 0; t < 4; t++) {
-        const g = TIER_FX[t] * eraScale;
-        const fx: Partial<Record<Trait, number>> = { [b.main]: round2(g * (b.mainSign ?? 1)) };
-        if (b.side) fx[b.side] = round2(g * (t === 3 && (b.sideSign ?? 1) < 0 ? 0.8 : 0.45) * (b.sideSign ?? 1));
+        const g = TIER_FX[t] * eraScale * MAG[c.id][bi];
+        const fx: Partial<Record<Trait, number>> = { [b.main]: r3(g * (b.mainSign ?? 1)) };
+        if (b.side) fx[b.side] = r3(g * (t === 3 && (b.sideSign ?? 1) < 0 ? 0.8 : 0.45) * (b.sideSign ?? 1));
         // the outer ring is a keystone: big gain, and it always costs something (a synergy branch pays in tyre life)
-        if (t === 3 && (b.sideSign ?? 1) > 0 && b.main !== "wear") fx.wear = round2(-g * 0.4);
+        if (t === 3 && (b.sideSign ?? 1) > 0 && b.main !== "wear") fx.wear = r3(-g * 0.4);
         nodes.push({
           id: nodeKey(c.id, bi, t + 1), comp: c.id, branch: bi as 0 | 1 | 2, tier: (t + 1) as 1 | 2 | 3 | 4, name: b.tiers[t], fx,
           cost: round2(TIER_COST[t] * (0.9 + rng.next() * 0.25)), days: Math.round(TIER_DAYS[t] * (0.9 + rng.next() * 0.25)), labour: TIER_LABOUR[t],
@@ -268,7 +282,7 @@ export function treeTraits(t: TeamState, car?: "A" | "B"): Partial<Record<Trait,
     const nd = nodeOf(tr, p.id);
     if (!nd) continue;
     // for one car: the full gain if the part is on that car; with no car named, the team average of the two
-    const on = car ? ((car === "A" ? p.onA : p.onB) ? 1 : 0) : (p.onA ? 0.5 : 0) + (p.onB ? 0.5 : 0);
+    const on = car ? ((car === "A" ? p.onA : p.onB) ? misfitOf(p, car) : 0) : (p.onA ? 0.5 * misfitOf(p, "A") : 0) + (p.onB ? 0.5 * misfitOf(p, "B") : 0);
     if (on <= 0) continue;
     const f = scaled(nd, nd.mult * (tr.mods?.gain[nd.comp] ?? 1));
     for (const k of TRAITS) if (f[k] !== undefined) out[k] = round2((out[k] ?? 0) + (f[k] as number) * on);

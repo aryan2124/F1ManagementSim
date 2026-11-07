@@ -4,6 +4,7 @@ import { proposeAmendment, voteAmendment } from "./amendments";
 import { setExploit } from "./loopholes";
 import { setKeystone } from "./keystones";
 import { install, scrapBuild, startBuild, startTest } from "./ctree";
+import { applySuggested, requestFit } from "./fitting";
 import { setFocus, pepTalk, setDelegate } from "./focus";
 import { runLab } from "./lab";
 import { clampDesign } from "./design";
@@ -139,8 +140,14 @@ export function apply(s: CareerState, a: Action): { ok: boolean; message: string
       return r.ok ? good(r.message) : fail(r.message);
     }
     case "treeInstall": {
-      const r = install(s, me, a.id, a.car, a.on);
+      const r = requestFit(s, me, a.id, a.car, a.on, !!a.rush);
       return r.ok ? good(r.message) : fail(r.message);
+    }
+    case "treeSuggested": {
+      const ci = s.weekend?.circuitId ?? s.calendar.find((r) => r.day >= s.day - 2)?.circuitId;
+      if (!ci) return fail("No race to set the car up for.");
+      const r = applySuggested(s, me, ci, !!a.rush);
+      return r.n ? good(r.message) : fail(r.message);
     }
     case "treeKeep": {
       const r1 = install(s, me, a.id, "A", a.keep);

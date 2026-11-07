@@ -15,6 +15,9 @@ import { startWeekend, practiceRun } from "../src/career/weekend";
 import { TreeLive } from "../src/ui/career/Weekend";
 import { Car } from "../src/ui/career/Car";
 import { Inbox } from "../src/ui/career/Inbox";
+import { NodeDetail } from "../src/ui/career/SkillTree";
+import { rulesOf } from "../src/career/eras";
+import { nodeOf } from "../src/career/ctree";
 import { sendSeasonReport } from "../src/career/treeplay";
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
@@ -53,6 +56,9 @@ describe("tree screens render", () => {
       expect(hot.querySelectorAll(".rt-node.hot").length).toBe(12);
       s.day = day0;
     }
+    const det = mount(<NodeDetail s={s} d={d} nd={nodeOf(treeOf(s, t), id)!} act={() => {}} flags={rulesOf(s)} />);
+    expect(det.textContent).toContain("RUSH it");
+    expect(det.textContent).toMatch(/A change costs \d+ days?/);
     const inbox = mount(<Inbox s={s} d={d} />);
     const labels = [...inbox.querySelectorAll(".fold button")].map((b) => b.textContent ?? "");
     expect(labels.some((l) => l.startsWith("PRACTICE"))).toBe(true);

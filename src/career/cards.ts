@@ -82,9 +82,9 @@ export const OK: CardOption[] = [{ id: "ok", label: "OK" }];
 /** A letter for the Inbox tab. It never stops the clock, and if it is not answered it simply lapses. */
 export function sendMail(
   s: CareerState,
-  m: { from: string; role: string; subject: string; body: string; options: CardOption[]; days?: number; def?: string; data?: Card["data"] },
+  m: { from: string; role: string; subject: string; body: string; options: CardOption[]; days?: number; def?: string; data?: Card["data"]; free?: boolean },
 ): Card {
-  const c = pushCard(s, "mail", m.subject, m.body, m.options, { urgency: 1, deadline: s.day + (m.days ?? 25), defaultOption: m.def ?? m.options[m.options.length - 1].id, data: m.data });
+  const c = pushCard(s, "mail", m.subject, m.body, m.options, { urgency: 1, free: m.free, deadline: s.day + (m.days ?? 25), defaultOption: m.def ?? m.options[m.options.length - 1].id, data: m.data });
   c.mail = { from: m.from, role: m.role };
   c.notice = false;
   return c;

@@ -19,7 +19,7 @@ function offerData(sp: Sponsor, shady: boolean): NonNullable<Card["data"]> {
 }
 
 /** A sponsor writes. `scale` is how big the company thinks the team is. */
-export function sponsorMail(s: CareerState, scale: number, from?: string) {
+export function sponsorMail(s: CareerState, scale: number, from?: string, free = false) {
   const me = s.teams[s.teamId];
   const rng = rngFor(s, `spmail:${s.day}:${s.uid}`);
   const taken = new Set(me.sponsors.map((x) => x.name));
@@ -37,6 +37,7 @@ export function sponsorMail(s: CareerState, scale: number, from?: string) {
     ? `Hi! ${sp.name} loves what you are doing. We can pay ${fmtMoney(sp.retainer)} a year, no strings, paid quickly. We do not usually put offers in writing, so please do not show this to your lawyers. Sign this week.`
     : `Dear team principal, ${sp.name} has been following the team and would like to talk about a partnership: ${fmtMoney(sp.retainer)} a year until ${sp.endYear}, plus ${fmtMoney(sp.bonusPerRace, 2)} each race when the result is: ${sp.objective.toLowerCase()}.`;
   sendMail(s, {
+    free,
     from: from ?? `${first}, ${sp.name}`,
     role: shady ? "Sponsor (unsolicited)" : "Sponsor",
     subject: `${sp.name}: partnership offer`,
@@ -147,11 +148,11 @@ export function huntResult(s: CareerState, mode: HuntMode) {
   let n = 0;
   for (let i = 0; i < 3; i++) if (rng.chance(clamp(expect / 3 - i * 0.12, 0.05, 0.85))) n++;
   if (!n) {
-    sendMail(s, { from: "Your sponsorship inbox", role: "Result", subject: "The replies are in", body: rank >= 8 ? "Nobody wrote back. Companies are not queueing up to put their name on a car at the back of the grid." : "Nothing came of it this time.", options: [{ id: "ok", label: "Noted" }, { id: "ok", label: "Delete" }], days: 10, def: "ok", data: { m: "none" } });
+    sendMail(s, { from: "Your sponsorship inbox", role: "Result", subject: "The replies are in", body: rank >= 8 ? "Nobody wrote back. Companies are not queueing up to put their name on a car at the back of the grid." : "Nothing came of it this time.", options: [{ id: "ok", label: "Noted" }, { id: "ok", label: "Delete" }], days: 10, def: "ok", data: { m: "none" }, free: true });
     news(s, "Your sponsor hunt turned up nothing.", { importance: 1, tag: "money" });
     return;
   }
-  for (let i = 0; i < n; i++) sponsorMail(s, rng.range(0.14, 0.26) * fanMul * rankMul * boost);
+  for (let i = 0; i < n; i++) sponsorMail(s, rng.range(0.14, 0.26) * fanMul * rankMul * boost, undefined, true);
   recap(s, `${n} sponsor${n > 1 ? "s" : ""} replied to your approach. Check the inbox.`);
 }
 

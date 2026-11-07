@@ -6,6 +6,7 @@ import { rulesOf } from "../../career/eras";
 import { lapDelta } from "../../career/util";
 import { loadCircuit } from "../../game/circuits";
 import { activeDrivers } from "../../career/car";
+import { fitNumber } from "../../career/fitting";
 import { partTrackExpect } from "../../career/treeplay";
 import { teamOf, type Props } from "./common";
 import { NodeDetail } from "./SkillTree";
@@ -157,6 +158,7 @@ export function RadialTree({ s, d }: Props) {
         })}
         <span className="rt-grow" />
         <button className={`tiny ${heat ? "primary" : ""}`} onClick={() => setHeat(!heat)} title="Glow on the parts the next track rewards">TRACK HEAT {heat ? "ON" : "OFF"}</button>
+        <button className="tiny" onClick={() => setMsg(d({ type: "treeSuggested" }).message)} title="Fit the best set your built parts allow for the next track, at the normal price">SUGGESTED FIT</button>
         <button className="tiny" onClick={fitAll}>SEE ALL</button>
         <button className="tiny" aria-label="Zoom out" onClick={() => setView((v) => ({ ...v, k: Math.max(0.28, v.k - 0.12) }))}>-</button>
         <button className="tiny" aria-label="Zoom in" onClick={() => setView((v) => ({ ...v, k: Math.min(1.8, v.k + 0.12) }))}>+</button>
@@ -237,6 +239,7 @@ export function RadialTree({ s, d }: Props) {
           </section>
           <section className="panel rt-slots" aria-label="What is fitted to each car">
             <h4>ON THE CARS NOW</h4>
+            {nextId && <p className="dim small">Fit for round {nextRound}: {(["A", "B"] as const).map((c, i) => `${drivers[i] ?? c} ${fitNumber(s, me, c, nextId).pct}%`).join(", ")}</p>}
             <div className="rt-slotgrid">
               {(["A", "B"] as const).map((car, i) => (
                 <div key={car} className="rt-slotcard">

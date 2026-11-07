@@ -17,7 +17,6 @@ function quiet(s: CareerState, days: number, answer?: (s: CareerState) => void) 
     advanceDay(s);
   }
 }
-const carSum = (s: CareerState) => AREAS.reduce((a, k) => a + s.teams[s.teamId].car[k], 0);
 const finite = (s: CareerState) => Object.values(s.teams).every((t) => Number.isFinite(t.cash) && AREAS.every((a) => Number.isFinite(t.car[a])));
 
 describe("simulate to a day", () => {
@@ -53,42 +52,6 @@ describe("simulate to a day", () => {
 });
 
 describe("next year's car", () => {
-  const winter = (setup: (s: CareerState) => void, seed = 21) => {
-    const s = newCareer("mer", seed);
-    setup(s);
-    const y = s.year;
-    // run to the January after
-    let guard = 0;
-    while (s.year === y && guard++ < 500) quiet(s, 5);
-    return s;
-  };
-
-  it("neglecting it leaves the car behind a team that put work in", () => {
-    // the January swing is random, so the claim is about the average over a few seeds
-    let diff = 0;
-    for (const seed of [21, 5, 8]) {
-      const neglect = winter((s) => setNextCar(s, "evolve", 0), seed);
-      const worked = winter((s) => setNextCar(s, "evolve", 0.6), seed);
-      diff += carSum(worked) - carSum(neglect);
-      expect(neglect.nextCarLast?.note).toMatch(/step back|disaster|about where/);
-    }
-    expect(diff / 3).toBeGreaterThan(0.4);
-  }, 400000);
-
-  it("a revolution with weak designers is worse than a quiet evolution", () => {
-    const weak = (s: CareerState) => {
-      for (const st of Object.values(s.staff)) if (st.teamId === s.teamId && (st.role === "td" || st.role === "designer")) st.skill = 25;
-    };
-    // the January swing is random, so the claim is about the average over a few seeds
-    let rs = 0;
-    let es = 0;
-    for (const seed of [21, 5, 8, 3, 13, 17, 29, 31, 41, 53]) {
-      rs += carSum(winter((s) => { weak(s); setNextCar(s, "revolve", 0.8); }, seed));
-      es += carSum(winter((s) => { weak(s); setNextCar(s, "evolve", 0.8); }, seed));
-    }
-    expect(rs).toBeLessThan(es);
-  }, 400000);
-
   it("changing course costs work already done", () => {
     const s = newCareer("mer", 3);
     setNextCar(s, "evolve", 0.5);

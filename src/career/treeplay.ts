@@ -1,7 +1,9 @@
 import { Rng, hashSeed } from "../sim/rng";
+import { traitWeight, trackNeed } from "./traits";
 import { pushCard, recap, sendLetter } from "./cards";
 
-import { install, lockOf, nodeOf, priceOf, slotsOf, startBuild, tickTree, treeOf, type CompId, type TreeNode, type TreeState } from "./ctree";
+import { tickFits } from "./fitting";
+import { install, lockOf, misfitOf, nodeOf, priceOf, slotsOf, startBuild, tickTree, treeOf, type CompId, type TreeNode, type TreeState } from "./ctree";
 import { CARDS, assignCards, cardMods, promoteSpark, sparkWeekly } from "./leadcards";
 import { rulesOf } from "./eras";
 import { round2, clamp } from "./util";
@@ -38,6 +40,7 @@ export function treeDaily(s: CareerState) {
   }
   if (s.day % 7 === 0) refreshMods(s, t);
   const r = tickTree(s, t);
+  tickFits(s, t);
   for (const id of r.built) {
     const nd = nodeOf(tr, id)!;
     recap(s, `Built: ${nd.name}.`);
@@ -138,16 +141,7 @@ export function onPromote(s: CareerState, stId: string): string | undefined {
 /** Measure the fitted tree parts during a practice run: expected against actual, per session. */
 /** How much this circuit cares about a trait, 1 being an ordinary track (from the sourced track table). */
 export function trackFactor(trait: Trait, circuitId: string): number {
-  const x = trackRow(circuitId);
-  const sev = loadCircuit(circuitId).meta.tyreSeverity;
-  switch (trait) {
-    case "downforce": return x.df / 3;
-    case "efficiency": case "output": case "drive": return x.pow / 3;
-    case "capacity": case "packaging": return x.cool / 3;
-    case "grip": case "platform": return (x.df + x.brk) / 6;
-    case "wear": case "warmup": return clamp(sev / 1.2, 0.5, 1.6);
-    default: return 1;
-  }
+  return traitWeight({} as Record<Trait, number>, trait, trackNeed(circuitId));
 }
 
 /** What one built part is really worth on this circuit's lap, seconds gained (positive is faster). */
@@ -178,7 +172,7 @@ export function carLapGain(t: TeamState, car: "A" | "B", circuitId: string): num
   for (const p of Object.values(tr.parts)) {
     if (!(car === "A" ? p.onA : p.onB)) continue;
     const nd = nodeOf(tr, p.id);
-    if (nd) v += partTrackGain(tr, nd, circuitId);
+    if (nd) v += partTrackGain(tr, nd, circuitId) * misfitOf(p, car);
   }
   return round2(v);
 }
@@ -202,7 +196,7 @@ export function recordTreeRun(s: CareerState, session: number, driverId: string,
     const nd = nodeOf(tr, p.id);
     if (!nd) continue;
     const exp = -partTrackExpect(nd, ws.circuitId);
-    const truth = -partTrackGain(tr, nd, ws.circuitId);
+    const truth = -partTrackGain(tr, nd, ws.circuitId) * misfitOf(p, car);
     const prev = col[p.id] ?? { exp, act: 0, n: 0 };
     const shot = truth + rng.gauss() * Math.max(0.01, noise * 0.5);
     const n = prev.n + 1;

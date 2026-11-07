@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { fitQuote } from "../../career/fitting";
 import { branchName, expertise, isBuilding, lockOf, priceOf, rangeOf, treeOf, type TreeNode } from "../../career/ctree";
 import { rulesOf } from "../../career/eras";
 import { fmtMoney, lapDelta } from "../../career/util";
@@ -43,6 +45,11 @@ export function NodeDetail({ s, d, nd, act, flags }: Props & { nd: TreeNode; act
   const pos = (v: number) => Math.max(0, Math.min(100, 50 + (v / 0.3) * 50));
   const lo = Math.min(pos(r.lo), pos(r.hi)), hi = Math.max(pos(r.lo), pos(r.hi));
   const traits = (Object.keys(nd.fx) as Trait[]);
+  const [rush, setRush] = useState(false);
+  const inSession = !!s.weekend && s.weekend.stage === "practice";
+  const qOn = fitQuote(s, me, nd, true, rush);
+  const price = `${inSession ? `${qOn.minutes} min` : `${qOn.days} day${qOn.days > 1 ? "s" : ""}`}, ${fmtMoney(qOn.money)}`;
+  const pending = (tr.fits ?? []).filter((j) => j.id === nd.id);
   return (
     <>
       <h4>{nd.name}</h4>
@@ -66,9 +73,12 @@ export function NodeDetail({ s, d, nd, act, flags }: Props & { nd: TreeNode; act
       {part && (
         <>
           <div className="ct-slots">
-            <button className={`btn ${part.onA ? "primary" : ""}`} onClick={() => act(rawDispatch(d, { type: "treeInstall", id: nd.id, car: "A", on: !part.onA }))}>CAR A {part.onA ? "ON" : "OFF"}</button>
-            <button className={`btn ${part.onB ? "primary" : ""}`} onClick={() => act(rawDispatch(d, { type: "treeInstall", id: nd.id, car: "B", on: !part.onB }))}>CAR B {part.onB ? "ON" : "OFF"}</button>
+            <button className={`btn ${part.onA ? "primary" : ""}`} onClick={() => act(rawDispatch(d, { type: "treeInstall", id: nd.id, car: "A", on: !part.onA, rush }))}>CAR A {part.onA ? (part.misfit?.A ? "ON, BAD FIT" : "ON") : "OFF"}</button>
+            <button className={`btn ${part.onB ? "primary" : ""}`} onClick={() => act(rawDispatch(d, { type: "treeInstall", id: nd.id, car: "B", on: !part.onB, rush }))}>CAR B {part.onB ? (part.misfit?.B ? "ON, BAD FIT" : "ON") : "OFF"}</button>
           </div>
+          <label className="small rt-rush"><input type="checkbox" checked={rush} onChange={(e) => setRush(e.target.checked)} /> RUSH it: pay {fmtMoney(qOn.money)} to be quick, {Math.round(fitQuote(s, me, nd, true, true).risk * 100)}% it does not sit right</label>
+          <p className="dim small">A change costs {price}{rush ? " (rushed)" : ""}. {inSession ? "It comes out of this practice session." : "The mechanics do it in the factory."}</p>
+          {pending.map((j) => <p key={j.car} className="small">Car {j.car}: {j.on ? "fitting" : "removing"}, {j.left} day{j.left > 1 ? "s" : ""} left.</p>)}
           {!part.tested && <button className="btn" onClick={() => act(rawDispatch(d, { type: "treeTest", id: nd.id }))}>TEST IN THE SIMULATOR ($0.4m, {tr.mods?.testDays ?? 4} days)</button>}
           {tr.tests.some((x) => x.id === nd.id) && <p className="small">In the simulator now.</p>}
           {part.copies < 2 && <p className="warn small">Only one of this part is left.</p>}

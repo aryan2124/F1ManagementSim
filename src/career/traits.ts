@@ -1,6 +1,7 @@
 import { keystoneTraits } from "./keystones";
 import { Rng, hashSeed } from "../sim/rng";
 import { CIRCUITS } from "../game/circuits";
+import { trackRow } from "../game/trackdata";
 import { clamp, round2 } from "./util";
 import { AREAS, TRAITS } from "./types";
 import type { Area, CareerState, Phil, TeamState, Trait } from "./types";
@@ -124,6 +125,12 @@ export interface TrackNeed {
   df: number;
   /** 1 is average tyre wear. */
   sev: number;
+  /** -1 fast and flowing to +1 slow, twisty and heavy on the brakes (from the sourced track table). */
+  slow?: number;
+  /** -1 cool to +1 a circuit that is hard on cooling. */
+  hot?: number;
+  /** -1 low load to +1 high load, the call on a stable platform. */
+  stab?: number;
 }
 const DF_TABLE: Record<string, number> = {
   monaco: 1, "marina-bay": 0.8, hungaroring: 0.9, zandvoort: 0.6, suzuka: 0.5, barcelona: 0.5, mugello: 0.5, madring: 0.4, "albert-park": 0.1, shanghai: 0.1, interlagos: 0.2, "red-bull-ring": -0.2,
@@ -132,7 +139,8 @@ const DF_TABLE: Record<string, number> = {
 export function trackNeed(circuitId: string): TrackNeed {
   const meta = CIRCUITS.find((c) => c.id === circuitId);
   const df = DF_TABLE[circuitId] ?? (new Rng(hashSeed(`df:${circuitId}`)).next() - 0.5);
-  return { df, sev: meta?.tyreSeverity ?? 1 };
+  const x = trackRow(circuitId);
+  return { df, sev: meta?.tyreSeverity ?? 1, slow: clamp(((x.brk - 3) + (3 - x.pow)) / 4, -1, 1), hot: clamp((x.cool - 3) / 2, -1, 1), stab: clamp((x.df - 3) / 2, -1, 1) };
 }
 
 /** How much a trait is worth in seconds at this circuit under these rules, relative to the average trait. */
@@ -149,12 +157,12 @@ export function traitWeight(w: Record<Trait, number>, tr: Trait, need?: TrackNee
   const f: Record<Trait, number> = {
     downforce: 1 + TRACK_LEAN * df,
     efficiency: 1 - TRACK_LEAN * df,
-    grip: 1 + 0.1 * df,
-    platform: 1,
-    output: 1 - 0.15 * df,
-    drive: 1 + 0.1 * df,
-    capacity: 1,
-    packaging: 1,
+    grip: 1 + 0.1 * df + 0.6 * (need.slow ?? 0),
+    platform: 1 + 0.5 * (need.stab ?? 0),
+    output: 1 - 0.15 * df - 0.25 * (need.slow ?? 0),
+    drive: 1 + 0.1 * df + 0.6 * (need.slow ?? 0),
+    capacity: 1 + 0.6 * (need.hot ?? 0),
+    packaging: 1 - 0.6 * (need.hot ?? 0),
     wear: 1 + 0.9 * sev,
     warmup: 1 - 0.6 * sev,
   };

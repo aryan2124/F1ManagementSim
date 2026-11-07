@@ -576,6 +576,8 @@ export interface SessionResult {
 export interface WeekendState {
   /** The pre-race talk given this weekend, if any. */
   pep?: "calm" | "fire" | "joke";
+  /** Minutes of the practice session spent on car changes so far (see fitting.ts). */
+  fitMin?: number;
   round: number;
   circuitId: string;
   sprint: boolean;
@@ -1049,7 +1051,8 @@ export type Action =
   | { type: "treeBuild"; id: string }
   | { type: "treeScrap"; id: string }
   | { type: "treeTest"; id: string }
-  | { type: "treeInstall"; id: string; car: "A" | "B"; on: boolean }
+  | { type: "treeInstall"; id: string; car: "A" | "B"; on: boolean; rush?: boolean }
+  | { type: "treeSuggested"; rush?: boolean }
   | { type: "treeKeep"; id: string; keep: boolean }
   | { type: "upgradeFacility"; which: keyof Omit<Facilities, "building"> }
   | { type: "delegate"; area: keyof Delegation; level: Level }
