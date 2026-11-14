@@ -13,7 +13,9 @@ const version = JSON.parse(readFileSync(path.join(root, "node_modules/electron/p
 const name = `BOX-BOX-${platform}-${arch}`;
 const out = path.join(root, "release", name);
 
-if (!existsSync(path.join(root, "dist", "index.html"))) execFileSync("npx", ["vite", "build"], { cwd: root, stdio: "inherit" });
+// always rebuild: a leftover dist folder once shipped stale code in a zip
+rmSync(path.join(root, "dist"), { recursive: true, force: true });
+execFileSync("npx", ["vite", "build"], { cwd: root, stdio: "inherit" });
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 const zip = await downloadArtifact({ version, platform, arch, artifactName: "electron" });

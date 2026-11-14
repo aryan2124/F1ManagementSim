@@ -68,7 +68,7 @@ export function Home({ onNew, onLoad, onOnline, onWeekend, onTutorial }: { onNew
       </nav>
       {err && <p className="warn center">{err}</p>}
       <input ref={file} type="file" accept="application/json,.json" hidden onChange={(e) => void importFile(e.target.files?.[0])} />
-      <footer className="home-foot dim small">Arrow keys and Enter work. The game saves by itself while you play a career.</footer>
+      <footer className="home-foot dim small">Arrow keys and Enter work. The game saves by itself while you play a career. <span title="Which build this is">Build {__BUILD__}</span></footer>
     </div>
   );
 }
